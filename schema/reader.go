@@ -8,16 +8,21 @@ import (
 type Reader struct {
 	wrap        types.Reader
 	columnTypes []types.Any
-	columns     []Column
+	columns     []column
 	index       int
 	firstErr    error
 }
 
-func NewReader(wrap types.Reader, columnTypes ...types.Any) *Reader {
+func NewReader(wrap types.Reader) *Reader {
 	return &Reader{
 		wrap:        wrap,
-		columnTypes: columnTypes,
+		columnTypes: make([]types.Any, 0),
 	}
+}
+
+func (r *Reader) Column(tp types.Any) *Reader {
+	r.columnTypes = append(r.columnTypes, tp)
+	return r
 }
 
 func (r *Reader) Err() error {

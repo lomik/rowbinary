@@ -18,7 +18,7 @@ import (
 )
 
 // requests clickhouse, caching locally to disk
-// re-running the test can already work without KH. including in CI if you commit fixtures/*
+// re-running the test can already work without CH. including in CI if you commit fixtures/*
 func execLocal(query string) ([]byte, error) {
 	h := sha256.New()
 	h.Write([]byte(query))

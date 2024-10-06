@@ -8,16 +8,24 @@ import (
 
 type Writer struct {
 	wrap     types.Writer
-	columns  []Column
+	columns  []column
 	index    int
 	firstErr error
 }
 
-func NewWriter(wrap types.Writer, columns ...Column) *Writer {
+func NewWriter(wrap types.Writer) *Writer {
 	return &Writer{
 		wrap:    wrap,
-		columns: columns,
+		columns: make([]column, 0),
 	}
+}
+
+func (w *Writer) Column(name string, tp types.Any) *Writer {
+	w.columns = append(w.columns, column{
+		Name: name,
+		Type: tp,
+	})
+	return w
 }
 
 func (w *Writer) Err() error {
