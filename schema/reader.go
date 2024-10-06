@@ -11,6 +11,7 @@ type Reader struct {
 	columns     []column
 	index       int
 	firstErr    error
+	format      Format
 }
 
 func NewReader(wrap types.Reader) *Reader {
@@ -22,6 +23,11 @@ func NewReader(wrap types.Reader) *Reader {
 
 func (r *Reader) Column(tp types.Any) *Reader {
 	r.columnTypes = append(r.columnTypes, tp)
+	return r
+}
+
+func (r *Reader) Format(f Format) *Reader {
+	r.format = f
 	return r
 }
 
@@ -38,6 +44,11 @@ func (r *Reader) setErr(err error) error {
 		r.firstErr = err
 	}
 	return r.firstErr
+}
+
+func (r *Reader) ReadHeader() error {
+	panic("not implemented")
+	return nil
 }
 
 func Read[V any](r *Reader, tp types.Type[V]) (V, error) {

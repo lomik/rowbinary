@@ -11,6 +11,7 @@ type Writer struct {
 	columns  []column
 	index    int
 	firstErr error
+	format   Format
 }
 
 func NewWriter(wrap types.Writer) *Writer {
@@ -25,6 +26,11 @@ func (w *Writer) Column(name string, tp types.Any) *Writer {
 		Name: name,
 		Type: tp,
 	})
+	return w
+}
+
+func (w *Writer) Format(f Format) *Writer {
+	w.format = f
 	return w
 }
 
@@ -43,12 +49,7 @@ func (w *Writer) setErr(err error) error {
 	return w.firstErr
 }
 
-func (w *Writer) WriteWithNamesHeader() error {
-	panic("not implemented")
-	return nil
-}
-
-func (w *Writer) WriteWithNamesAndTypesHeader() error {
+func (w *Writer) WriteHeader() error {
 	panic("not implemented")
 	return nil
 }
@@ -62,7 +63,7 @@ func (w *Writer) single(value any) error {
 	return w.setErr(err)
 }
 
-func (w *Writer) Values(values ...any) error {
+func (w *Writer) WriteValues(values ...any) error {
 	for i := 0; i < len(values); i++ {
 		err := w.single(values[i])
 		if err != nil {
