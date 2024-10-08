@@ -50,7 +50,27 @@ func (w *Writer) setErr(err error) error {
 }
 
 func (w *Writer) WriteHeader() error {
-	panic("not implemented")
+	if w.format == RowBinary {
+		return nil
+	}
+	if w.format == RowBinaryWithNames || w.format == RowBinaryWithNamesAndTypes {
+		if err := rowbinary.UVarint.Write(w.wrap, uint64(len(w.columns))); err != nil {
+			return err
+		}
+		for i := 0; i < len(w.columns); i++ {
+			if err := rowbinary.String.Write(w.wrap, w.columns[i].Name); err != nil {
+				return err
+			}
+		}
+
+		if w.format == RowBinaryWithNamesAndTypes {
+			for i := 0; i < len(w.columns); i++ {
+				if err := rowbinary.String.Write(w.wrap, w.columns[i].Type.String()); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
 
