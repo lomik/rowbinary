@@ -1,4 +1,4 @@
-package types
+package rowbinary
 
 type Type[T any] interface {
 	String() string

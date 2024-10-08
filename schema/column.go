@@ -1,8 +1,8 @@
 package schema
 
-import "github.com/pluto-metrics/rowbinary/types"
+import "github.com/pluto-metrics/rowbinary"
 
 type column struct {
 	Name string
-	Type types.Any
+	Type rowbinary.Any
 }

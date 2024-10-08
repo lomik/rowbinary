@@ -1,4 +1,4 @@
-package types
+package rowbinary
 
 import (
 	"github.com/pkg/errors"

@@ -3,25 +3,25 @@ package schema
 import (
 	"github.com/pkg/errors"
 
-	"github.com/pluto-metrics/rowbinary/types"
+	"github.com/pluto-metrics/rowbinary"
 )
 
 type Writer struct {
-	wrap     types.Writer
+	wrap     rowbinary.Writer
 	columns  []column
 	index    int
 	firstErr error
 	format   Format
 }
 
-func NewWriter(wrap types.Writer) *Writer {
+func NewWriter(wrap rowbinary.Writer) *Writer {
 	return &Writer{
 		wrap:    wrap,
 		columns: make([]column, 0),
 	}
 }
 
-func (w *Writer) Column(name string, tp types.Any) *Writer {
+func (w *Writer) Column(name string, tp rowbinary.Any) *Writer {
 	w.columns = append(w.columns, column{
 		Name: name,
 		Type: tp,
@@ -73,7 +73,7 @@ func (w *Writer) WriteValues(values ...any) error {
 	return nil
 }
 
-func Write[V any](w *Writer, tp types.Type[V], value V) error {
+func Write[V any](w *Writer, tp rowbinary.Type[V], value V) error {
 	// todo: optimize type check?
 	if tp.String() != w.columns[w.index].Type.String() {
 		return errors.New("type mismatch")

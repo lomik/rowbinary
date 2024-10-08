@@ -2,26 +2,26 @@ package schema
 
 import (
 	"github.com/pkg/errors"
-	"github.com/pluto-metrics/rowbinary/types"
+	"github.com/pluto-metrics/rowbinary"
 )
 
 type Reader struct {
-	wrap        types.Reader
-	columnTypes []types.Any
+	wrap        rowbinary.Reader
+	columnTypes []rowbinary.Any
 	columns     []column
 	index       int
 	firstErr    error
 	format      Format
 }
 
-func NewReader(wrap types.Reader) *Reader {
+func NewReader(wrap rowbinary.Reader) *Reader {
 	return &Reader{
 		wrap:        wrap,
-		columnTypes: make([]types.Any, 0),
+		columnTypes: make([]rowbinary.Any, 0),
 	}
 }
 
-func (r *Reader) Column(tp types.Any) *Reader {
+func (r *Reader) Column(tp rowbinary.Any) *Reader {
 	r.columnTypes = append(r.columnTypes, tp)
 	return r
 }
@@ -51,7 +51,7 @@ func (r *Reader) ReadHeader() error {
 	return nil
 }
 
-func Read[V any](r *Reader, tp types.Type[V]) (V, error) {
+func Read[V any](r *Reader, tp rowbinary.Type[V]) (V, error) {
 	var value V
 
 	// todo: optimize type check?
