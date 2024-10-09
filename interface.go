@@ -9,6 +9,7 @@ import (
 type Reader interface {
 	io.Reader
 	io.ByteReader
+	Peek(n int) ([]byte, error)
 }
 
 type Writer interface {

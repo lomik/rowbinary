@@ -35,6 +35,14 @@ func (r *Reader) Err() error {
 	return r.firstErr
 }
 
+func (r *Reader) Next() bool {
+	_, err := r.wrap.Peek(1)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (r *Reader) next() {
 	r.index = (r.index + 1) % (len(r.columns))
 }
