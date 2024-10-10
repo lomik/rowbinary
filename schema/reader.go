@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"io"
+
 	"github.com/pkg/errors"
 	"github.com/pluto-metrics/rowbinary"
 )
@@ -36,8 +38,14 @@ func (r *Reader) Err() error {
 }
 
 func (r *Reader) Next() bool {
-	_, err := r.wrap.Peek(1)
+	_, err := r.wrap.ReadByte()
+	if err != nil && err != io.EOF {
+		r.setErr(err)
+	}
 	if err != nil {
+		return false
+	}
+	if err = r.wrap.UnreadByte(); err != nil {
 		return false
 	}
 	return true
