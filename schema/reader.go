@@ -52,7 +52,7 @@ func (r *Reader) Next() bool {
 }
 
 func (r *Reader) next() {
-	r.index = (r.index + 1) % (len(r.columns))
+	r.index = (r.index + 1) % (len(r.columnTypes))
 }
 
 func (r *Reader) setErr(err error) error {
