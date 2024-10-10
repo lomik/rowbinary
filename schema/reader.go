@@ -63,12 +63,55 @@ func (r *Reader) setErr(err error) error {
 }
 
 func (r *Reader) ReadHeader() error {
-	panic("not implemented")
+	if r.firstErr != nil {
+		return r.firstErr
+	}
+
+	if r.format == RowBinary {
+		return nil
+	}
+
+	if r.format == RowBinaryWithNames || r.format == RowBinaryWithNamesAndTypes {
+		n, err := rowbinary.UVarint.Read(r.wrap)
+		if err != nil {
+			return r.setErr(err)
+		}
+
+		if int(n) != len(r.columnTypes) {
+			return r.setErr(errors.New("columns count mismatch"))
+		}
+
+		r.columns = make([]column, 0, len(r.columnTypes))
+
+		for i := 0; i < len(r.columnTypes); i++ {
+			name, err := rowbinary.String.Read(r.wrap)
+			if err != nil {
+				return r.setErr(err)
+			}
+			r.columns = append(r.columns, column{Name: name, Type: r.columnTypes[i]})
+		}
+
+		if r.format == RowBinaryWithNamesAndTypes {
+			for i := 0; i < len(r.columnTypes); i++ {
+				tp, err := rowbinary.String.Read(r.wrap)
+				if err != nil {
+					return r.setErr(err)
+				}
+				if r.columnTypes[i].String() != tp {
+					return r.setErr(errors.New("column type mismatch"))
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
 func Read[V any](r *Reader, tp rowbinary.Type[V]) (V, error) {
 	var value V
+	if r.firstErr != nil {
+		return value, r.firstErr
+	}
 
 	// todo: optimize type check?
 	if tp.String() != r.columnTypes[r.index].String() {

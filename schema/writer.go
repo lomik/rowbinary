@@ -50,23 +50,26 @@ func (w *Writer) setErr(err error) error {
 }
 
 func (w *Writer) WriteHeader() error {
+	if w.firstErr != nil {
+		return w.firstErr
+	}
 	if w.format == RowBinary {
 		return nil
 	}
 	if w.format == RowBinaryWithNames || w.format == RowBinaryWithNamesAndTypes {
 		if err := rowbinary.UVarint.Write(w.wrap, uint64(len(w.columns))); err != nil {
-			return err
+			return w.setErr(err)
 		}
 		for i := 0; i < len(w.columns); i++ {
 			if err := rowbinary.String.Write(w.wrap, w.columns[i].Name); err != nil {
-				return err
+				return w.setErr(err)
 			}
 		}
 
 		if w.format == RowBinaryWithNamesAndTypes {
 			for i := 0; i < len(w.columns); i++ {
 				if err := rowbinary.String.Write(w.wrap, w.columns[i].Type.String()); err != nil {
-					return err
+					return w.setErr(err)
 				}
 			}
 		}
@@ -94,6 +97,9 @@ func (w *Writer) WriteValues(values ...any) error {
 }
 
 func Write[V any](w *Writer, tp rowbinary.Type[V], value V) error {
+	if w.firstErr != nil {
+		return w.firstErr
+	}
 	// todo: optimize type check?
 	if tp.String() != w.columns[w.index].Type.String() {
 		return errors.New("type mismatch")
