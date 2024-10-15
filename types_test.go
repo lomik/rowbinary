@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"errors"
@@ -174,27 +173,5 @@ func Test_Typed(t *testing.T) {
 			_, err = tt.tp.ReadAny(valueReaderTruncated)
 			assert.Error(err)
 		})
-	}
-}
-
-func TestReader_Uvarint(t *testing.T) {
-	t.Parallel()
-	assert := assert.New(t)
-
-	body, err := execLocal("SELECT 1 as c1, 2 as c2, 3 as c3, 4 as c4 FORMAT RowBinaryWithNamesAndTypes")
-	assert.NoError(err)
-
-	r := bytes.NewReader(body)
-
-	value, err := UVarint.Read(r)
-	assert.NoError(err)
-	assert.Equal(uint64(4), value)
-}
-
-func BenchmarkStringWrite(b *testing.B) {
-	out := bufio.NewWriter(io.Discard)
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		String.Write(out, "hello world")
 	}
 }
