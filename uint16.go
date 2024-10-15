@@ -17,11 +17,9 @@ func (t *typeUInt16) String() string {
 }
 
 func (t *typeUInt16) Write(w Writer, v uint16) error {
-	var err error
-	if err = w.WriteByte(byte(v)); err != nil {
-		return err
-	}
-	return w.WriteByte(byte(v >> 8))
+	binary.LittleEndian.PutUint16(w.Buffer(), v)
+	_, err := w.Write(w.Buffer()[:2])
+	return err
 }
 
 func (t *typeUInt16) Read(r Reader) (uint16, error) {

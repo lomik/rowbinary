@@ -14,9 +14,9 @@ type Writer struct {
 	format   Format
 }
 
-func NewWriter(wrap rowbinary.Writer) *Writer {
+func NewWriter(wrap rowbinary.OriginWriter) *Writer {
 	return &Writer{
-		wrap:    wrap,
+		wrap:    rowbinary.NewWriter(wrap),
 		columns: make([]column, 0),
 	}
 }

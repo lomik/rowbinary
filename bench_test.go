@@ -12,12 +12,6 @@ import (
 )
 
 func BenchmarkTypes(b *testing.B) {
-	out := bufio.NewWriter(io.Discard)
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		String.Write(out, "hello world")
-	}
-
 	tests := []struct {
 		tp   Any
 		want interface{}
@@ -51,7 +45,7 @@ func BenchmarkTypes(b *testing.B) {
 		tt := tt
 
 		b.Run(fmt.Sprintf("%s Write", tt.tp.String()), func(b *testing.B) {
-			out := bufio.NewWriter(io.Discard)
+			out := NewWriter(bufio.NewWriter(io.Discard))
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
 				tt.tp.WriteAny(out, tt.want)

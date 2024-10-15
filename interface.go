@@ -14,6 +14,7 @@ type Reader interface {
 type Writer interface {
 	io.Writer
 	io.ByteWriter
+	Buffer() []byte // returns 16 bytes buffer for encoding
 }
 
 var ErrNotImplemented = errors.New("not implemented")

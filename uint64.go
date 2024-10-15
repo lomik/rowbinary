@@ -17,9 +17,8 @@ func (t *typeUInt64) String() string {
 }
 
 func (t *typeUInt64) Write(w Writer, value uint64) error {
-	var buf [8]byte
-	binary.LittleEndian.PutUint64(buf[:], value)
-	_, err := w.Write(buf[:])
+	binary.LittleEndian.PutUint64(w.Buffer(), value)
+	_, err := w.Write(w.Buffer()[:8])
 	return err
 }
 

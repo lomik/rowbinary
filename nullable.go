@@ -24,10 +24,9 @@ func (t *typeNullable[V]) String() string {
 
 func (t *typeNullable[V]) Write(w Writer, value *V) error {
 	if value == nil {
-		_, err := w.Write([]byte{0x01})
-		return err
+		return w.WriteByte(0x01)
 	}
-	_, err := w.Write([]byte{0x0})
+	err := w.WriteByte(0x0)
 	if err != nil {
 		return err
 	}

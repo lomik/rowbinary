@@ -161,7 +161,7 @@ func Test_Typed(t *testing.T) {
 				// 	assert.Equal(true, ok)
 			} else {
 				w := new(bytes.Buffer)
-				err = tt.tp.WriteAny(w, tt.want)
+				err = tt.tp.WriteAny(NewWriter(w), tt.want)
 				if assert.NoError(err) {
 					assert.Equal(valueBody, w.Bytes())
 				}
