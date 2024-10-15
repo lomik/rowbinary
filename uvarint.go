@@ -15,10 +15,19 @@ func (t *typeUVarint) String() string {
 	return "UVarint"
 }
 
-func (t *typeUVarint) Write(w Writer, value uint64) error {
-	var buf [binary.MaxVarintLen64]byte
-	n := binary.PutUvarint(buf[:], value)
-	_, err := w.Write(buf[:n])
+func (t *typeUVarint) Write(w Writer, x uint64) error {
+	var err error
+	i := 0
+	for x >= 0x80 {
+		if err = w.WriteByte(byte(x) | 0x80); err != nil {
+			return err
+		}
+		x >>= 7
+		i++
+	}
+	if err = w.WriteByte(byte(x)); err != nil {
+		return err
+	}
 	return err
 }
 

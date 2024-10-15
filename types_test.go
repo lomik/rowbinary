@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"errors"
@@ -188,4 +189,12 @@ func TestReader_Uvarint(t *testing.T) {
 	value, err := UVarint.Read(r)
 	assert.NoError(err)
 	assert.Equal(uint64(4), value)
+}
+
+func BenchmarkStringWrite(b *testing.B) {
+	out := bufio.NewWriter(io.Discard)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		String.Write(out, "hello world")
+	}
 }

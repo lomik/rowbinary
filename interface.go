@@ -13,6 +13,7 @@ type Reader interface {
 
 type Writer interface {
 	io.Writer
+	io.ByteWriter
 }
 
 var ErrNotImplemented = errors.New("not implemented")

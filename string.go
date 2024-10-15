@@ -3,9 +3,20 @@ package rowbinary
 import (
 	"encoding/binary"
 	"io"
+	"unsafe"
 
 	"github.com/pkg/errors"
 )
+
+func toBytes(s string) []byte {
+	// unsafe.StringData is unspecified for the empty string, so we provide a strict interpretation
+	if len(s) == 0 {
+		return nil
+	}
+	// Copied from go 1.20.1 os.File.WriteString
+	// https://github.com/golang/go/blob/202a1a57064127c3f19d96df57b9f9586145e21c/src/os/file.go#L246
+	return unsafe.Slice(unsafe.StringData(s), len(s))
+}
 
 var String Type[string] = &typeString{}
 
@@ -21,7 +32,7 @@ func (t *typeString) Write(w Writer, value string) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(value))
+	_, err = w.Write(toBytes(value))
 	return err
 }
 
