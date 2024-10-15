@@ -16,11 +16,18 @@ func (t *typeUInt32) String() string {
 	return "UInt32"
 }
 
-func (t *typeUInt32) Write(w Writer, value uint32) error {
-	var buf [4]byte
-	binary.LittleEndian.PutUint32(buf[:], value)
-	_, err := w.Write(buf[:])
-	return err
+func (t *typeUInt32) Write(w Writer, v uint32) error {
+	var err error
+	if err = w.WriteByte(byte(v)); err != nil {
+		return err
+	}
+	if err = w.WriteByte(byte(v >> 8)); err != nil {
+		return err
+	}
+	if err = w.WriteByte(byte(v >> 16)); err != nil {
+		return err
+	}
+	return w.WriteByte(byte(v >> 24))
 }
 
 func (t *typeUInt32) Read(r Reader) (uint32, error) {

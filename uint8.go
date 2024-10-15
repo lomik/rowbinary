@@ -16,10 +16,7 @@ func (t *typeUInt8) String() string {
 }
 
 func (t *typeUInt8) Write(w Writer, value uint8) error {
-	var buf [1]byte
-	buf[0] = byte(value)
-	_, err := w.Write(buf[:])
-	return err
+	return w.WriteByte(value)
 }
 
 func (t *typeUInt8) Read(r Reader) (uint8, error) {
