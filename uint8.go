@@ -20,12 +20,11 @@ func (t *typeUInt8) Write(w Writer, value uint8) error {
 }
 
 func (t *typeUInt8) Read(r Reader) (uint8, error) {
-	var buf [1]byte
-	_, err := io.ReadAtLeast(r, buf[:], len(buf))
+	_, err := io.ReadAtLeast(r, r.buffer()[:1], 1)
 	if err != nil {
 		return 0, err
 	}
-	return buf[0], nil
+	return r.buffer()[0], nil
 }
 
 func (t *typeUInt8) WriteAny(w Writer, v any) error {

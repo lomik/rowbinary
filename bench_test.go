@@ -44,7 +44,7 @@ func BenchmarkTypes(b *testing.B) {
 	for _, tt := range tests {
 		tt := tt
 
-		b.Run(fmt.Sprintf("%s Write", tt.tp.String()), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Write %s", tt.tp.String()), func(b *testing.B) {
 			out := NewWriter(io.Discard)
 			for i := 0; i < b.N; i++ {
 				tt.tp.WriteAny(out, tt.want)
@@ -55,7 +55,7 @@ func BenchmarkTypes(b *testing.B) {
 	for _, tt := range tests {
 		tt := tt
 
-		b.Run(fmt.Sprintf("%s Read", tt.tp.String()), func(b *testing.B) {
+		b.Run(fmt.Sprintf("Read %s", tt.tp.String()), func(b *testing.B) {
 			buf := new(bytes.Buffer)
 			data := buf.Bytes()
 			br := bytes.NewReader(data)

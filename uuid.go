@@ -30,15 +30,14 @@ func (t *typeUUID) Write(w Writer, value uuid.UUID) error {
 }
 
 func (t *typeUUID) Read(r Reader) (uuid.UUID, error) {
-	var buf [16]byte
-	_, err := io.ReadAtLeast(r, buf[:], len(buf))
+	_, err := io.ReadAtLeast(r, r.buffer()[:16], 16)
 	if err != nil {
 		return uuid.UUID{}, err
 	}
 
-	swap64(buf[:])
+	swap64(r.buffer()[:16])
 
-	return uuid.FromBytes(buf[:])
+	return uuid.FromBytes(r.buffer()[:16])
 }
 
 func (t *typeUUID) WriteAny(w Writer, v any) error {

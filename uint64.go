@@ -23,12 +23,11 @@ func (t *typeUInt64) Write(w Writer, value uint64) error {
 }
 
 func (t *typeUInt64) Read(r Reader) (uint64, error) {
-	var buf [8]byte
-	_, err := io.ReadAtLeast(r, buf[:], len(buf))
+	_, err := io.ReadAtLeast(r, r.buffer()[:8], 8)
 	if err != nil {
 		return 0, err
 	}
-	return binary.LittleEndian.Uint64(buf[:]), nil
+	return binary.LittleEndian.Uint64(r.buffer()[:8]), nil
 }
 
 func (t *typeUInt64) WriteAny(w Writer, v any) error {
