@@ -16,9 +16,9 @@ type Reader struct {
 	format      Format
 }
 
-func NewReader(wrap rowbinary.Reader) *Reader {
+func NewReader(wrap io.Reader) *Reader {
 	return &Reader{
-		wrap:        wrap,
+		wrap:        rowbinary.NewReader(wrap),
 		columnTypes: make([]rowbinary.Any, 0),
 	}
 }

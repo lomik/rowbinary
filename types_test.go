@@ -95,7 +95,7 @@ func Test_Typed(t *testing.T) {
 			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC'")
 			assert.NoError(err)
 
-			r := bytes.NewReader(body)
+			r := NewReader(bytes.NewReader(body))
 
 			// first read the column name and type. check that there is one column and the type matches the one being checked
 			n, err := UVarint.Read(r)
@@ -130,7 +130,7 @@ func Test_Typed(t *testing.T) {
 				return
 			}
 
-			valueReader := bytes.NewReader(valueBody)
+			valueReader := NewReader(bytes.NewReader(valueBody))
 
 			value, err := tt.tp.ReadAny(valueReader)
 			if assert.NoError(err) {
@@ -168,7 +168,7 @@ func Test_Typed(t *testing.T) {
 			}
 
 			// And if you give one byte less, then there should be an error
-			valueReaderTruncated := bytes.NewReader(valueBody[:len(valueBody)-1])
+			valueReaderTruncated := NewReader(bytes.NewReader(valueBody[:len(valueBody)-1]))
 
 			_, err = tt.tp.ReadAny(valueReaderTruncated)
 			assert.Error(err)
