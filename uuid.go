@@ -21,7 +21,7 @@ func (t *typeUUID) Write(w Writer, value uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	buf := w.Buffer()
+	buf := w.buffer()
 	copy(buf, tmp)
 	swap64(buf)
 	_, err = w.Write(buf)

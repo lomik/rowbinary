@@ -2,22 +2,49 @@ package rowbinary
 
 import "io"
 
-type OriginWriter interface {
+type byteWriter interface {
 	io.Writer
 	io.ByteWriter
 }
 
-type typeWriter struct {
-	OriginWriter
-	buffer [16]byte
+type writer struct {
+	byteWriter
+	buf [16]byte
 }
 
-func NewWriter(wrap OriginWriter) Writer {
-	return &typeWriter{
-		OriginWriter: wrap,
+type Writer interface {
+	io.Writer
+	io.ByteWriter
+	buffer() []byte // 16 bytes buffer for encoding
+}
+
+type implByteWriter struct {
+	io.Writer
+	b []byte
+}
+
+func NewWriter(w io.Writer) Writer {
+	return &writer{
+		byteWriter: newByteWriter(w),
 	}
 }
 
-func (w *typeWriter) Buffer() []byte {
-	return w.buffer[:]
+func (w *writer) buffer() []byte {
+	return w.buf[:]
+}
+
+func newByteWriter(w io.Writer) byteWriter {
+	if bw, ok := w.(byteWriter); ok {
+		return bw
+	}
+	return &implByteWriter{
+		Writer: w,
+		b:      make([]byte, 1),
+	}
+}
+
+func (bw *implByteWriter) WriteByte(b byte) error {
+	bw.b[0] = b
+	_, err := bw.Write(bw.b)
+	return err
 }

@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"testing"
@@ -45,7 +44,7 @@ func BenchmarkTypes(b *testing.B) {
 		tt := tt
 
 		b.Run(fmt.Sprintf("%s Write", tt.tp.String()), func(b *testing.B) {
-			out := NewWriter(bufio.NewWriter(io.Discard))
+			out := NewWriter(io.Discard)
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
 				tt.tp.WriteAny(out, tt.want)

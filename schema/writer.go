@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"io"
+
 	"github.com/pkg/errors"
 
 	"github.com/pluto-metrics/rowbinary"
@@ -14,7 +16,7 @@ type Writer struct {
 	format   Format
 }
 
-func NewWriter(wrap rowbinary.OriginWriter) *Writer {
+func NewWriter(wrap io.Writer) *Writer {
 	return &Writer{
 		wrap:    rowbinary.NewWriter(wrap),
 		columns: make([]column, 0),
