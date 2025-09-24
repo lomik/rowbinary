@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,7 @@ type Reader struct {
 	index       int
 	firstErr    error
 	format      Format
+	useBinary   bool
 }
 
 func NewReader(wrap io.Reader) *Reader {
@@ -30,6 +32,13 @@ func (r *Reader) Column(tp rowbinary.Any) *Reader {
 
 func (r *Reader) Format(f Format) *Reader {
 	r.format = f
+	return r
+}
+
+// output_format_binary_encode_types_in_binary_format=true
+// https://clickhouse.com/docs/interfaces/formats/RowBinary
+func (r *Reader) UseBinary(use bool) *Reader {
+	r.useBinary = use
 	return r
 }
 
@@ -93,12 +102,24 @@ func (r *Reader) ReadHeader() error {
 
 		if r.format == RowBinaryWithNamesAndTypes {
 			for i := 0; i < len(r.columnTypes); i++ {
-				tp, err := rowbinary.String.Read(r.wrap)
-				if err != nil {
-					return r.setErr(err)
-				}
-				if r.columnTypes[i].String() != tp {
-					return r.setErr(errors.New("column type mismatch"))
+				if r.useBinary {
+					expectedType := r.columnTypes[i].Binary()
+					tpHeader := make([]byte, len(expectedType))
+					n, err := r.wrap.Read(tpHeader)
+					if err != nil {
+						return r.setErr(err)
+					}
+					if n != len(tpHeader) || !bytes.Equal(tpHeader, expectedType) {
+						return r.setErr(errors.New("column type mismatch"))
+					}
+				} else {
+					tp, err := rowbinary.String.Read(r.wrap)
+					if err != nil {
+						return r.setErr(err)
+					}
+					if r.columnTypes[i].String() != tp {
+						return r.setErr(errors.New("column type mismatch"))
+					}
 				}
 			}
 		}

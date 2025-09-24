@@ -22,6 +22,10 @@ func (t *typeNullable[V]) String() string {
 	return fmt.Sprintf("Nullable(%s)", t.valueType.String())
 }
 
+func (t *typeNullable[V]) Binary() []byte {
+	return append(typeBinaryNullable[:], t.valueType.Binary()...)
+}
+
 func (t *typeNullable[V]) Write(w Writer, value *V) error {
 	if value == nil {
 		return w.WriteByte(0x01)

@@ -27,6 +27,10 @@ func (t *typeString) String() string {
 	return "String"
 }
 
+func (t *typeString) Binary() []byte {
+	return typeBinaryString[:]
+}
+
 func (t *typeString) Write(w Writer, value string) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {

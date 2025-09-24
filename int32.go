@@ -13,6 +13,10 @@ func (t *typeInt32) String() string {
 	return "Int32"
 }
 
+func (t *typeInt32) Binary() []byte {
+	return typeBinaryInt32[:]
+}
+
 func (t *typeInt32) Write(w Writer, value int32) error {
 	return UInt32.Write(w, uint32(value))
 }

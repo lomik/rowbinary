@@ -15,6 +15,10 @@ func (t *typeUVarint) String() string {
 	return "UVarint"
 }
 
+func (t *typeUVarint) Binary() []byte {
+	return typeBinaryNothing[:]
+}
+
 func (t *typeUVarint) Write(w Writer, x uint64) error {
 	var err error
 	i := 0

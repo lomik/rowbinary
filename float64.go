@@ -15,6 +15,10 @@ func (t *typeFloat64) String() string {
 	return "Float64"
 }
 
+func (t *typeFloat64) Binary() []byte {
+	return typeBinaryFloat64[:]
+}
+
 func (t *typeFloat64) Write(w Writer, value float64) error {
 	return UInt64.Write(w, math.Float64bits(value))
 }

@@ -16,6 +16,10 @@ func (t *typeUInt64) String() string {
 	return "UInt64"
 }
 
+func (t *typeUInt64) Binary() []byte {
+	return typeBinaryUInt64[:]
+}
+
 func (t *typeUInt64) Write(w Writer, value uint64) error {
 	binary.LittleEndian.PutUint64(w.buffer(), value)
 	_, err := w.Write(w.buffer()[:8])

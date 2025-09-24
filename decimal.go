@@ -25,6 +25,14 @@ func (t *typeDecimal) String() string {
 	return fmt.Sprintf("Decimal(%d, %d)", t.precision, t.scale)
 }
 
+func (t *typeDecimal) Binary() []byte {
+	if t.precision <= 9 {
+		// decimal32
+		return []byte{typeBinaryDecimal32[0], t.precision, t.scale}
+	}
+	return []byte{typeBinaryDecimal64[0], t.precision, t.scale}
+}
+
 func (t *typeDecimal) Write(w Writer, value decimal.Decimal) error {
 	// decimal32
 	if t.precision <= 9 {

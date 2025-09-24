@@ -16,6 +16,10 @@ func (t *typeUUID) String() string {
 	return "UUID"
 }
 
+func (t *typeUUID) Binary() []byte {
+	return typeBinaryUUID[:]
+}
+
 func (t *typeUUID) Write(w Writer, value uuid.UUID) error {
 	tmp, err := value.MarshalBinary()
 	if err != nil {

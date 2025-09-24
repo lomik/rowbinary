@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/pkg/errors"
@@ -9,11 +10,12 @@ import (
 )
 
 type Writer struct {
-	wrap     rowbinary.Writer
-	columns  []column
-	index    int
-	firstErr error
-	format   Format
+	wrap      rowbinary.Writer
+	columns   []column
+	index     int
+	firstErr  error
+	format    Format
+	useBinary bool
 }
 
 func NewWriter(wrap io.Writer) *Writer {
@@ -33,6 +35,13 @@ func (w *Writer) Column(name string, tp rowbinary.Any) *Writer {
 
 func (w *Writer) Format(f Format) *Writer {
 	w.format = f
+	return w
+}
+
+// input_format_binary_decode_types_in_binary_format=true
+// https://clickhouse.com/docs/interfaces/formats/RowBinary
+func (w *Writer) UseBinary(use bool) *Writer {
+	w.useBinary = use
 	return w
 }
 
@@ -70,8 +79,14 @@ func (w *Writer) WriteHeader() error {
 
 		if w.format == RowBinaryWithNamesAndTypes {
 			for i := 0; i < len(w.columns); i++ {
-				if err := rowbinary.String.Write(w.wrap, w.columns[i].Type.String()); err != nil {
-					return w.setErr(err)
+				if w.useBinary {
+					if _, err := w.wrap.Write(w.columns[i].Type.Binary()); err != nil {
+						return w.setErr(err)
+					}
+				} else {
+					if err := rowbinary.String.Write(w.wrap, w.columns[i].Type.String()); err != nil {
+						return w.setErr(err)
+					}
 				}
 			}
 		}
@@ -102,8 +117,8 @@ func Write[V any](w *Writer, tp rowbinary.Type[V], value V) error {
 	if w.firstErr != nil {
 		return w.firstErr
 	}
-	// todo: optimize type check?
-	if tp.String() != w.columns[w.index].Type.String() {
+
+	if !bytes.Equal(tp.Binary(), w.columns[w.index].Type.Binary()) {
 		return errors.New("type mismatch")
 	}
 

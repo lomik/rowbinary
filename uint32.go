@@ -16,6 +16,10 @@ func (t *typeUInt32) String() string {
 	return "UInt32"
 }
 
+func (t *typeUInt32) Binary() []byte {
+	return typeBinaryUInt32[:]
+}
+
 func (t *typeUInt32) Write(w Writer, v uint32) error {
 	binary.LittleEndian.PutUint32(w.buffer(), v)
 	_, err := w.Write(w.buffer()[:4])

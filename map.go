@@ -24,6 +24,10 @@ func (t *typeMap[K, V]) String() string {
 	return fmt.Sprintf("Map(%s, %s)", t.keyType.String(), t.valueType.String())
 }
 
+func (t *typeMap[K, V]) Binary() []byte {
+	return append(append(typeBinaryMap[:], t.keyType.Binary()...), t.valueType.Binary()...)
+}
+
 func (t *typeMap[K, V]) Write(w Writer, value map[K]V) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {

@@ -15,6 +15,10 @@ func (t *typeDateTime) String() string {
 	return "DateTime"
 }
 
+func (t *typeDateTime) Binary() []byte {
+	return typeBinaryDateTime[:]
+}
+
 func (t *typeDateTime) Write(w Writer, value time.Time) error {
 	if value.Year() < 1970 {
 		return UInt32.Write(w, 0)

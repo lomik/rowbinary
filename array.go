@@ -22,6 +22,10 @@ func (t *typeArray[V]) String() string {
 	return fmt.Sprintf("Array(%s)", t.valueType.String())
 }
 
+func (t *typeArray[V]) Binary() []byte {
+	return append(typeBinaryArray[:], t.valueType.Binary()...)
+}
+
 func (t *typeArray[V]) Write(w Writer, value []V) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {

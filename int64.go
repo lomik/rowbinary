@@ -13,6 +13,10 @@ func (t *typeInt64) String() string {
 	return "Int64"
 }
 
+func (t *typeInt64) Binary() []byte {
+	return typeBinaryInt64[:]
+}
+
 func (t *typeInt64) Write(w Writer, value int64) error {
 	return UInt64.Write(w, uint64(value))
 }

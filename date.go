@@ -20,6 +20,10 @@ func (t *typeDate) String() string {
 	return "Date"
 }
 
+func (t *typeDate) Binary() []byte {
+	return typeBinaryDate[:]
+}
+
 func (t *typeDate) Write(w Writer, value time.Time) error {
 	if value.Year() < 1970 {
 		return UInt16.Write(w, 0)
