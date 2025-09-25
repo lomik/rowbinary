@@ -1,0 +1,15 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: always
+    user: "0"
+    ports:
+    - 8123:8123
+    - 9000:9000
+    volumes:
+    - './tmp/clickhouse/:/var/lib/clickhouse/'
+    - '/etc/localtime:/etc/localtime:ro'
+    - './fixtures/init.sql:/docker-entrypoint-initdb.d/init.sql'
+    environment:
+    - CLICKHOUSE_USER=user
+    - CLICKHOUSE_PASSWORD=password

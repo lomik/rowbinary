@@ -1,5 +1,12 @@
 package rowbinary
 
+import (
+	"encoding/binary"
+	"io"
+
+	"github.com/pkg/errors"
+)
+
 // https://clickhouse.com/docs/sql-reference/data-types/data-types-binary-encoding
 
 var (
@@ -56,3 +63,156 @@ var (
 	typeBinaryTime                    = [1]byte{0x32}
 	typeBinaryTime64                  = [1]byte{0x34} // <uint8_precision>
 )
+
+type decodeBinaryTypeReader interface {
+	io.ByteReader
+	io.Reader
+}
+
+// DecodeBinaryType decodes a binary type from the given reader.
+func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
+	var firstByte [1]byte
+	if _, err := io.ReadFull(r, firstByte[:]); err != nil {
+		return nil, err
+	}
+
+	switch firstByte {
+	case typeBinaryNothing:
+		return Nothing, nil
+	case typeBinaryUInt8:
+		return UInt8, nil
+	case typeBinaryUInt16:
+		return UInt16, nil
+	case typeBinaryUInt32:
+		return UInt32, nil
+	case typeBinaryUInt64:
+		return UInt64, nil
+	case typeBinaryUInt128:
+		return nil, errors.New("not implemented")
+	case typeBinaryUInt256:
+		return nil, errors.New("not implemented")
+	case typeBinaryInt8:
+		return Int8, nil
+	case typeBinaryInt16:
+		return Int16, nil
+	case typeBinaryInt32:
+		return Int32, nil
+	case typeBinaryInt64:
+		return Int64, nil
+	case typeBinaryInt128:
+		return nil, errors.New("not implemented")
+	case typeBinaryInt256:
+		return nil, errors.New("not implemented")
+	case typeBinaryFloat32:
+		return Float32, nil
+	case typeBinaryFloat64:
+		return Float64, nil
+	case typeBinaryDate:
+		return Date, nil
+	case typeBinaryDate32:
+		return nil, errors.New("not implemented")
+	case typeBinaryDateTime:
+		return DateTime, nil
+	case typeBinaryDateTimeWithTimeZone:
+		return nil, errors.New("not implemented")
+	case typeBinaryDateTime64:
+		return nil, errors.New("not implemented")
+	case typeBinaryDateTime64WithTimeZone:
+		return nil, errors.New("not implemented")
+	case typeBinaryString:
+		return String, nil
+	case typeBinaryFixedString:
+		return nil, errors.New("not implemented")
+	case typeBinaryEnum8:
+		return nil, errors.New("not implemented")
+	case typeBinaryEnum16:
+		return nil, errors.New("not implemented")
+	case typeBinaryDecimal32, typeBinaryDecimal64, typeBinaryDecimal128, typeBinaryDecimal256: // <uint8_precision><uint8_scale>
+		var precision [1]byte
+		var scale [1]byte
+		if _, err := io.ReadFull(r, precision[:]); err != nil {
+			return nil, err
+		}
+		if _, err := io.ReadFull(r, scale[:]); err != nil {
+			return nil, err
+		}
+		return Decimal(precision[0], scale[0]), nil
+	case typeBinaryUUID:
+		return UUID, nil
+	case typeBinaryArray:
+		nested, err := DecodeBinaryType(r)
+		if err != nil {
+			return nil, err
+		}
+		return ArrayAny(nested), nil
+	case typeBinaryTuple:
+		n, err := binary.ReadUvarint(r)
+		types := make([]Any, 0, n)
+		if err != nil {
+			return nil, err
+		}
+		for range n {
+			tp, err := DecodeBinaryType(r)
+			if err != nil {
+				return nil, err
+			}
+			types = append(types, tp)
+		}
+		return TupleAny(types...), nil
+	case typeBinaryTupleNamed:
+		return nil, errors.New("not implemented")
+	case typeBinarySet:
+		return nil, errors.New("not implemented")
+	case typeBinaryInterval:
+		return nil, errors.New("not implemented")
+	case typeBinaryNullable: // <nested_type_encoding>
+		nested, err := DecodeBinaryType(r)
+		if err != nil {
+			return nil, err
+		}
+		return NullableAny(nested), nil
+	case typeBinaryFunction:
+		return nil, errors.New("not implemented")
+	case typeBinaryAggregateFunction:
+		return nil, errors.New("not implemented")
+	case typeBinaryLowCardinality:
+		return nil, errors.New("not implemented")
+	case typeBinaryMap: // <key_type_encoding><value_type_encoding>
+		keyType, err := DecodeBinaryType(r)
+		if err != nil {
+			return nil, err
+		}
+		valueType, err := DecodeBinaryType(r)
+		if err != nil {
+			return nil, err
+		}
+		return MapAny(keyType, valueType), nil
+	case typeBinaryIPv4:
+		return nil, errors.New("not implemented")
+	case typeBinaryIPv6:
+		return nil, errors.New("not implemented")
+	case typeBinaryVariant:
+		return nil, errors.New("not implemented")
+	case typeBinaryDynamic:
+		return nil, errors.New("not implemented")
+	case typeBinaryCustom:
+		return nil, errors.New("not implemented")
+	case typeBinaryBool:
+		return nil, errors.New("not implemented")
+	case typeBinarySimpleAggregateFunction:
+		return nil, errors.New("not implemented")
+	case typeBinaryNested:
+		return nil, errors.New("not implemented")
+	case typeBinaryJSON:
+		return nil, errors.New("not implemented")
+	case typeBinaryBFloat16:
+		return nil, errors.New("not implemented")
+	case typeBinaryTime:
+		return nil, errors.New("not implemented")
+	case typeBinaryTime64:
+		return nil, errors.New("not implemented")
+	default:
+		return nil, errors.New("not implemented")
+	}
+
+}

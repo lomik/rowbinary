@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"bytes"
 	"encoding/binary"
 
 	"github.com/pkg/errors"
@@ -49,4 +50,16 @@ func (t *typeUVarint) WriteAny(w Writer, v any) error {
 		return errors.New("unexpected type")
 	}
 	return t.Write(w, value)
+}
+
+func varintEncode(x uint64) []byte {
+	var b bytes.Buffer
+	i := 0
+	for x >= 0x80 {
+		b.WriteByte(byte(x) | 0x80)
+		x >>= 7
+		i++
+	}
+	b.WriteByte(byte(x))
+	return b.Bytes()
 }

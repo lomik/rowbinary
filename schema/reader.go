@@ -2,6 +2,7 @@ package schema
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
@@ -9,36 +10,22 @@ import (
 )
 
 type Reader struct {
-	wrap        rowbinary.Reader
-	columnTypes []rowbinary.Any
-	columns     []column
-	index       int
-	firstErr    error
-	format      Format
-	useBinary   bool
+	wrap     rowbinary.Reader
+	options  options
+	remote   []column
+	index    int
+	firstErr error
 }
 
-func NewReader(wrap io.Reader) *Reader {
-	return &Reader{
-		wrap:        rowbinary.NewReader(wrap),
-		columnTypes: make([]rowbinary.Any, 0),
+func NewReader(wrap io.Reader, opts ...Option) *Reader {
+	r := &Reader{
+		wrap: rowbinary.NewReader(wrap),
 	}
-}
 
-func (r *Reader) Column(tp rowbinary.Any) *Reader {
-	r.columnTypes = append(r.columnTypes, tp)
-	return r
-}
+	for _, opt := range opts {
+		opt(&r.options)
+	}
 
-func (r *Reader) Format(f Format) *Reader {
-	r.format = f
-	return r
-}
-
-// output_format_binary_encode_types_in_binary_format=true
-// https://clickhouse.com/docs/interfaces/formats/RowBinary
-func (r *Reader) UseBinary(use bool) *Reader {
-	r.useBinary = use
 	return r
 }
 
@@ -61,7 +48,7 @@ func (r *Reader) Next() bool {
 }
 
 func (r *Reader) next() {
-	r.index = (r.index + 1) % (len(r.columnTypes))
+	r.index++
 }
 
 func (r *Reader) setErr(err error) error {
@@ -76,54 +63,43 @@ func (r *Reader) ReadHeader() error {
 		return r.firstErr
 	}
 
-	if r.format == RowBinary {
+	if r.options.format == RowBinary {
 		return nil
 	}
 
-	if r.format == RowBinaryWithNames || r.format == RowBinaryWithNamesAndTypes {
+	if r.options.format == RowBinaryWithNames || r.options.format == RowBinaryWithNamesAndTypes {
 		n, err := rowbinary.UVarint.Read(r.wrap)
 		if err != nil {
 			return r.setErr(err)
 		}
 
-		if int(n) != len(r.columnTypes) {
-			return r.setErr(errors.New("columns count mismatch"))
-		}
+		r.remote = make([]column, 0, n)
 
-		r.columns = make([]column, 0, len(r.columnTypes))
-
-		for i := 0; i < len(r.columnTypes); i++ {
+		for i := 0; i < int(n); i++ {
 			name, err := rowbinary.String.Read(r.wrap)
 			if err != nil {
 				return r.setErr(err)
 			}
-			r.columns = append(r.columns, column{Name: name, Type: r.columnTypes[i]})
+			r.remote = append(r.remote, column{Name: name})
 		}
 
-		if r.format == RowBinaryWithNamesAndTypes {
-			for i := 0; i < len(r.columnTypes); i++ {
-				if r.useBinary {
-					expectedType := r.columnTypes[i].Binary()
-					tpHeader := make([]byte, len(expectedType))
-					n, err := r.wrap.Read(tpHeader)
+		if r.options.format == RowBinaryWithNamesAndTypes {
+			for i := 0; i < int(n); i++ {
+				if r.options.isBinary {
+					tp, err := rowbinary.DecodeBinaryType(r.wrap)
 					if err != nil {
 						return r.setErr(err)
 					}
-					if n != len(tpHeader) || !bytes.Equal(tpHeader, expectedType) {
-						return r.setErr(errors.New("column type mismatch"))
-					}
+					r.remote[i].Type = tp
 				} else {
-					tp, err := rowbinary.String.Read(r.wrap)
-					if err != nil {
-						return r.setErr(err)
-					}
-					if r.columnTypes[i].String() != tp {
-						return r.setErr(errors.New("column type mismatch"))
-					}
+					// @TODO: implement non-binary type decoding
+					return r.setErr(errors.New("not implemented"))
 				}
 			}
 		}
 	}
+
+	// @TODO: compare local and remote
 
 	return nil
 }
@@ -134,9 +110,10 @@ func Read[V any](r *Reader, tp rowbinary.Type[V]) (V, error) {
 		return value, r.firstErr
 	}
 
-	// todo: optimize type check?
-	if tp.String() != r.columnTypes[r.index].String() {
-		return value, errors.New("type mismatch")
+	if r.remote != nil {
+		if !bytes.Equal(tp.Binary(), r.remote[r.index].Type.Binary()) {
+			return value, fmt.Errorf("type mismatch. expected %s, got %s", r.remote[r.index].Type.String(), tp.String())
+		}
 	}
 
 	value, err := tp.Read(r.wrap)

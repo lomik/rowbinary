@@ -1,9 +1,9 @@
 package schema
 
-type Format int
+type format int
 
 const (
-	RowBinary Format = iota
-	RowBinaryWithNames
-	RowBinaryWithNamesAndTypes
+	RowBinary                  format = 0
+	RowBinaryWithNames         format = 1
+	RowBinaryWithNamesAndTypes format = 2
 )
