@@ -60,6 +60,7 @@ var commonTestData = []struct {
 	{LowCardinalityAny(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp"},
 	{Bool, false, "SELECT false"},
 	{Bool, true, "SELECT true"},
+	{FixedString(10), []byte("hello\x00\x00\x00\x00\x00"), "SELECT toFixedString('hello', 10)"},
 }
 
 // requests clickhouse, caching locally to disk

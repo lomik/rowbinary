@@ -121,8 +121,12 @@ func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
 		return nil, errors.New("not implemented")
 	case BinaryTypeString:
 		return String, nil
-	case BinaryTypeFixedString:
-		return nil, errors.New("not implemented")
+	case BinaryTypeFixedString: // <var_uint_size>
+		size, err := binary.ReadUvarint(r)
+		if err != nil {
+			return nil, err
+		}
+		return FixedString(int(size)), nil
 	case BinaryTypeEnum8:
 		return nil, errors.New("not implemented")
 	case BinaryTypeEnum16:
