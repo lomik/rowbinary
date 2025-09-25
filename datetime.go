@@ -16,7 +16,7 @@ func (t *typeDateTime) String() string {
 }
 
 func (t *typeDateTime) Binary() []byte {
-	return typeBinaryDateTime[:]
+	return BinaryTypeDateTime[:]
 }
 
 func (t *typeDateTime) Write(w Writer, value time.Time) error {

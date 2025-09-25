@@ -17,7 +17,7 @@ func (t *typeUUID) String() string {
 }
 
 func (t *typeUUID) Binary() []byte {
-	return typeBinaryUUID[:]
+	return BinaryTypeUUID[:]
 }
 
 func (t *typeUUID) Write(w Writer, value uuid.UUID) error {

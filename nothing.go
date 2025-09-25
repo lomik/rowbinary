@@ -10,7 +10,7 @@ func (t *typeNothing) String() string {
 }
 
 func (t *typeNothing) Binary() []byte {
-	return typeBinaryNothing[:]
+	return BinaryTypeNothing[:]
 }
 
 func (t *typeNothing) Write(w Writer, value any) error {

@@ -28,7 +28,7 @@ func (t *typeTupleAny) String() string {
 }
 
 func (t *typeTupleAny) Binary() []byte {
-	b := append(typeBinaryTuple[:], varintEncode(uint64(len(t.valueTypes)))...)
+	b := append(BinaryTypeTuple[:], varintEncode(uint64(len(t.valueTypes)))...)
 	for _, vt := range t.valueTypes {
 		b = append(b, vt.Binary()...)
 	}

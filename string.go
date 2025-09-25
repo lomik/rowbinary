@@ -28,7 +28,7 @@ func (t *typeString) String() string {
 }
 
 func (t *typeString) Binary() []byte {
-	return typeBinaryString[:]
+	return BinaryTypeString[:]
 }
 
 func (t *typeString) Write(w Writer, value string) error {

@@ -23,7 +23,7 @@ func (t *typeArray[V]) String() string {
 }
 
 func (t *typeArray[V]) Binary() []byte {
-	return append(typeBinaryArray[:], t.valueType.Binary()...)
+	return append(BinaryTypeArray[:], t.valueType.Binary()...)
 }
 
 func (t *typeArray[V]) Write(w Writer, value []V) error {

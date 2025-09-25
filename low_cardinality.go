@@ -21,7 +21,7 @@ func (t *typeLowCardinality[V]) String() string {
 }
 
 func (t *typeLowCardinality[V]) Binary() []byte {
-	return append(typeBinaryLowCardinality[:], t.valueType.Binary()...)
+	return append(BinaryTypeLowCardinality[:], t.valueType.Binary()...)
 }
 
 func (t *typeLowCardinality[V]) Write(w Writer, value V) error {

@@ -25,7 +25,7 @@ func (t *typeMapAny) String() string {
 }
 
 func (t *typeMapAny) Binary() []byte {
-	return append(append(typeBinaryMap[:], t.keyType.Binary()...), t.valueType.Binary()...)
+	return append(append(BinaryTypeMap[:], t.keyType.Binary()...), t.valueType.Binary()...)
 }
 
 func (t *typeMapAny) Write(w Writer, value map[any]any) error {

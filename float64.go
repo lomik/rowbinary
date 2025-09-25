@@ -16,7 +16,7 @@ func (t *typeFloat64) String() string {
 }
 
 func (t *typeFloat64) Binary() []byte {
-	return typeBinaryFloat64[:]
+	return BinaryTypeFloat64[:]
 }
 
 func (t *typeFloat64) Write(w Writer, value float64) error {

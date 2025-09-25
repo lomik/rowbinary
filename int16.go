@@ -14,7 +14,7 @@ func (t *typeInt16) String() string {
 }
 
 func (t *typeInt16) Binary() []byte {
-	return typeBinaryInt16[:]
+	return BinaryTypeInt16[:]
 }
 
 func (t *typeInt16) Write(w Writer, value int16) error {

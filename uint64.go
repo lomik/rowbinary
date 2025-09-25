@@ -17,7 +17,7 @@ func (t *typeUInt64) String() string {
 }
 
 func (t *typeUInt64) Binary() []byte {
-	return typeBinaryUInt64[:]
+	return BinaryTypeUInt64[:]
 }
 
 func (t *typeUInt64) Write(w Writer, value uint64) error {

@@ -14,7 +14,7 @@ func (t *typeInt8) String() string {
 }
 
 func (t *typeInt8) Binary() []byte {
-	return typeBinaryInt8[:]
+	return BinaryTypeInt8[:]
 }
 
 func (t *typeInt8) Write(w Writer, value int8) error {

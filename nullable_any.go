@@ -23,7 +23,7 @@ func (t *typeNullableAny) String() string {
 }
 
 func (t *typeNullableAny) Binary() []byte {
-	return append(typeBinaryNullable[:], t.valueType.Binary()...)
+	return append(BinaryTypeNullable[:], t.valueType.Binary()...)
 }
 
 func (t *typeNullableAny) Write(w Writer, value *any) error {
