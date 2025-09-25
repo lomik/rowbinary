@@ -175,8 +175,12 @@ func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
 		return nil, errors.New("not implemented")
 	case typeBinaryAggregateFunction:
 		return nil, errors.New("not implemented")
-	case typeBinaryLowCardinality:
-		return nil, errors.New("not implemented")
+	case typeBinaryLowCardinality: // <nested_type_encoding>
+		nested, err := DecodeBinaryType(r)
+		if err != nil {
+			return nil, err
+		}
+		return LowCardinalityAny(nested), nil
 	case typeBinaryMap: // <key_type_encoding><value_type_encoding>
 		keyType, err := DecodeBinaryType(r)
 		if err != nil {

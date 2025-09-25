@@ -18,7 +18,7 @@ var commonTestData = []struct {
 	query string
 }{
 	{Nullable(Nothing), null(any(nil)), "SELECT NULL"},
-	{String, "hello world", "SELECT toString('hello world')"},
+	{String, "hello world", "CREATE TEMPORARY TABLE my_temp_table (id UInt64, value String) ENGINE=Memory; SELECT toString('hello world')"},
 	{String, "", "SELECT toString('')"},
 	{UInt8, uint8(42), "SELECT toUInt8(42)"},
 	{UInt16, uint16(42), "SELECT toUInt16(42)"},
@@ -56,6 +56,8 @@ var commonTestData = []struct {
 	{Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-03-05')"},
 	{Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-03-05')"},
 	{TupleAny(UInt32, String), []any{uint32(42), "hello world"}, "SELECT tuple(toUInt32(42), 'hello world')"},
+	{LowCardinality(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp"},
+	{LowCardinalityAny(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp"},
 }
 
 // requests clickhouse, caching locally to disk
