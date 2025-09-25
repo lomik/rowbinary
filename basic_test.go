@@ -10,17 +10,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_TypedBinary(t *testing.T) {
+func TestBasic(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range commonTestData {
 		tt := tt
-
-		t.Run(fmt.Sprintf("%s/%#v binary header", tt.tp, tt.want), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/%#v", tt.tp, tt.want), func(t *testing.T) {
 			t.Parallel()
 			assert := assert.New(t)
 
-			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC', output_format_binary_encode_types_in_binary_format=true, input_format_binary_decode_types_in_binary_format=true")
+			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC'")
 			assert.NoError(err)
 
 			r := NewReader(bytes.NewReader(body))
@@ -44,18 +43,12 @@ func Test_TypedBinary(t *testing.T) {
 				return
 			}
 
-			typeBinary := tt.tp.Binary()
-			headerBinary := make([]byte, len(typeBinary))
-
-			nn, err := r.Read(headerBinary)
-			if !assert.Equal(len(typeBinary), nn) {
-				return
-			}
+			tp, err := String.Read(r)
 			if !assert.NoError(err) {
 				return
 			}
 
-			if !assert.Equal(tt.tp.Binary(), headerBinary) {
+			if !assert.Equal(tt.tp.String(), tp) {
 				return
 			}
 
@@ -106,52 +99,6 @@ func Test_TypedBinary(t *testing.T) {
 
 			_, err = tt.tp.ReadAny(valueReaderTruncated)
 			assert.Error(err)
-		})
-	}
-}
-
-func Test_DecodeBinaryType(t *testing.T) {
-	t.Parallel()
-
-	for _, tt := range commonTestData {
-		tt := tt
-
-		t.Run(fmt.Sprintf("%s/%#v binary header", tt.tp, tt.want), func(t *testing.T) {
-			t.Parallel()
-			assert := assert.New(t)
-
-			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC', output_format_binary_encode_types_in_binary_format=true, input_format_binary_decode_types_in_binary_format=true")
-			assert.NoError(err)
-
-			r := NewReader(bytes.NewReader(body))
-
-			// first read the column name and type. check that there is one column and the type matches the one being checked
-			n, err := UVarint.Read(r)
-			if !assert.NoError(err) {
-				return
-			}
-
-			if !assert.Equal(uint64(1), n) {
-				return
-			}
-
-			name, err := String.Read(r)
-			if !assert.NoError(err) {
-				return
-			}
-
-			if !assert.Equal("value", name) {
-				return
-			}
-
-			tp, err := DecodeBinaryType(r)
-			if !assert.NoError(err) {
-				return
-			}
-
-			if !assert.Equal(tt.tp.Binary(), tp.Binary()) {
-				return
-			}
 		})
 	}
 }
