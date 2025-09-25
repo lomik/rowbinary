@@ -58,6 +58,8 @@ var commonTestData = []struct {
 	{TupleAny(UInt32, String), []any{uint32(42), "hello world"}, "SELECT tuple(toUInt32(42), 'hello world')"},
 	{LowCardinality(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp"},
 	{LowCardinalityAny(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp"},
+	{Bool, false, "SELECT false"},
+	{Bool, true, "SELECT true"},
 }
 
 // requests clickhouse, caching locally to disk

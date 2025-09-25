@@ -202,7 +202,7 @@ func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
 	case BinaryTypeCustom:
 		return nil, errors.New("not implemented")
 	case BinaryTypeBool:
-		return nil, errors.New("not implemented")
+		return Bool, nil
 	case BinaryTypeSimpleAggregateFunction:
 		return nil, errors.New("not implemented")
 	case BinaryTypeNested:
