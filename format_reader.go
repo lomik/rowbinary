@@ -174,11 +174,6 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 		}
 	}
 
-	// validate against options.columns
-	if len(r.options.columns) != len(remote) {
-		return r.setErr(fmt.Errorf("mismatched number of columns. expected %d, got %d", len(r.options.columns), len(remote)))
-	}
-
 	r.columns = remote
 	return nil
 }
