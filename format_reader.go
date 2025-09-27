@@ -197,7 +197,7 @@ func (r *FormatReader) ReadAny() (any, error) {
 	}
 
 	if r.index >= len(r.columns) {
-		return nil, fmt.Errorf("no more columns to read")
+		return nil, r.setErr(fmt.Errorf("no more columns to read"))
 	}
 
 	value, err := r.columns[r.index].tp.ReadAny(r.wrap)

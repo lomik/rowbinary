@@ -37,7 +37,7 @@ func (c *Client) Select(ctx context.Context, query string, readFunc func(r *Form
 		params.Set("output_format_binary_encode_types_in_binary_format", "1")
 	}
 
-	req, err := c.newRequest(ctx, ClientKindSelect, params)
+	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindSelect}, params)
 	if err != nil {
 		return err
 	}

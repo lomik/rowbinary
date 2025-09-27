@@ -17,7 +17,7 @@ type ExecuteOption interface {
 }
 
 func (c *Client) Execute(ctx context.Context, query string, opts ...ExecuteOption) error {
-	req, err := c.newRequest(ctx, ClientKindExecute, url.Values{})
+	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindExecute}, url.Values{})
 	if err != nil {
 		return err
 	}

@@ -18,10 +18,14 @@ const (
 	ClientKindExecute ClientKind = 3
 )
 
+type DiscoveryCtx struct {
+	Kind ClientKind
+}
+
 // ClientOptions contains the options for creating a ClickHouse client.
 type ClientOptions struct {
 	HTTPClient *http.Client
-	Discovery  func(ctx context.Context, dsn string, kind ClientKind) (string, error)
+	Discovery  func(ctx context.Context, dsn string, kind DiscoveryCtx) (string, error)
 	Database   string
 }
 
@@ -40,11 +44,11 @@ func NewClient(ctx context.Context, dsn string, opts *ClientOptions) *Client {
 	return c
 }
 
-func (c *Client) newRequest(ctx context.Context, kind ClientKind, params url.Values) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params url.Values) (*http.Request, error) {
 	var err error
 	dsn := c.dsn
 	if c.opts.Discovery != nil {
-		dsn, err = c.opts.Discovery(ctx, dsn, kind)
+		dsn, err = c.opts.Discovery(ctx, dsn, discoCtx)
 		if err != nil {
 			return nil, err
 		}

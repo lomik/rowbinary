@@ -1,4 +1,4 @@
-module github.com/pluto-metrics/rowbinary
+module github.com/lomik/rowbinary
 
 go 1.24.0
 
