@@ -36,3 +36,8 @@ func (f Format) Eq(other Format) bool {
 func (f Format) applyFormatOption(o *formatOptions) {
 	o.format = f
 }
+
+func (f Format) applySelectOptions(o *selectOptions) {
+	o.format = f
+	o.formatOptions = append(o.formatOptions, f)
+}

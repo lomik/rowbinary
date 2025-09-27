@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ type ExecuteOption interface {
 }
 
 func (c *Client) Execute(ctx context.Context, query string, opts ...ExecuteOption) error {
-	req, err := c.newRequest(ctx, ClientKindExecute)
+	req, err := c.newRequest(ctx, ClientKindExecute, url.Values{})
 	if err != nil {
 		return err
 	}

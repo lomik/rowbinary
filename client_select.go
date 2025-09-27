@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
 type selectOptions struct {
-	formatOptions []FormatOption
+	formatOptions   []FormatOption
+	format          Format
+	useBinaryHeader bool
 }
 
 type SelectOption interface {
@@ -22,16 +25,24 @@ func (c *Client) Select(ctx context.Context, query string, readFunc func(r *Form
 			RowBinaryWithNamesAndTypes,
 			UseBinaryHeader(true),
 		},
+		format:          RowBinaryWithNamesAndTypes,
+		useBinaryHeader: true,
 	}
 	for _, opt := range options {
 		opt.applySelectOptions(&opts)
 	}
 
-	req, err := c.newRequest(ctx, ClientKindSelect)
+	params := url.Values{}
+	if opts.useBinaryHeader {
+		params.Set("output_format_binary_encode_types_in_binary_format", "1")
+	}
+
+	req, err := c.newRequest(ctx, ClientKindSelect, params)
 	if err != nil {
 		return err
 	}
 	req.Body = io.NopCloser(strings.NewReader(query))
+	req.Header.Set("X-ClickHouse-Format", opts.format.String())
 
 	resp, err := c.do(req)
 	if err != nil {

@@ -40,7 +40,7 @@ func NewClient(ctx context.Context, dsn string, opts *ClientOptions) *Client {
 	return c
 }
 
-func (c *Client) newRequest(ctx context.Context, kind ClientKind) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, kind ClientKind, params url.Values) (*http.Request, error) {
 	var err error
 	dsn := c.dsn
 	if c.opts.Discovery != nil {
@@ -68,6 +68,11 @@ func (c *Client) newRequest(ctx context.Context, kind ClientKind) (*http.Request
 	} else {
 		values.Set("database", "default")
 	}
+
+	for k, v := range params {
+		values.Set(k, v[0])
+	}
+
 	url.RawQuery = values.Encode()
 
 	httpReq := (&http.Request{

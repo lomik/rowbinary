@@ -25,3 +25,8 @@ func UseBinaryHeader(value bool) useBinaryHeaderType {
 func (o useBinaryHeaderType) applyFormatOption(opts *formatOptions) {
 	opts.useBinaryHeader = o.value
 }
+
+func (o useBinaryHeaderType) applySelectOptions(opts *selectOptions) {
+	opts.useBinaryHeader = o.value
+	opts.formatOptions = append(opts.formatOptions, o)
+}

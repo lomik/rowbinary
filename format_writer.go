@@ -120,7 +120,7 @@ func Write[V any](w *FormatWriter, tp Type[V], value V) error {
 	}
 
 	if !Eq(tp, w.options.columns[w.index].tp) {
-		return fmt.Errorf("type mismatch. expected %s, got %s", w.options.columns[w.index].tp.String(), tp.String())
+		return w.setErr(fmt.Errorf("type mismatch. expected %s, got %s", w.options.columns[w.index].tp.String(), tp.String()))
 	}
 
 	err := tp.Write(w.wrap, value)

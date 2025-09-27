@@ -18,3 +18,7 @@ func NewColumn(name string, tp Any) Column {
 		tp:   tp,
 	}
 }
+
+func (c Column) applySelectOptions(o *selectOptions) {
+	o.formatOptions = append(o.formatOptions, c)
+}
