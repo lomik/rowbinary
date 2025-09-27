@@ -2,9 +2,8 @@ package rowbinary
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 // https://clickhouse.com/docs/sql-reference/data-types/data-types-binary-encoding

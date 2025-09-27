@@ -1,10 +1,9 @@
 package rowbinary
 
 import (
+	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 var _ Any = ArrayAny(UInt32)

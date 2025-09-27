@@ -1,7 +1,7 @@
 package rowbinary
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var Int64 Type[int64] = &typeInt64{}

@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // secInDay represents seconds in day.

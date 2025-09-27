@@ -1,7 +1,7 @@
 package rowbinary
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var Int16 Type[int16] = &typeInt16{}

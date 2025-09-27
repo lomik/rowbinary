@@ -2,9 +2,8 @@ package rowbinary
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 var UInt64 Type[uint64] = &typeUInt64{}

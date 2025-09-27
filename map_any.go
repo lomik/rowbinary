@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 var _ Any = MapAny(UInt32, UInt32)

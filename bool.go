@@ -1,7 +1,7 @@
 package rowbinary
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var Bool Type[bool] = &typeBool{}

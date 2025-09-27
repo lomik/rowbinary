@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 var DateTime Type[time.Time] = &typeDateTime{}

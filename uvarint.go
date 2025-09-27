@@ -3,8 +3,7 @@ package rowbinary
 import (
 	"bytes"
 	"encoding/binary"
-
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var UVarint Type[uint64] = &typeUVarint{}

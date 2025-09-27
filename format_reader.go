@@ -1,10 +1,9 @@
 package rowbinary
 
 import (
+	"errors"
 	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 type FormatReader struct {

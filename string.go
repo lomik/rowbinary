@@ -2,10 +2,9 @@ package rowbinary
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"unsafe"
-
-	"github.com/pkg/errors"
 )
 
 func toBytes(s string) []byte {

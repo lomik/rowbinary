@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"math"
-
-	"github.com/pkg/errors"
 )
 
 var Float64 Type[float64] = &typeFloat64{}

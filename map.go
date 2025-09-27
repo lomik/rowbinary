@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 var MapUInt32UInt32 Type[map[uint32]uint32] = Map(UInt32, UInt32)

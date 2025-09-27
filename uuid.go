@@ -1,10 +1,10 @@
 package rowbinary
 
 import (
+	"errors"
 	"io"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 var UUID Type[uuid.UUID] = &typeUUID{}

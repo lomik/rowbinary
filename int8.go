@@ -1,7 +1,7 @@
 package rowbinary
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var Int8 Type[int8] = &typeInt8{}

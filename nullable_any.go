@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 var _ Any = NullableAny(UInt32)

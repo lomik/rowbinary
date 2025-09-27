@@ -1,10 +1,9 @@
 package rowbinary
 
 import (
+	"errors"
 	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 var _ Type[[]byte] = FixedString(10)
@@ -29,7 +28,7 @@ func (t *typeFixedString) Binary() []byte {
 
 func (t *typeFixedString) Write(w Writer, value []byte) error {
 	if len(value) != t.length {
-		return errors.Errorf("invalid length %d, expected %d", len(value), t.length)
+		return fmt.Errorf("invalid length %d, expected %d", len(value), t.length)
 	}
 
 	_, err := w.Write(value)

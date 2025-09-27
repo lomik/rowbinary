@@ -1,9 +1,8 @@
 package rowbinary
 
 import (
+	"errors"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 var UInt8 Type[uint8] = &typeUInt8{}
