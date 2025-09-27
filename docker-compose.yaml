@@ -1,0 +1,14 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: always
+    user: "0"
+    ports:
+    - 8123:8123
+    - 9000:9000
+    volumes:
+    - './tmp/clickhouse/:/var/lib/clickhouse/'
+    - '/etc/localtime:/etc/localtime:ro'
+    environment:
+    - CLICKHOUSE_USER=user
+    - CLICKHOUSE_PASSWORD=password
