@@ -8,11 +8,14 @@ import (
 	"strings"
 )
 
-type ExecuteOptions struct {
-	// Add any fields you need for the execution options
+type executeOptions struct {
 }
 
-func (c *Client) Execute(ctx context.Context, query string, opts *ExecuteOptions) error {
+type ExecuteOption interface {
+	applyExecuteOptions(*executeOptions)
+}
+
+func (c *Client) Execute(ctx context.Context, query string, opts ...ExecuteOption) error {
 	req, err := c.newRequest(ctx, ClientKindExecute)
 	if err != nil {
 		return err
