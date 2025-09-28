@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 var MapUInt32UInt32 Type[map[uint32]uint32] = Map(UInt32, UInt32)
@@ -10,21 +11,25 @@ var MapUInt32UInt32 Type[map[uint32]uint32] = Map(UInt32, UInt32)
 type typeMap[K comparable, V any] struct {
 	keyType   Type[K]
 	valueType Type[V]
+	tbin      []byte
+	tstr      string
 }
 
 func Map[K comparable, V any](keyType Type[K], valueType Type[V]) *typeMap[K, V] {
 	return &typeMap[K, V]{
 		keyType:   keyType,
 		valueType: valueType,
+		tbin:      slices.Concat(BinaryTypeMap[:], keyType.Binary(), valueType.Binary()),
+		tstr:      fmt.Sprintf("Map(%s, %s)", keyType.String(), valueType.String()),
 	}
 }
 
 func (t *typeMap[K, V]) String() string {
-	return fmt.Sprintf("Map(%s, %s)", t.keyType.String(), t.valueType.String())
+	return t.tstr
 }
 
 func (t *typeMap[K, V]) Binary() []byte {
-	return append(append(BinaryTypeMap[:], t.keyType.Binary()...), t.valueType.Binary()...)
+	return t.tbin
 }
 
 func (t *typeMap[K, V]) Write(w Writer, value map[K]V) error {

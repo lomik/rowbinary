@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -48,7 +49,10 @@ func (c *Client) Insert(ctx context.Context, table string, writeFunc func(w *For
 
 	go func() {
 		defer w.Close()
-		writer := NewFormatWriter(w, opts.formatOptions...)
+		bw := bufio.NewWriterSize(w, 1024*1024)
+		defer bw.Flush()
+
+		writer := NewFormatWriter(bw, opts.formatOptions...)
 		if err := writer.WriteHeader(); err != nil {
 			w.CloseWithError(err)
 			return

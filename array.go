@@ -3,26 +3,31 @@ package rowbinary
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 var _ Type[[]uint32] = Array(UInt32)
 
 type typeArray[V any] struct {
 	valueType Type[V]
+	tbin      []byte
+	tstr      string
 }
 
 func Array[V any](valueType Type[V]) *typeArray[V] {
 	return &typeArray[V]{
 		valueType: valueType,
+		tbin:      slices.Concat(BinaryTypeArray[:], valueType.Binary()),
+		tstr:      fmt.Sprintf("Array(%s)", valueType.String()),
 	}
 }
 
 func (t *typeArray[V]) String() string {
-	return fmt.Sprintf("Array(%s)", t.valueType.String())
+	return t.tstr
 }
 
 func (t *typeArray[V]) Binary() []byte {
-	return append(BinaryTypeArray[:], t.valueType.Binary()...)
+	return t.tbin
 }
 
 func (t *typeArray[V]) Write(w Writer, value []V) error {
