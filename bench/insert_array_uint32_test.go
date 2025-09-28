@@ -46,6 +46,41 @@ func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 	b.StopTimer()
 }
 
+func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
+	assert := assert.New(b)
+	tc := newTestCase()
+	defer tc.Close()
+
+	ctx := context.Background()
+	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
+		Database: tc.Database(),
+	})
+
+	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
+
+	data := make([]uint32, 1000)
+	for i := range data {
+		data[i] = uint32(i)
+	}
+
+	b.ResetTimer()
+
+	for b.Loop() {
+		assert.NoError(
+			c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
+				for range 100000 {
+					if err := r.WriteAny(data); err != nil {
+						return err
+					}
+				}
+				return nil
+			}, rowbinary.NewColumn("x", arrayUInt32)),
+		)
+	}
+
+	b.StopTimer()
+}
+
 func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 	assert := assert.New(b)
 	tc := newTestCase()
