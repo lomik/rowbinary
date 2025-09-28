@@ -19,7 +19,7 @@ func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
 	b.ResetTimer()
 
@@ -49,7 +49,7 @@ func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
 	b.ResetTimer()
 
@@ -79,7 +79,7 @@ func BenchmarkNative_Insert_UInt32(b *testing.B) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{testClickHouseNativeAddr},

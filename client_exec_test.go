@@ -17,9 +17,9 @@ func TestClient_Execute(t *testing.T) {
 		Database: tc.Database(),
 	})
 
-	err := c.Execute(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory AS SELECT 1")
+	err := c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory AS SELECT 1")
 	assert.NoError(err)
 
-	err = c.Execute(ctx, "CREATE TABLE")
+	err = c.Exec(ctx, "CREATE TABLE")
 	assert.ErrorContains(err, "Syntax error")
 }

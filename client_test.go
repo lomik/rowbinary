@@ -21,7 +21,7 @@ func newTestCase() *testCase {
 	db := fmt.Sprintf("db_%d_%d", testTableCounter.Add(1), time.Now().UnixNano())
 	defaultClient := NewClient(context.Background(), testClickHouseDSN, nil)
 
-	err := defaultClient.Execute(context.Background(), "CREATE DATABASE "+db, nil)
+	err := defaultClient.Exec(context.Background(), "CREATE DATABASE "+db, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func (tc *testCase) Database() string {
 }
 
 func (tc *testCase) Close() {
-	err := tc.defaultClient.Execute(context.Background(), "DROP DATABASE "+tc.db, nil)
+	err := tc.defaultClient.Exec(context.Background(), "DROP DATABASE "+tc.db, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

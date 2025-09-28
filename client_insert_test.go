@@ -18,7 +18,7 @@ func TestClient_Insert(t *testing.T) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory"))
 
 	assert.NoError(c.Insert(ctx, "t1", func(r *FormatWriter) error {
 		for i := range 5 {

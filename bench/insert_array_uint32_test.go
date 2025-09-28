@@ -21,7 +21,7 @@ func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
 	data := make([]uint32, 1000)
 	for i := range data {
@@ -56,7 +56,7 @@ func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
 	data := make([]uint32, 1000)
 	for i := range data {
@@ -91,7 +91,7 @@ func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 		Database: tc.Database(),
 	})
 
-	assert.NoError(c.Execute(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
 	data := make([]uint32, 1000)
 	for i := range data {
