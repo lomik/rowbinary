@@ -11,19 +11,23 @@ var _ Type[[]byte] = FixedString(10)
 func FixedString(length int) *typeFixedString {
 	return &typeFixedString{
 		length: length,
+		tbin:   append(BinaryTypeFixedString[:], varintEncode(uint64(length))...),
+		tstr:   fmt.Sprintf("FixedString(%d)", length),
 	}
 }
 
 type typeFixedString struct {
 	length int
+	tbin   []byte
+	tstr   string
 }
 
 func (t *typeFixedString) String() string {
-	return fmt.Sprintf("FixedString(%d)", t.length)
+	return t.tstr
 }
 
 func (t *typeFixedString) Binary() []byte {
-	return append(BinaryTypeFixedString[:], varintEncode(uint64(t.length))...)
+	return t.tbin
 }
 
 func (t *typeFixedString) Write(w Writer, value []byte) error {

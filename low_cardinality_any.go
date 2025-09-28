@@ -8,20 +8,24 @@ var _ Any = NullableAny(UInt32)
 
 type typeLowCardinalityAny struct {
 	valueType Any
+	tbin      []byte
+	tstr      string
 }
 
 func LowCardinalityAny(valueType Any) *typeLowCardinalityAny {
 	return &typeLowCardinalityAny{
 		valueType: valueType,
+		tbin:      append(BinaryTypeLowCardinality[:], valueType.Binary()...),
+		tstr:      fmt.Sprintf("LowCardinality(%s)", valueType.String()),
 	}
 }
 
 func (t *typeLowCardinalityAny) String() string {
-	return fmt.Sprintf("LowCardinality(%s)", t.valueType.String())
+	return t.tstr
 }
 
 func (t *typeLowCardinalityAny) Binary() []byte {
-	return append(BinaryTypeLowCardinality[:], t.valueType.Binary()...)
+	return t.tbin
 }
 
 func (t *typeLowCardinalityAny) Write(w Writer, value any) error {

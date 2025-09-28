@@ -10,28 +10,32 @@ var _ Any = ArrayAny(UInt32)
 
 type typeTupleAny struct {
 	valueTypes []Any
+	tbin       []byte
+	tstr       string
 }
 
 func TupleAny(valueTypes ...Any) *typeTupleAny {
+	var types []string
+	for _, vt := range valueTypes {
+		types = append(types, vt.String())
+	}
+	tbin := append(BinaryTypeTuple[:], varintEncode(uint64(len(valueTypes)))...)
+	for _, vt := range valueTypes {
+		tbin = append(tbin, vt.Binary()...)
+	}
 	return &typeTupleAny{
 		valueTypes: valueTypes,
+		tbin:       tbin,
+		tstr:       fmt.Sprintf("Tuple(%s)", strings.Join(types, ", ")),
 	}
 }
 
 func (t *typeTupleAny) String() string {
-	var types []string
-	for _, vt := range t.valueTypes {
-		types = append(types, vt.String())
-	}
-	return fmt.Sprintf("Tuple(%s)", strings.Join(types, ", "))
+	return t.tstr
 }
 
 func (t *typeTupleAny) Binary() []byte {
-	b := append(BinaryTypeTuple[:], varintEncode(uint64(len(t.valueTypes)))...)
-	for _, vt := range t.valueTypes {
-		b = append(b, vt.Binary()...)
-	}
-	return b
+	return t.tbin
 }
 
 func (t *typeTupleAny) Write(w Writer, value []any) error {

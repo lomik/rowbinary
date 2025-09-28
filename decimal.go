@@ -12,25 +12,33 @@ var _ Type[decimal.Decimal] = Decimal(18, 4)
 type typeDecimal struct {
 	precision uint8
 	scale     uint8
+	tbin      []byte
+	tstr      string
 }
 
 func Decimal(precision uint8, scale uint8) *typeDecimal {
+	var tbin []byte
+	if precision <= 9 {
+		// decimal32
+		tbin = []byte{BinaryTypeDecimal32[0], precision, scale}
+	} else {
+		tbin = []byte{BinaryTypeDecimal64[0], precision, scale}
+	}
+
 	return &typeDecimal{
 		precision: precision,
 		scale:     scale,
+		tbin:      tbin,
+		tstr:      fmt.Sprintf("Decimal(%d, %d)", precision, scale),
 	}
 }
 
 func (t *typeDecimal) String() string {
-	return fmt.Sprintf("Decimal(%d, %d)", t.precision, t.scale)
+	return t.tstr
 }
 
 func (t *typeDecimal) Binary() []byte {
-	if t.precision <= 9 {
-		// decimal32
-		return []byte{BinaryTypeDecimal32[0], t.precision, t.scale}
-	}
-	return []byte{BinaryTypeDecimal64[0], t.precision, t.scale}
+	return t.tbin
 }
 
 func (t *typeDecimal) Write(w Writer, value decimal.Decimal) error {

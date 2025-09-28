@@ -9,20 +9,24 @@ var _ Type[*uint32] = Nullable(UInt32)
 
 type typeNullable[V any] struct {
 	valueType Type[V]
+	tbin      []byte
+	tstr      string
 }
 
 func Nullable[V any](valueType Type[V]) *typeNullable[V] {
 	return &typeNullable[V]{
 		valueType: valueType,
+		tbin:      append(BinaryTypeNullable[:], valueType.Binary()...),
+		tstr:      fmt.Sprintf("Nullable(%s)", valueType.String()),
 	}
 }
 
 func (t *typeNullable[V]) String() string {
-	return fmt.Sprintf("Nullable(%s)", t.valueType.String())
+	return t.tstr
 }
 
 func (t *typeNullable[V]) Binary() []byte {
-	return append(BinaryTypeNullable[:], t.valueType.Binary()...)
+	return t.tbin
 }
 
 func (t *typeNullable[V]) Write(w Writer, value *V) error {

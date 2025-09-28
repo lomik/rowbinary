@@ -155,3 +155,25 @@ func Test_DecodeBinaryType(t *testing.T) {
 		})
 	}
 }
+
+func Benchmark_Header_Allocs(b *testing.B) {
+	b.SetParallelism(1)
+
+	for _, tt := range commonTestData {
+		tt := tt
+		b.Run(fmt.Sprintf("%s binary header", tt.tp), func(b *testing.B) {
+			for b.Loop() {
+				_ = tt.tp.Binary()
+			}
+		})
+	}
+
+	for _, tt := range commonTestData {
+		tt := tt
+		b.Run(fmt.Sprintf("%s string header", tt.tp), func(b *testing.B) {
+			for b.Loop() {
+				_ = tt.tp.String()
+			}
+		})
+	}
+}

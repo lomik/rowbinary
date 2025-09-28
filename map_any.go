@@ -10,21 +10,25 @@ var _ Any = MapAny(UInt32, UInt32)
 type typeMapAny struct {
 	keyType   Any
 	valueType Any
+	tbin      []byte
+	tstr      string
 }
 
 func MapAny(keyType Any, valueType Any) *typeMapAny {
 	return &typeMapAny{
 		keyType:   keyType,
 		valueType: valueType,
+		tbin:      append(append(BinaryTypeMap[:], keyType.Binary()...), valueType.Binary()...),
+		tstr:      fmt.Sprintf("Map(%s, %s)", keyType.String(), valueType.String()),
 	}
 }
 
 func (t *typeMapAny) String() string {
-	return fmt.Sprintf("Map(%s, %s)", t.keyType.String(), t.valueType.String())
+	return t.tstr
 }
 
 func (t *typeMapAny) Binary() []byte {
-	return append(append(BinaryTypeMap[:], t.keyType.Binary()...), t.valueType.Binary()...)
+	return t.tbin
 }
 
 func (t *typeMapAny) Write(w Writer, value map[any]any) error {
