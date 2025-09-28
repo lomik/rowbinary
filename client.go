@@ -80,12 +80,12 @@ func (c *Client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params u
 	url.RawQuery = values.Encode()
 
 	httpReq := (&http.Request{
-		Method:           "POST",
-		ProtoMajor:       1,
-		ProtoMinor:       1,
-		URL:              url,
-		TransferEncoding: []string{"chunked"},
-		Header:           headers,
+		Method:     "POST",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		URL:        url,
+		// TransferEncoding: []string{"chunked"},
+		Header: headers,
 	}).WithContext(ctx)
 
 	if u.User.Username() != "" {

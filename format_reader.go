@@ -18,6 +18,10 @@ type FormatReader struct {
 func NewFormatReader(wrap io.Reader, opts ...FormatOption) *FormatReader {
 	r := &FormatReader{
 		wrap: NewReader(wrap),
+		options: formatOptions{
+			format:          RowBinary,
+			useBinaryHeader: false,
+		},
 	}
 
 	for _, opt := range opts {

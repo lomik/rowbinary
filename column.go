@@ -33,3 +33,7 @@ func (c Column) applySelectOptions(o *selectOptions) {
 func (c Column) applyInsertOptions(o *insertOptions) {
 	o.formatOptions = append(o.formatOptions, c)
 }
+
+func (c Column) applyExternalDataOption(o *externalData) {
+	o.formatOptions = append(o.formatOptions, c)
+}

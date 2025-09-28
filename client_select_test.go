@@ -75,3 +75,31 @@ func TestClient_Select(t *testing.T) {
 		return r.Err()
 	}, UseBinaryHeader(false)), "not implemented")
 }
+
+func TestClient_Select_ExternalData(t *testing.T) {
+	assert := assert.New(t)
+
+	ctx := context.Background()
+	c := NewClient(ctx, testClickHouseDSN, nil)
+
+	assert.NoError(c.Select(ctx, "SELECT max(value) FROM data1", func(r *FormatReader) error {
+		var numbers []uint64
+
+		for r.Next() {
+			numbers = append(numbers, must(Read(r, UInt64)))
+		}
+		assert.Equal([]uint64{4}, numbers)
+		return r.Err()
+	}, ExternalData(
+		"data1",
+		func(w *FormatWriter) error {
+			for i := uint64(0); i < 5; i++ {
+				if err := Write(w, UInt64, i); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		C("value", UInt64),
+	)))
+}

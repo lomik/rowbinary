@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 type FormatWriter struct {
@@ -16,6 +17,10 @@ type FormatWriter struct {
 func NewFormatWriter(wrap io.Writer, opts ...FormatOption) *FormatWriter {
 	w := &FormatWriter{
 		wrap: NewWriter(wrap),
+		options: formatOptions{
+			format:          RowBinary,
+			useBinaryHeader: false,
+		},
 	}
 
 	for _, opt := range opts {
@@ -27,6 +32,10 @@ func NewFormatWriter(wrap io.Writer, opts ...FormatOption) *FormatWriter {
 
 func (w *FormatWriter) Err() error {
 	return w.firstErr
+}
+
+func (w *FormatWriter) Format() Format {
+	return w.options.format
 }
 
 func (w *FormatWriter) nextColumn() {
@@ -64,6 +73,19 @@ func (w *FormatWriter) check() error {
 
 func (w *FormatWriter) WriteHeader() error {
 	return w.check()
+}
+
+func (w *FormatWriter) Structure() string {
+	out := new(strings.Builder)
+	for i, col := range w.options.columns {
+		if i > 0 {
+			out.WriteString(", ")
+		}
+		out.WriteString(col.name)
+		out.WriteString(" ")
+		out.WriteString(col.tp.String())
+	}
+	return out.String()
 }
 
 func (w *FormatWriter) writeHeader() error {
