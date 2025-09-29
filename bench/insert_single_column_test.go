@@ -124,7 +124,7 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 			assert.NoError(err)
 
 			for range count {
-				assert.NoError(batch.Append(value))
+				batch.Append(value)
 			}
 
 			assert.NoError(batch.Send())

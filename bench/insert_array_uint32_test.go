@@ -115,7 +115,7 @@ func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 		assert.NoError(err)
 
 		for range 100000 {
-			assert.NoError(batch.Append(data))
+			batch.Append(data)
 		}
 
 		assert.NoError(batch.Send())

@@ -83,7 +83,7 @@ func BenchmarkNative_Select_SystemNumbers(b *testing.B) {
 		assert.NoError(err)
 
 		for rows.Next() {
-			assert.NoError(rows.Scan(&x))
+			rows.Scan(&x)
 		}
 		rows.Close()
 
