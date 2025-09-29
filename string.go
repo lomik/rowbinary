@@ -17,20 +17,25 @@ func toBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
-var String Type[string] = &typeString{}
+var String Type[string] = typeString{}
 
-type typeString struct {
-}
+type typeString struct{}
 
-func (t *typeString) String() string {
+var typeStringID = BinaryTypeID(BinaryTypeString[:])
+
+func (t typeString) String() string {
 	return "String"
 }
 
-func (t *typeString) Binary() []byte {
+func (t typeString) Binary() []byte {
 	return BinaryTypeString[:]
 }
 
-func (t *typeString) Write(w Writer, value string) error {
+func (t typeString) ID() uint64 {
+	return typeStringID
+}
+
+func (t typeString) Write(w Writer, value string) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {
 		return err
@@ -39,7 +44,7 @@ func (t *typeString) Write(w Writer, value string) error {
 	return err
 }
 
-func (t *typeString) Read(r Reader) (string, error) {
+func (t typeString) Read(r Reader) (string, error) {
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return "", err
@@ -54,7 +59,7 @@ func (t *typeString) Read(r Reader) (string, error) {
 	return string(buf[:n]), nil
 }
 
-func (t *typeString) WriteAny(w Writer, v any) error {
+func (t typeString) WriteAny(w Writer, v any) error {
 	value, ok := v.(string)
 	if !ok {
 		return errors.New("unexpected type")
@@ -62,6 +67,6 @@ func (t *typeString) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func (t *typeString) ReadAny(r Reader) (any, error) {
+func (t typeString) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }

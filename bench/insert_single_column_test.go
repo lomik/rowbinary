@@ -16,8 +16,21 @@ func BenchmarkSingleColumn(b *testing.B) {
 	for i := range arrayUInt32 {
 		arrayUInt32[i] = uint32(i)
 	}
+
 	benchmarkSingleColumn(b, rowbinary.Array(rowbinary.UInt32), arrayUInt32, 100000)
+	benchmarkSingleColumn(b, rowbinary.String, "hello world", 100000)
+	benchmarkSingleColumn(b, rowbinary.UInt8, uint8(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.UInt16, uint16(42), 100000)
 	benchmarkSingleColumn(b, rowbinary.UInt32, uint32(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.UInt64, uint64(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.Int8, int8(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.Int16, int16(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.Int32, int32(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.Int64, int64(42), 100000)
+	benchmarkSingleColumn(b, rowbinary.Float32, float32(123.123), 100000)
+	benchmarkSingleColumn(b, rowbinary.Float64, float64(123.123), 100000)
+
+	// @TODO more types
 }
 
 func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, count int) {

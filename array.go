@@ -9,21 +9,28 @@ import (
 var _ Type[[]uint32] = Array(UInt32)
 
 type typeArray[V any] struct {
+	id        uint64
 	valueType Type[V]
 	tbin      []byte
 	tstr      string
 }
 
 func Array[V any](valueType Type[V]) *typeArray[V] {
+	tbin := slices.Concat(BinaryTypeArray[:], valueType.Binary())
 	return &typeArray[V]{
 		valueType: valueType,
-		tbin:      slices.Concat(BinaryTypeArray[:], valueType.Binary()),
+		tbin:      tbin,
 		tstr:      fmt.Sprintf("Array(%s)", valueType.String()),
+		id:        BinaryTypeID(tbin),
 	}
 }
 
 func (t *typeArray[V]) String() string {
 	return t.tstr
+}
+
+func (t *typeArray[V]) ID() uint64 {
+	return t.id
 }
 
 func (t *typeArray[V]) Binary() []byte {

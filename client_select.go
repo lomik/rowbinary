@@ -22,6 +22,20 @@ type SelectOption interface {
 	applySelectOptions(*selectOptions)
 }
 
+/*
+@TODO: handle response headers
+HEADER: X-Clickhouse-Summary [{"read_rows":"588681","read_bytes":"4709448","written_rows":"0","written_bytes":"0","total_rows_to_read":"500000000","result_rows":"0","result_bytes":"0","elapsed_ns":"3477917"}]
+HEADER: Date [Mon, 29 Sep 2025 15:15:30 GMT]
+HEADER: Content-Type [application/octet-stream]
+HEADER: Access-Control-Expose-Headers [X-ClickHouse-Query-Id,X-ClickHouse-Summary,X-ClickHouse-Server-Display-Name,X-ClickHouse-Format,X-ClickHouse-Timezone,X-ClickHouse-Exception-Code]
+HEADER: X-Clickhouse-Query-Id [d9d2e809-284b-4502-ad4f-0cace04e9130]
+HEADER: X-Clickhouse-Timezone [Europe/Moscow]
+HEADER: Connection [Keep-Alive]
+HEADER: X-Clickhouse-Server-Display-Name [mbp-rlomonosov-OZON-GJV47009WP]
+HEADER: X-Clickhouse-Format [RowBinaryWithNamesAndTypes]
+HEADER: Keep-Alive [timeout=30, max=9999]
+*/
+
 func (c *Client) Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error {
 	opts := selectOptions{
 		formatOptions: []FormatOption{
@@ -120,7 +134,9 @@ func (c *Client) Select(ctx context.Context, query string, readFunc func(r *Form
 		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
 	}
 
-	if err := readFunc(NewFormatReader(resp.Body, opts.formatOptions...)); err != nil {
+	respReader := bufio.NewReaderSize(resp.Body, 1024*1024)
+
+	if err := readFunc(NewFormatReader(respReader, opts.formatOptions...)); err != nil {
 		return err
 	}
 

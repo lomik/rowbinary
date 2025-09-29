@@ -1,7 +1,5 @@
 package rowbinary
 
-import "bytes"
-
 type Type[T any] interface {
 	String() string
 	Binary() []byte // https://clickhouse.com/docs/sql-reference/data-types/data-types-binary-encoding
@@ -9,6 +7,7 @@ type Type[T any] interface {
 	Write(w Writer, v T) error
 	ReadAny(r Reader) (any, error)
 	WriteAny(w Writer, v any) error
+	ID() uint64
 }
 
 type Any interface {
@@ -16,8 +15,9 @@ type Any interface {
 	Binary() []byte
 	ReadAny(r Reader) (any, error)
 	WriteAny(w Writer, v any) error
+	ID() uint64
 }
 
 func Eq(a, b Any) bool {
-	return bytes.Equal(a.Binary(), b.Binary())
+	return a.ID() == b.ID()
 }

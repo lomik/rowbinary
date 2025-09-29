@@ -11,19 +11,23 @@ import (
 const secInDay = 24 * 60 * 60
 
 var Date Type[time.Time] = &typeDate{}
+var typeDateID = BinaryTypeID(BinaryTypeDate[:])
 
-type typeDate struct {
-}
+type typeDate struct{}
 
-func (t *typeDate) String() string {
+func (t typeDate) String() string {
 	return "Date"
 }
 
-func (t *typeDate) Binary() []byte {
+func (t typeDate) Binary() []byte {
 	return BinaryTypeDate[:]
 }
 
-func (t *typeDate) Write(w Writer, value time.Time) error {
+func (t typeDate) ID() uint64 {
+	return typeDateID
+}
+
+func (t typeDate) Write(w Writer, value time.Time) error {
 	if value.Year() < 1970 {
 		return UInt16.Write(w, 0)
 	}
@@ -33,7 +37,7 @@ func (t *typeDate) Write(w Writer, value time.Time) error {
 	return UInt16.Write(w, days)
 }
 
-func (t *typeDate) Read(r Reader) (time.Time, error) {
+func (t typeDate) Read(r Reader) (time.Time, error) {
 	n, err := UInt16.Read(r)
 	if err != nil {
 		return time.Time{}, err
@@ -42,7 +46,7 @@ func (t *typeDate) Read(r Reader) (time.Time, error) {
 	return v, nil
 }
 
-func (t *typeDate) WriteAny(w Writer, v any) error {
+func (t typeDate) WriteAny(w Writer, v any) error {
 	value, ok := v.(time.Time)
 	if !ok {
 		return errors.New("unexpected type")
@@ -50,6 +54,6 @@ func (t *typeDate) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func (t *typeDate) ReadAny(r Reader) (any, error) {
+func (t typeDate) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }

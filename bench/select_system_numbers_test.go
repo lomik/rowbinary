@@ -63,7 +63,7 @@ func BenchmarkRowbinary_Select_SystemNumbers_Any(b *testing.B) {
 	b.StopTimer()
 }
 
-func BenchmarkNative_Select_SystemNumbers_Any(b *testing.B) {
+func BenchmarkNative_Select_SystemNumbers(b *testing.B) {
 	assert := assert.New(b)
 
 	ctx := context.Background()

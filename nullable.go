@@ -8,15 +8,18 @@ import (
 var _ Type[*uint32] = Nullable(UInt32)
 
 type typeNullable[V any] struct {
+	id        uint64
 	valueType Type[V]
 	tbin      []byte
 	tstr      string
 }
 
 func Nullable[V any](valueType Type[V]) *typeNullable[V] {
+	tbin := append(BinaryTypeNullable[:], valueType.Binary()...)
 	return &typeNullable[V]{
 		valueType: valueType,
-		tbin:      append(BinaryTypeNullable[:], valueType.Binary()...),
+		id:        BinaryTypeID(tbin),
+		tbin:      tbin,
 		tstr:      fmt.Sprintf("Nullable(%s)", valueType.String()),
 	}
 }
@@ -27,6 +30,10 @@ func (t *typeNullable[V]) String() string {
 
 func (t *typeNullable[V]) Binary() []byte {
 	return t.tbin
+}
+
+func (t *typeNullable[V]) ID() uint64 {
+	return t.id
 }
 
 func (t *typeNullable[V]) Write(w Writer, value *V) error {

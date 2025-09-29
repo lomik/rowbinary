@@ -8,8 +8,7 @@ import (
 
 var UVarint Type[uint64] = &typeUVarint{}
 
-type typeUVarint struct {
-}
+type typeUVarint struct{}
 
 func (t *typeUVarint) String() string {
 	return "UVarint"
@@ -17,6 +16,10 @@ func (t *typeUVarint) String() string {
 
 func (t *typeUVarint) Binary() []byte {
 	return BinaryTypeNothing[:]
+}
+
+func (t *typeUVarint) ID() uint64 {
+	return typeNothingID
 }
 
 func (t *typeUVarint) Write(w Writer, x uint64) error {

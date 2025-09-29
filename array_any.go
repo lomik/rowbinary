@@ -9,16 +9,19 @@ import (
 var _ Any = ArrayAny(UInt32)
 
 type typeArrayAny struct {
+	id        uint64
 	valueType Any
 	tbin      []byte
 	tstr      string
 }
 
 func ArrayAny(valueType Any) *typeArrayAny {
+	tbin := slices.Concat(BinaryTypeArray[:], valueType.Binary())
 	return &typeArrayAny{
 		valueType: valueType,
-		tbin:      slices.Concat(BinaryTypeArray[:], valueType.Binary()),
+		tbin:      tbin,
 		tstr:      fmt.Sprintf("Array(%s)", valueType.String()),
+		id:        BinaryTypeID(tbin),
 	}
 }
 
@@ -28,6 +31,10 @@ func (t *typeArrayAny) String() string {
 
 func (t *typeArrayAny) Binary() []byte {
 	return t.tbin
+}
+
+func (t *typeArrayAny) ID() uint64 {
+	return t.id
 }
 
 func (t *typeArrayAny) Write(w Writer, value []any) error {

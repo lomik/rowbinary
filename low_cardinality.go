@@ -4,19 +4,22 @@ import (
 	"fmt"
 )
 
-var _ Type[*uint32] = Nullable(UInt32)
+var _ Type[uint32] = LowCardinality(UInt32)
 
 type typeLowCardinality[V any] struct {
+	id        uint64
 	valueType Type[V]
 	tbin      []byte
 	tstr      string
 }
 
 func LowCardinality[V any](valueType Type[V]) *typeLowCardinality[V] {
+	tbin := append(BinaryTypeLowCardinality[:], valueType.Binary()...)
 	return &typeLowCardinality[V]{
 		valueType: valueType,
-		tbin:      append(BinaryTypeLowCardinality[:], valueType.Binary()...),
+		tbin:      tbin,
 		tstr:      fmt.Sprintf("LowCardinality(%s)", valueType.String()),
+		id:        BinaryTypeID(tbin),
 	}
 }
 
@@ -26,6 +29,10 @@ func (t *typeLowCardinality[V]) String() string {
 
 func (t *typeLowCardinality[V]) Binary() []byte {
 	return t.tbin
+}
+
+func (t *typeLowCardinality[V]) ID() uint64 {
+	return t.id
 }
 
 func (t *typeLowCardinality[V]) Write(w Writer, value V) error {

@@ -215,11 +215,7 @@ func Read[V any](r *FormatReader, tp Type[V]) (V, error) {
 		return value, err
 	}
 
-	if r.index >= len(r.columns) {
-		return value, r.setErr(fmt.Errorf("no more columns to read"))
-	}
-
-	if !Eq(tp, r.columns[r.index].tp) {
+	if tp.ID() != r.columns[r.index].tp.ID() {
 		return value, r.setErr(fmt.Errorf("type mismatch. expected %s, got %s", r.columns[r.index].tp.String(), tp.String()))
 	}
 

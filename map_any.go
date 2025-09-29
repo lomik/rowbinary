@@ -3,11 +3,13 @@ package rowbinary
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 var _ Any = MapAny(UInt32, UInt32)
 
 type typeMapAny struct {
+	id        uint64
 	keyType   Any
 	valueType Any
 	tbin      []byte
@@ -15,11 +17,13 @@ type typeMapAny struct {
 }
 
 func MapAny(keyType Any, valueType Any) *typeMapAny {
+	tbin := slices.Concat(BinaryTypeMap[:], keyType.Binary(), valueType.Binary())
 	return &typeMapAny{
 		keyType:   keyType,
 		valueType: valueType,
-		tbin:      append(append(BinaryTypeMap[:], keyType.Binary()...), valueType.Binary()...),
+		tbin:      tbin,
 		tstr:      fmt.Sprintf("Map(%s, %s)", keyType.String(), valueType.String()),
+		id:        BinaryTypeID(tbin),
 	}
 }
 
@@ -29,6 +33,10 @@ func (t *typeMapAny) String() string {
 
 func (t *typeMapAny) Binary() []byte {
 	return t.tbin
+}
+
+func (t *typeMapAny) ID() uint64 {
+	return t.id
 }
 
 func (t *typeMapAny) Write(w Writer, value map[any]any) error {

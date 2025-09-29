@@ -6,9 +6,8 @@ import (
 	"strings"
 )
 
-var _ Any = ArrayAny(UInt32)
-
 type typeTupleAny struct {
+	id         uint64
 	valueTypes []Any
 	tbin       []byte
 	tstr       string
@@ -27,6 +26,7 @@ func TupleAny(valueTypes ...Any) *typeTupleAny {
 		valueTypes: valueTypes,
 		tbin:       tbin,
 		tstr:       fmt.Sprintf("Tuple(%s)", strings.Join(types, ", ")),
+		id:         BinaryTypeID(tbin),
 	}
 }
 
@@ -75,4 +75,8 @@ func (t *typeTupleAny) WriteAny(w Writer, v any) error {
 		return errors.New("unexpected type")
 	}
 	return t.Write(w, value)
+}
+
+func (t *typeTupleAny) ID() uint64 {
+	return t.id
 }

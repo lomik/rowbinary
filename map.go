@@ -9,6 +9,7 @@ import (
 var MapUInt32UInt32 Type[map[uint32]uint32] = Map(UInt32, UInt32)
 
 type typeMap[K comparable, V any] struct {
+	id        uint64
 	keyType   Type[K]
 	valueType Type[V]
 	tbin      []byte
@@ -16,11 +17,13 @@ type typeMap[K comparable, V any] struct {
 }
 
 func Map[K comparable, V any](keyType Type[K], valueType Type[V]) *typeMap[K, V] {
+	tbin := slices.Concat(BinaryTypeMap[:], keyType.Binary(), valueType.Binary())
 	return &typeMap[K, V]{
 		keyType:   keyType,
 		valueType: valueType,
-		tbin:      slices.Concat(BinaryTypeMap[:], keyType.Binary(), valueType.Binary()),
+		tbin:      tbin,
 		tstr:      fmt.Sprintf("Map(%s, %s)", keyType.String(), valueType.String()),
+		id:        BinaryTypeID(tbin),
 	}
 }
 
@@ -30,6 +33,10 @@ func (t *typeMap[K, V]) String() string {
 
 func (t *typeMap[K, V]) Binary() []byte {
 	return t.tbin
+}
+
+func (t *typeMap[K, V]) ID() uint64 {
+	return t.id
 }
 
 func (t *typeMap[K, V]) Write(w Writer, value map[K]V) error {

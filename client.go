@@ -41,6 +41,15 @@ func NewClient(ctx context.Context, dsn string, opts *ClientOptions) *Client {
 	if opts != nil {
 		c.opts = *opts
 	}
+
+	if c.opts.HTTPClient == nil {
+		c.opts.HTTPClient = &http.Client{
+			Transport: &http.Transport{
+				ReadBufferSize:  1024 * 1024,
+				WriteBufferSize: 1024 * 1024,
+			},
+		}
+	}
 	return c
 }
 
@@ -97,8 +106,5 @@ func (c *Client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params u
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
-	if c.opts.HTTPClient == nil {
-		return http.DefaultClient.Do(req)
-	}
 	return c.opts.HTTPClient.Do(req)
 }

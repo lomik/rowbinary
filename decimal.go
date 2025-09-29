@@ -10,6 +10,7 @@ import (
 var _ Type[decimal.Decimal] = Decimal(18, 4)
 
 type typeDecimal struct {
+	id        uint64
 	precision uint8
 	scale     uint8
 	tbin      []byte
@@ -30,6 +31,7 @@ func Decimal(precision uint8, scale uint8) *typeDecimal {
 		scale:     scale,
 		tbin:      tbin,
 		tstr:      fmt.Sprintf("Decimal(%d, %d)", precision, scale),
+		id:        BinaryTypeID(tbin),
 	}
 }
 
@@ -39,6 +41,10 @@ func (t *typeDecimal) String() string {
 
 func (t *typeDecimal) Binary() []byte {
 	return t.tbin
+}
+
+func (t *typeDecimal) ID() uint64 {
+	return t.id
 }
 
 func (t *typeDecimal) Write(w Writer, value decimal.Decimal) error {
