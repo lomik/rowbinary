@@ -36,7 +36,7 @@ HEADER: X-Clickhouse-Format [RowBinaryWithNamesAndTypes]
 HEADER: Keep-Alive [timeout=30, max=9999]
 */
 
-func (c *Client) Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error {
+func (c *client) Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error {
 	opts := selectOptions{
 		formatOptions: []FormatOption{
 			RowBinaryWithNamesAndTypes,

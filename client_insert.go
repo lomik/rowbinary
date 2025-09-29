@@ -19,7 +19,7 @@ type InsertOption interface {
 	applyInsertOptions(*insertOptions)
 }
 
-func (c *Client) Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error {
+func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error {
 	opts := insertOptions{
 		formatOptions: []FormatOption{
 			RowBinaryWithNamesAndTypes,

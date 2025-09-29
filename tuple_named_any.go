@@ -14,7 +14,7 @@ type typeTupleNamedAny struct {
 	tstr    string
 }
 
-func TupleNameAny(columns ...Column) *typeTupleNamedAny {
+func TupleNamedAny(columns ...Column) *typeTupleNamedAny {
 	var types []string
 	for _, col := range columns {
 		types = append(types, col.String())

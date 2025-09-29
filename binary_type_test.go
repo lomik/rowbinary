@@ -20,7 +20,7 @@ func Test_TypedBinary(t *testing.T) {
 			t.Parallel()
 			assert := assert.New(t)
 
-			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC', output_format_binary_encode_types_in_binary_format=true, input_format_binary_decode_types_in_binary_format=true")
+			body, err := ExecLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC', output_format_binary_encode_types_in_binary_format=true, input_format_binary_decode_types_in_binary_format=true")
 			assert.NoError(err)
 
 			r := NewReader(bytes.NewReader(body))
@@ -120,7 +120,7 @@ func Test_DecodeBinaryType(t *testing.T) {
 			t.Parallel()
 			assert := assert.New(t)
 
-			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC', output_format_binary_encode_types_in_binary_format=true, input_format_binary_decode_types_in_binary_format=true")
+			body, err := ExecLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC', output_format_binary_encode_types_in_binary_format=true, input_format_binary_decode_types_in_binary_format=true")
 			assert.NoError(err)
 
 			r := NewReader(bytes.NewReader(body))

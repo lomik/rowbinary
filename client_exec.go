@@ -16,7 +16,7 @@ type ExecuteOption interface {
 	applyExecuteOptions(*execOptions)
 }
 
-func (c *Client) Exec(ctx context.Context, query string, options ...ExecuteOption) error {
+func (c *client) Exec(ctx context.Context, query string, options ...ExecuteOption) error {
 	opts := execOptions{}
 	for _, opt := range options {
 		opt.applyExecuteOptions(&opts)

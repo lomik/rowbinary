@@ -174,7 +174,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			}
 			columns = append(columns, Column{name: name, tp: tp})
 		}
-		return TupleNameAny(columns...), nil
+		return TupleNamedAny(columns...), nil
 	case BinaryTypeSet:
 		return nil, errors.New("not implemented")
 	case BinaryTypeInterval:

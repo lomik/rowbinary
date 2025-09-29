@@ -17,7 +17,7 @@ var testTableCounter atomic.Uint64
 
 type testCase struct {
 	db            string
-	defaultClient *rowbinary.Client
+	defaultClient rowbinary.Client
 }
 
 func newTestCase() *testCase {

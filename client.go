@@ -29,15 +29,22 @@ type ClientOptions struct {
 	Database   string
 }
 
+type Client interface {
+	Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error
+	Exec(ctx context.Context, query string, options ...ExecuteOption) error
+	Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error
+	Close() error
+}
+
 // Client represents a ClickHouse client.
-type Client struct {
+type client struct {
 	dsn  string
 	opts ClientOptions
 }
 
 // NewClient creates a new ClickHouse client.
-func NewClient(ctx context.Context, dsn string, opts *ClientOptions) *Client {
-	c := &Client{dsn: dsn}
+func NewClient(ctx context.Context, dsn string, opts *ClientOptions) Client {
+	c := &client{dsn: dsn}
 	if opts != nil {
 		c.opts = *opts
 	}
@@ -53,7 +60,7 @@ func NewClient(ctx context.Context, dsn string, opts *ClientOptions) *Client {
 	return c
 }
 
-func (c *Client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params url.Values) (*http.Request, error) {
+func (c *client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params url.Values) (*http.Request, error) {
 	var err error
 	dsn := c.dsn
 	if c.opts.Discovery != nil {
@@ -105,6 +112,10 @@ func (c *Client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params u
 	return httpReq, nil
 }
 
-func (c *Client) do(req *http.Request) (*http.Response, error) {
+func (c *client) do(req *http.Request) (*http.Response, error) {
 	return c.opts.HTTPClient.Do(req)
+}
+
+func (c *client) Close() error {
+	return nil
 }

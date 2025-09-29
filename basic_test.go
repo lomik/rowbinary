@@ -19,7 +19,7 @@ func TestBasic(t *testing.T) {
 			t.Parallel()
 			assert := assert.New(t)
 
-			body, err := execLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC'")
+			body, err := ExecLocal(tt.query + " AS value FORMAT RowBinaryWithNamesAndTypes SETTINGS session_timezone='UTC'")
 			assert.NoError(err)
 
 			r := NewReader(bytes.NewReader(body))
