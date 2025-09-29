@@ -37,3 +37,15 @@ func (c Column) applyInsertOptions(o *insertOptions) {
 func (c Column) applyExternalDataOption(o *externalData) {
 	o.formatOptions = append(o.formatOptions, c)
 }
+
+func (c Column) Name() string {
+	return c.name
+}
+
+func (c Column) Type() Any {
+	return c.tp
+}
+
+func (c Column) String() string {
+	return c.Name() + " " + c.Type().String()
+}

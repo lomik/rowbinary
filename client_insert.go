@@ -42,7 +42,6 @@ func (c *Client) Insert(ctx context.Context, table string, writeFunc func(w *For
 	if err != nil {
 		return err
 	}
-	req.Header.Set("X-ClickHouse-Format", opts.format.String())
 
 	r, w := io.Pipe()
 	req.Body = r

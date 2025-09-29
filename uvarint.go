@@ -6,23 +6,23 @@ import (
 	"errors"
 )
 
-var UVarint Type[uint64] = &typeUVarint{}
+var UVarint Type[uint64] = typeUVarint{}
 
 type typeUVarint struct{}
 
-func (t *typeUVarint) String() string {
+func (t typeUVarint) String() string {
 	return "UVarint"
 }
 
-func (t *typeUVarint) Binary() []byte {
+func (t typeUVarint) Binary() []byte {
 	return BinaryTypeNothing[:]
 }
 
-func (t *typeUVarint) ID() uint64 {
+func (t typeUVarint) ID() uint64 {
 	return typeNothingID
 }
 
-func (t *typeUVarint) Write(w Writer, x uint64) error {
+func (t typeUVarint) Write(w Writer, x uint64) error {
 	var err error
 	i := 0
 	for x >= 0x80 {
@@ -38,15 +38,15 @@ func (t *typeUVarint) Write(w Writer, x uint64) error {
 	return err
 }
 
-func (t *typeUVarint) Read(r Reader) (uint64, error) {
+func (t typeUVarint) Read(r Reader) (uint64, error) {
 	return binary.ReadUvarint(r)
 }
 
-func (t *typeUVarint) ReadAny(r Reader) (any, error) {
+func (t typeUVarint) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
 
-func (t *typeUVarint) WriteAny(w Writer, v any) error {
+func (t typeUVarint) WriteAny(w Writer, v any) error {
 	value, ok := v.(uint64)
 	if !ok {
 		return errors.New("unexpected type")
@@ -54,7 +54,7 @@ func (t *typeUVarint) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func varintEncode(x uint64) []byte {
+func UVarintEncode(x uint64) []byte {
 	var b bytes.Buffer
 	i := 0
 	for x >= 0x80 {

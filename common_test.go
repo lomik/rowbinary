@@ -61,6 +61,7 @@ var commonTestData = []struct {
 	{Bool, false, "SELECT false"},
 	{Bool, true, "SELECT true"},
 	{FixedString(10), []byte("hello\x00\x00\x00\x00\x00"), "SELECT toFixedString('hello', 10)"},
+	{TupleNameAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"}, "CREATE TEMPORARY TABLE named_tuples (`value` Tuple(i UInt32, s String)) ENGINE = Memory; INSERT INTO named_tuples VALUES ((42, 'hello world')); SELECT value FROM named_tuples"},
 }
 
 // requests clickhouse, caching locally to disk

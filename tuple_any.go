@@ -18,7 +18,7 @@ func TupleAny(valueTypes ...Any) *typeTupleAny {
 	for _, vt := range valueTypes {
 		types = append(types, vt.String())
 	}
-	tbin := append(BinaryTypeTuple[:], varintEncode(uint64(len(valueTypes)))...)
+	tbin := append(BinaryTypeTuple[:], UVarintEncode(uint64(len(valueTypes)))...)
 	for _, vt := range valueTypes {
 		tbin = append(tbin, vt.Binary()...)
 	}

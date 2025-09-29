@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -69,4 +70,11 @@ func (t typeString) WriteAny(w Writer, v any) error {
 
 func (t typeString) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
+}
+
+func StringEncode(s string) []byte {
+	var b bytes.Buffer
+	w := NewWriter(&b)
+	String.Write(w, s)
+	return b.Bytes()
 }

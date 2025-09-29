@@ -9,14 +9,19 @@ import (
 	"strings"
 )
 
-type executeOptions struct {
+type execOptions struct {
 }
 
 type ExecuteOption interface {
-	applyExecuteOptions(*executeOptions)
+	applyExecuteOptions(*execOptions)
 }
 
-func (c *Client) Exec(ctx context.Context, query string, opts ...ExecuteOption) error {
+func (c *Client) Exec(ctx context.Context, query string, options ...ExecuteOption) error {
+	opts := execOptions{}
+	for _, opt := range options {
+		opt.applyExecuteOptions(&opts)
+	}
+
 	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindExecute}, url.Values{})
 	if err != nil {
 		return err

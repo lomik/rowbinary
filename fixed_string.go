@@ -9,7 +9,7 @@ import (
 var _ Type[[]byte] = FixedString(10)
 
 func FixedString(length int) *typeFixedString {
-	tbin := append(BinaryTypeFixedString[:], varintEncode(uint64(length))...)
+	tbin := append(BinaryTypeFixedString[:], UVarintEncode(uint64(length))...)
 	return &typeFixedString{
 		length: length,
 		tbin:   tbin,
