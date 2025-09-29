@@ -50,11 +50,13 @@ func readAtLeast(r Reader, buf []byte, min int) (int, error) {
 }
 
 func (t typeUInt64) Read(r Reader) (uint64, error) {
-	p, err := r.ReadBytes(8)
+	b, err := r.Peek(8)
 	if err != nil {
 		return 0, err
 	}
-	return binary.LittleEndian.Uint64(p), nil
+	ret := binary.LittleEndian.Uint64(b)
+	r.Discard(8)
+	return ret, nil
 }
 
 func (t typeUInt64) WriteAny(w Writer, v any) error {

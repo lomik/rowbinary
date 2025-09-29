@@ -134,9 +134,7 @@ func (c *Client) Select(ctx context.Context, query string, readFunc func(r *Form
 		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
 	}
 
-	respReader := bufio.NewReaderSize(resp.Body, 1024*1024)
-
-	if err := readFunc(NewFormatReader(respReader, opts.formatOptions...)); err != nil {
+	if err := readFunc(NewFormatReader(resp.Body, opts.formatOptions...)); err != nil {
 		return err
 	}
 

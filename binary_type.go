@@ -63,13 +63,8 @@ var (
 	BinaryTypeTime64                  = [1]byte{0x34} // <uint8_precision>
 )
 
-type decodeBinaryTypeReader interface {
-	io.ByteReader
-	io.Reader
-}
-
 // DecodeBinaryType decodes a binary type from the given reader.
-func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
+func DecodeBinaryType(r Reader) (Any, error) {
 	var firstByte [1]byte
 	if _, err := io.ReadFull(r, firstByte[:]); err != nil {
 		return nil, err
@@ -121,7 +116,7 @@ func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
 	case BinaryTypeString:
 		return String, nil
 	case BinaryTypeFixedString: // <var_uint_size>
-		size, err := binary.ReadUvarint(r)
+		size, err := UVarint.Read(r)
 		if err != nil {
 			return nil, err
 		}
@@ -131,15 +126,15 @@ func DecodeBinaryType(r decodeBinaryTypeReader) (Any, error) {
 	case BinaryTypeEnum16:
 		return nil, errors.New("not implemented")
 	case BinaryTypeDecimal32, BinaryTypeDecimal64, BinaryTypeDecimal128, BinaryTypeDecimal256: // <uint8_precision><uint8_scale>
-		var precision [1]byte
-		var scale [1]byte
-		if _, err := io.ReadFull(r, precision[:]); err != nil {
+		precision, err := UInt8.Read(r)
+		if err != nil {
 			return nil, err
 		}
-		if _, err := io.ReadFull(r, scale[:]); err != nil {
+		scale, err := UInt8.Read(r)
+		if err != nil {
 			return nil, err
 		}
-		return Decimal(precision[0], scale[0]), nil
+		return Decimal(precision, scale), nil
 	case BinaryTypeUUID:
 		return UUID, nil
 	case BinaryTypeArray:

@@ -3,7 +3,6 @@ package rowbinary
 import (
 	"encoding/binary"
 	"errors"
-	"io"
 )
 
 var UInt32 Type[uint32] = typeUInt32{}
@@ -30,11 +29,13 @@ func (t typeUInt32) Write(w Writer, v uint32) error {
 }
 
 func (t typeUInt32) Read(r Reader) (uint32, error) {
-	_, err := io.ReadAtLeast(r, r.buffer()[:4], 4)
+	b, err := r.Peek(4)
 	if err != nil {
 		return 0, err
 	}
-	return binary.LittleEndian.Uint32(r.buffer()[:4]), nil
+	ret := binary.LittleEndian.Uint32(b)
+	r.Discard(4)
+	return ret, nil
 }
 
 func (t typeUInt32) WriteAny(w Writer, v any) error {

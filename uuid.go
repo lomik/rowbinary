@@ -2,7 +2,6 @@ package rowbinary
 
 import (
 	"errors"
-	"io"
 
 	"github.com/google/uuid"
 )
@@ -39,14 +38,16 @@ func (t typeUUID) Write(w Writer, value uuid.UUID) error {
 }
 
 func (t typeUUID) Read(r Reader) (uuid.UUID, error) {
-	_, err := io.ReadAtLeast(r, r.buffer()[:16], 16)
+	b, err := r.Peek(16)
 	if err != nil {
 		return uuid.UUID{}, err
 	}
 
-	swap64(r.buffer()[:16])
+	swap64(b)
+	ret, err := uuid.FromBytes(b)
+	r.Discard(16)
 
-	return uuid.FromBytes(r.buffer()[:16])
+	return ret, err
 }
 
 func (t typeUUID) WriteAny(w Writer, v any) error {
