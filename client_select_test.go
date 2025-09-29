@@ -93,7 +93,7 @@ func TestClient_Select_ExternalData(t *testing.T) {
 	}, ExternalData(
 		"data1",
 		func(w *FormatWriter) error {
-			for i := uint64(0); i < 5; i++ {
+			for i := range uint64(5) {
 				if err := Write(w, UInt64, i); err != nil {
 					return err
 				}
