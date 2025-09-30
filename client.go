@@ -36,6 +36,7 @@ type Client interface {
 	Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error
 	Exec(ctx context.Context, query string, options ...ExecOption) error
 	Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error
+	Database() string
 	Close() error
 }
 
@@ -167,4 +168,11 @@ func (c *client) do(req *http.Request) (*http.Response, error) {
 
 func (c *client) Close() error {
 	return nil
+}
+
+func (c *client) Database() string {
+	if c.opts.database != "" {
+		return c.opts.database
+	}
+	return "default"
 }

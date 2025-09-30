@@ -1,11 +1,15 @@
 package rowbinary
 
 import (
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"sync/atomic"
+	"time"
 )
 
 // requests clickhouse, caching locally to disk
@@ -29,4 +33,31 @@ func ExecLocal(query string) ([]byte, error) {
 	}
 	// #nosec G304
 	return os.ReadFile(filename)
+}
+
+var testClientCounter atomic.Uint64
+
+type testClient struct {
+	Client
+	db string
+}
+
+func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Client {
+	db := fmt.Sprintf("db_%d_%d", testClientCounter.Add(1), time.Now().UnixNano())
+	defaultClient := NewClient(context.Background(), dsn, append(options, WithDatabase("default"))...)
+
+	err := defaultClient.Exec(context.Background(), "CREATE DATABASE "+db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defaultClient.Close()
+
+	return &testClient{
+		Client: NewClient(ctx, dsn, append(options, WithDatabase(db))...),
+		db:     db,
+	}
+}
+
+func (tc *testClient) Close() error {
+	return tc.Exec(context.Background(), "DROP DATABASE "+tc.db)
 }

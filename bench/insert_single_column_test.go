@@ -36,13 +36,9 @@ func BenchmarkSingleColumn(b *testing.B) {
 func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, count int) {
 	b.Run(fmt.Sprintf("rowbinary_%s", tp.String()), func(b *testing.B) {
 		assert := assert.New(b)
-		tc := newTestCase()
-		defer tc.Close()
-
 		ctx := context.Background()
-		c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-			Database: tc.Database(),
-		})
+		c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+		defer c.Close()
 
 		assert.NoError(c.Exec(ctx, fmt.Sprintf("CREATE TABLE t (x %s) ENGINE = Null", tp.String())))
 
@@ -57,7 +53,7 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 						}
 					}
 					return nil
-				}, rowbinary.NewColumn("x", tp)),
+				}, rowbinary.C("x", tp)),
 			)
 		}
 
@@ -67,13 +63,9 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 
 	b.Run(fmt.Sprintf("rowbinary_any_%s", tp.String()), func(b *testing.B) {
 		assert := assert.New(b)
-		tc := newTestCase()
-		defer tc.Close()
-
 		ctx := context.Background()
-		c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-			Database: tc.Database(),
-		})
+		c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+		defer c.Close()
 
 		assert.NoError(c.Exec(ctx, fmt.Sprintf("CREATE TABLE t (x %s) ENGINE = Null", tp.String())))
 
@@ -88,7 +80,7 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 						}
 					}
 					return nil
-				}, rowbinary.NewColumn("x", tp)),
+				}, rowbinary.C("x", tp)),
 			)
 		}
 
@@ -97,20 +89,16 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 
 	b.Run(fmt.Sprintf("native_%s", tp.String()), func(b *testing.B) {
 		assert := assert.New(b)
-		tc := newTestCase()
-		defer tc.Close()
-
 		ctx := context.Background()
-		c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-			Database: tc.Database(),
-		})
+		c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+		defer c.Close()
 
 		assert.NoError(c.Exec(ctx, fmt.Sprintf("CREATE TABLE t (x %s) ENGINE = Null", tp.String())))
 
 		conn, err := clickhouse.Open(&clickhouse.Options{
 			Addr: []string{testClickHouseNativeAddr},
 			Auth: clickhouse.Auth{
-				Database: tc.Database(),
+				Database: c.Database(),
 			},
 		})
 

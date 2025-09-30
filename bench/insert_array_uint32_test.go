@@ -13,13 +13,9 @@ var arrayUInt32 = rowbinary.Array(rowbinary.UInt32)
 
 func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 	assert := assert.New(b)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-		Database: tc.Database(),
-	})
+	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
@@ -39,7 +35,7 @@ func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 					}
 				}
 				return nil
-			}, rowbinary.NewColumn("x", arrayUInt32)),
+			}, rowbinary.C("x", arrayUInt32)),
 		)
 	}
 
@@ -48,13 +44,9 @@ func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 
 func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 	assert := assert.New(b)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-		Database: tc.Database(),
-	})
+	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
@@ -74,7 +66,7 @@ func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 					}
 				}
 				return nil
-			}, rowbinary.NewColumn("x", arrayUInt32)),
+			}, rowbinary.C("x", arrayUInt32)),
 		)
 	}
 
@@ -83,13 +75,9 @@ func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 
 func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 	assert := assert.New(b)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-		Database: tc.Database(),
-	})
+	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
@@ -101,7 +89,7 @@ func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{testClickHouseNativeAddr},
 		Auth: clickhouse.Auth{
-			Database: tc.Database(),
+			Database: c.Database(),
 		},
 	})
 

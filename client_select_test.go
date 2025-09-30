@@ -14,11 +14,9 @@ func must[T any](v T, _ error) T {
 
 func TestClient_Select(t *testing.T) {
 	assert := assert.New(t)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := NewClient(ctx, testClickHouseDSN, WithDatabase(tc.Database()))
+	c := NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
 		var numbers []uint64
@@ -78,7 +76,8 @@ func TestClient_Select_ExternalData(t *testing.T) {
 	assert := assert.New(t)
 
 	ctx := context.Background()
-	c := NewClient(ctx, testClickHouseDSN, nil)
+	c := NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Select(ctx, "SELECT max(value) FROM data1", func(r *FormatReader) error {
 		var numbers []uint64

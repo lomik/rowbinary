@@ -11,13 +11,9 @@ import (
 
 func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 	assert := assert.New(b)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-		Database: tc.Database(),
-	})
+	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
@@ -32,7 +28,7 @@ func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 					}
 				}
 				return nil
-			}, rowbinary.NewColumn("x", rowbinary.UInt32)),
+			}, rowbinary.C("x", rowbinary.UInt32)),
 		)
 	}
 
@@ -41,13 +37,9 @@ func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 
 func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 	assert := assert.New(b)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-		Database: tc.Database(),
-	})
+	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
@@ -62,7 +54,7 @@ func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 					}
 				}
 				return nil
-			}, rowbinary.NewColumn("x", rowbinary.UInt32)),
+			}, rowbinary.C("x", rowbinary.UInt32)),
 		)
 	}
 
@@ -71,20 +63,16 @@ func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 
 func BenchmarkNative_Insert_UInt32(b *testing.B) {
 	assert := assert.New(b)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, &rowbinary.ClientOptions{
-		Database: tc.Database(),
-	})
+	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{testClickHouseNativeAddr},
 		Auth: clickhouse.Auth{
-			Database: tc.Database(),
+			Database: c.Database(),
 		},
 	})
 

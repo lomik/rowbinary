@@ -10,11 +10,9 @@ import (
 
 func TestClient_Insert(t *testing.T) {
 	assert := assert.New(t)
-	tc := newTestCase()
-	defer tc.Close()
-
 	ctx := context.Background()
-	c := NewClient(ctx, testClickHouseDSN, WithDatabase(tc.Database()))
+	c := NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory"))
 
