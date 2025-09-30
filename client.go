@@ -34,7 +34,7 @@ type ClientOption interface {
 
 type Client interface {
 	Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error
-	Exec(ctx context.Context, query string, options ...ExecuteOption) error
+	Exec(ctx context.Context, query string, options ...ExecOption) error
 	Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error
 	Close() error
 }
@@ -106,7 +106,7 @@ func NewClient(ctx context.Context, dsn string, options ...ClientOption) Client 
 	return c
 }
 
-func (c *client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params url.Values) (*http.Request, error) {
+func (c *client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, pp map[string]string, hh map[string]string) (*http.Request, error) {
 	var err error
 	dsn := c.dsn
 	if c.opts.discovery != nil {
@@ -135,8 +135,11 @@ func (c *client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, params u
 		values.Set("database", "default")
 	}
 
-	for k, v := range params {
-		values.Set(k, v[0])
+	for k, v := range pp {
+		values.Set(k, v)
+	}
+	for k, v := range hh {
+		headers.Set(k, v)
 	}
 
 	url.RawQuery = values.Encode()

@@ -27,6 +27,19 @@ func (o useBinaryHeaderType) applyFormatOption(opts *formatOptions) {
 }
 
 func (o useBinaryHeaderType) applySelectOptions(opts *selectOptions) {
-	opts.useBinaryHeader = o.value
 	opts.formatOptions = append(opts.formatOptions, o)
+	if o.value {
+		opts.params["output_format_binary_encode_types_in_binary_format"] = "1"
+	} else {
+		opts.params["output_format_binary_encode_types_in_binary_format"] = "0"
+	}
+}
+
+func (o useBinaryHeaderType) applyInsertOptions(opts *insertOptions) {
+	opts.formatOptions = append(opts.formatOptions, o)
+	if o.value {
+		opts.params["input_format_binary_decode_types_in_binary_format"] = "1"
+	} else {
+		opts.params["input_format_binary_decode_types_in_binary_format"] = "0"
+	}
 }

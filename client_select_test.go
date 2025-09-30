@@ -88,7 +88,7 @@ func TestClient_Select_ExternalData(t *testing.T) {
 		}
 		assert.Equal([]uint64{4}, numbers)
 		return r.Err()
-	}, ExternalData(
+	}, WithExternalData(
 		"data1",
 		func(w *FormatWriter) error {
 			for i := range uint64(5) {

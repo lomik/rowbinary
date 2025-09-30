@@ -5,24 +5,28 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
 type execOptions struct {
+	params  map[string]string
+	headers map[string]string
 }
 
-type ExecuteOption interface {
-	applyExecuteOptions(*execOptions)
+type ExecOption interface {
+	applyExecOptions(*execOptions)
 }
 
-func (c *client) Exec(ctx context.Context, query string, options ...ExecuteOption) error {
-	opts := execOptions{}
+func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) error {
+	opts := execOptions{
+		params:  map[string]string{},
+		headers: map[string]string{},
+	}
 	for _, opt := range options {
-		opt.applyExecuteOptions(&opts)
+		opt.applyExecOptions(&opts)
 	}
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindExecute}, url.Values{})
+	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindExecute}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}

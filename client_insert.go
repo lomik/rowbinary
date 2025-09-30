@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 )
 
 type insertOptions struct {
-	formatOptions   []FormatOption
-	format          Format
-	useBinaryHeader bool
+	formatOptions []FormatOption
+	format        Format
+	params        map[string]string
+	headers       map[string]string
 }
 
 type InsertOption interface {
@@ -25,20 +25,20 @@ func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *For
 			RowBinaryWithNamesAndTypes,
 			WithUseBinaryHeader(true),
 		},
-		format:          RowBinaryWithNamesAndTypes,
-		useBinaryHeader: true,
+		format: RowBinaryWithNamesAndTypes,
+		params: map[string]string{
+			"input_format_binary_decode_types_in_binary_format": "1",
+		},
+		headers: map[string]string{},
 	}
+
 	for _, opt := range options {
 		opt.applyInsertOptions(&opts)
 	}
 
-	params := url.Values{}
-	if opts.useBinaryHeader {
-		params.Set("input_format_binary_decode_types_in_binary_format", "1")
-	}
-	params.Set("query", fmt.Sprintf("INSERT INTO %s FORMAT %s", table, opts.format.String()))
+	opts.params["query"] = fmt.Sprintf("INSERT INTO %s FORMAT %s", table, opts.format.String())
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindInsert}, params)
+	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindInsert}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}

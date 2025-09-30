@@ -38,6 +38,11 @@ func (f Format) applyFormatOption(o *formatOptions) {
 }
 
 func (f Format) applySelectOptions(o *selectOptions) {
-	o.format = f
 	o.formatOptions = append(o.formatOptions, f)
+	o.headers["X-ClickHouse-Format"] = f.String()
+}
+
+func (f Format) applyInsertOptions(o *insertOptions) {
+	o.formatOptions = append(o.formatOptions, f)
+	o.format = f
 }

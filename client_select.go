@@ -7,15 +7,14 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
 type selectOptions struct {
-	formatOptions   []FormatOption
-	format          Format
-	useBinaryHeader bool
-	externalData    []externalData
+	formatOptions []FormatOption
+	externalData  []externalData
+	params        map[string]string
+	headers       map[string]string
 }
 
 type SelectOption interface {
@@ -42,23 +41,21 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 			RowBinaryWithNamesAndTypes,
 			WithUseBinaryHeader(true),
 		},
-		format:          RowBinaryWithNamesAndTypes,
-		useBinaryHeader: true,
+		params: map[string]string{
+			"output_format_binary_encode_types_in_binary_format": "1",
+		},
+		headers: map[string]string{
+			"X-ClickHouse-Format": RowBinaryWithNamesAndTypes.String(),
+		},
 	}
 	for _, opt := range options {
 		opt.applySelectOptions(&opts)
 	}
 
-	params := url.Values{}
-	if opts.useBinaryHeader {
-		params.Set("output_format_binary_encode_types_in_binary_format", "1")
-	}
-
-	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindSelect}, params)
+	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindSelect}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("X-ClickHouse-Format", opts.format.String())
 
 	// should attach files
 	if len(opts.externalData) > 0 {

@@ -10,7 +10,7 @@ type ExternalDataOption interface {
 	applyExternalDataOption(*externalData)
 }
 
-func ExternalData(name string, cb func(w *FormatWriter) error, opts ...ExternalDataOption) externalData {
+func WithExternalData(name string, cb func(w *FormatWriter) error, opts ...ExternalDataOption) externalData {
 	ret := externalData{
 		name: name,
 		cb:   cb,
