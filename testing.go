@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -83,6 +84,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		v2, err := tp.Read(r)
 		assert.NoError(err)
 		assert.Equal(value, v2)
+
 	})
 
 	// write/read any test
@@ -92,11 +94,27 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		// write
 		var buf bytes.Buffer
 		w := NewWriter(&buf)
-		assert.NoError(tp.WriteAny(w, value))
+		assert.NoError(tp.Write(w, value))
 
 		// read
 		r := NewReader(bytes.NewReader(buf.Bytes()))
 		v2, err := tp.ReadAny(r)
+		assert.NoError(err)
+		assert.Equal(value, v2)
+	})
+
+	// write/read any test
+	t.Run(fmt.Sprintf("%s/write_any_read", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.WriteAny(w, value))
+
+		// read
+		r := NewReader(bytes.NewReader(buf.Bytes()))
+		v2, err := tp.Read(r)
 		assert.NoError(err)
 		assert.Equal(value, v2)
 	})
@@ -133,8 +151,57 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		// read
 		for i := 0; i < buf.Len()-1; i++ {
 			r := NewReader(bytes.NewReader(buf.Bytes()[:i]))
-			_, err := tp.ReadAny(r)
+			_, err := tp.Read(r)
 			assert.Error(err)
 		}
 	})
+
+	// write truncated
+	t.Run(fmt.Sprintf("%s/write_truncated", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.Write(w, value))
+
+		// read
+		for i := 0; i < buf.Len()-1; i++ {
+			var wb bytes.Buffer
+			ww := NewWriter(newLimitedWriter(&wb, int64(i)))
+			err := tp.Write(ww, value)
+			assert.Error(err)
+		}
+	})
+}
+
+// limitedWriter wraps an io.Writer and limits the total bytes written.
+type limitedWriter struct {
+	W     io.Writer // The underlying writer
+	N     int64     // The maximum number of bytes allowed to be written
+	total int64     // The total number of bytes written so far
+}
+
+// NewLimitedWriter creates a new LimitedWriter.
+func newLimitedWriter(w io.Writer, limit int64) *limitedWriter {
+	return &limitedWriter{
+		W: w,
+		N: limit,
+	}
+}
+
+// Write writes bytes to the underlying writer, up to the remaining limit.
+func (lw *limitedWriter) Write(p []byte) (n int, err error) {
+	if lw.total >= lw.N {
+		return 0, io.EOF // Limit reached, return EOF
+	}
+
+	remaining := lw.N - lw.total
+	if int64(len(p)) > remaining {
+		p = p[:remaining] // Truncate the buffer if it exceeds the remaining limit
+	}
+
+	n, err = lw.W.Write(p)
+	lw.total += int64(n)
+	return n, err
 }
