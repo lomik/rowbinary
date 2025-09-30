@@ -13,7 +13,7 @@ type typeTupleAny struct {
 	tstr       string
 }
 
-func TupleAny(valueTypes ...Any) *typeTupleAny {
+func TupleAny(valueTypes ...Any) typeTupleAny {
 	var types []string
 	for _, vt := range valueTypes {
 		types = append(types, vt.String())
@@ -22,7 +22,7 @@ func TupleAny(valueTypes ...Any) *typeTupleAny {
 	for _, vt := range valueTypes {
 		tbin = append(tbin, vt.Binary()...)
 	}
-	return &typeTupleAny{
+	return typeTupleAny{
 		valueTypes: valueTypes,
 		tbin:       tbin,
 		tstr:       fmt.Sprintf("Tuple(%s)", strings.Join(types, ", ")),
@@ -30,15 +30,15 @@ func TupleAny(valueTypes ...Any) *typeTupleAny {
 	}
 }
 
-func (t *typeTupleAny) String() string {
+func (t typeTupleAny) String() string {
 	return t.tstr
 }
 
-func (t *typeTupleAny) Binary() []byte {
+func (t typeTupleAny) Binary() []byte {
 	return t.tbin
 }
 
-func (t *typeTupleAny) Write(w Writer, value []any) error {
+func (t typeTupleAny) Write(w Writer, value []any) error {
 	if len(value) != len(t.valueTypes) {
 		return errors.New("invalid tuple length")
 	}
@@ -52,7 +52,7 @@ func (t *typeTupleAny) Write(w Writer, value []any) error {
 	return nil
 }
 
-func (t *typeTupleAny) Read(r Reader) ([]any, error) {
+func (t typeTupleAny) Read(r Reader) ([]any, error) {
 	ret := make([]any, 0, len(t.valueTypes))
 	for i := 0; i < len(t.valueTypes); i++ {
 		s, err := t.valueTypes[i].ReadAny(r)
@@ -65,11 +65,11 @@ func (t *typeTupleAny) Read(r Reader) ([]any, error) {
 	return ret, nil
 }
 
-func (t *typeTupleAny) ReadAny(r Reader) (any, error) {
+func (t typeTupleAny) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
 
-func (t *typeTupleAny) WriteAny(w Writer, v any) error {
+func (t typeTupleAny) WriteAny(w Writer, v any) error {
 	value, ok := v.([]any)
 	if !ok {
 		return errors.New("unexpected type")
@@ -77,6 +77,6 @@ func (t *typeTupleAny) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func (t *typeTupleAny) ID() uint64 {
+func (t typeTupleAny) ID() uint64 {
 	return t.id
 }

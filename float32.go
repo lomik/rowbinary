@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-var Float32 Type[float32] = &typeFloat32{}
+var Float32 Type[float32] = typeFloat32{}
 var typeFloat32ID = BinaryTypeID(BinaryTypeFloat32[:])
 
 type typeFloat32 struct{}

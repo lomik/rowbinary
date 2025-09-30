@@ -10,7 +10,7 @@ import (
 // NB: works only on UTC, use time.Date, time.Time.AddDate.
 const secInDay = 24 * 60 * 60
 
-var Date Type[time.Time] = &typeDate{}
+var Date Type[time.Time] = typeDate{}
 var typeDateID = BinaryTypeID(BinaryTypeDate[:])
 
 type typeDate struct{}

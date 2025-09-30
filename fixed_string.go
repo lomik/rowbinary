@@ -8,9 +8,9 @@ import (
 
 var _ Type[[]byte] = FixedString(10)
 
-func FixedString(length int) *typeFixedString {
+func FixedString(length int) typeFixedString {
 	tbin := append(BinaryTypeFixedString[:], UVarintEncode(uint64(length))...)
-	return &typeFixedString{
+	return typeFixedString{
 		length: length,
 		tbin:   tbin,
 		tstr:   fmt.Sprintf("FixedString(%d)", length),
@@ -25,19 +25,19 @@ type typeFixedString struct {
 	tstr   string
 }
 
-func (t *typeFixedString) String() string {
+func (t typeFixedString) String() string {
 	return t.tstr
 }
 
-func (t *typeFixedString) Binary() []byte {
+func (t typeFixedString) Binary() []byte {
 	return t.tbin
 }
 
-func (t *typeFixedString) ID() uint64 {
+func (t typeFixedString) ID() uint64 {
 	return t.id
 }
 
-func (t *typeFixedString) Write(w Writer, value []byte) error {
+func (t typeFixedString) Write(w Writer, value []byte) error {
 	if len(value) != t.length {
 		return fmt.Errorf("invalid length %d, expected %d", len(value), t.length)
 	}
@@ -46,7 +46,7 @@ func (t *typeFixedString) Write(w Writer, value []byte) error {
 	return err
 }
 
-func (t *typeFixedString) Read(r Reader) ([]byte, error) {
+func (t typeFixedString) Read(r Reader) ([]byte, error) {
 	buf := make([]byte, t.length)
 	_, err := io.ReadAtLeast(r, buf, t.length)
 	if err != nil {
@@ -56,7 +56,7 @@ func (t *typeFixedString) Read(r Reader) ([]byte, error) {
 	return buf[:t.length], nil
 }
 
-func (t *typeFixedString) WriteAny(w Writer, v any) error {
+func (t typeFixedString) WriteAny(w Writer, v any) error {
 	value, ok := v.([]byte)
 	if !ok {
 		return errors.New("unexpected type")
@@ -64,6 +64,6 @@ func (t *typeFixedString) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func (t *typeFixedString) ReadAny(r Reader) (any, error) {
+func (t typeFixedString) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }

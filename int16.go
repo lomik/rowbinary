@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-var Int16 Type[int16] = &typeInt16{}
+var Int16 Type[int16] = typeInt16{}
 var typeInt16ID = BinaryTypeID(BinaryTypeInt16[:])
 
 type typeInt16 struct{}

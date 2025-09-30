@@ -22,6 +22,16 @@ type DiscoveryCtx struct {
 	Kind ClientKind
 }
 
+type clientOptions struct {
+	httpClient *http.Client
+	discovery  func(ctx context.Context, dsn string, kind DiscoveryCtx) (string, error)
+	database   string
+}
+
+type ClientOption interface {
+	applyClientOptions(*clientOptions)
+}
+
 // ClientOptions contains the options for creating a ClickHouse client.
 type ClientOptions struct {
 	HTTPClient *http.Client

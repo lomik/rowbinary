@@ -14,7 +14,7 @@ type typeTupleNamedAny struct {
 	tstr    string
 }
 
-func TupleNamedAny(columns ...Column) *typeTupleNamedAny {
+func TupleNamedAny(columns ...Column) typeTupleNamedAny {
 	var types []string
 	for _, col := range columns {
 		types = append(types, col.String())
@@ -23,7 +23,7 @@ func TupleNamedAny(columns ...Column) *typeTupleNamedAny {
 	for _, col := range columns {
 		tbin = slices.Concat(tbin, StringEncode(col.Name()), col.Type().Binary())
 	}
-	return &typeTupleNamedAny{
+	return typeTupleNamedAny{
 		id:      BinaryTypeID(tbin),
 		columns: columns,
 		tbin:    tbin,
@@ -31,15 +31,15 @@ func TupleNamedAny(columns ...Column) *typeTupleNamedAny {
 	}
 }
 
-func (t *typeTupleNamedAny) String() string {
+func (t typeTupleNamedAny) String() string {
 	return t.tstr
 }
 
-func (t *typeTupleNamedAny) Binary() []byte {
+func (t typeTupleNamedAny) Binary() []byte {
 	return t.tbin
 }
 
-func (t *typeTupleNamedAny) Write(w Writer, value []any) error {
+func (t typeTupleNamedAny) Write(w Writer, value []any) error {
 	if len(value) != len(t.columns) {
 		return errors.New("invalid tuple length")
 	}
@@ -53,7 +53,7 @@ func (t *typeTupleNamedAny) Write(w Writer, value []any) error {
 	return nil
 }
 
-func (t *typeTupleNamedAny) Read(r Reader) ([]any, error) {
+func (t typeTupleNamedAny) Read(r Reader) ([]any, error) {
 	ret := make([]any, 0, len(t.columns))
 	for i := 0; i < len(t.columns); i++ {
 		s, err := t.columns[i].Type().ReadAny(r)
@@ -66,11 +66,11 @@ func (t *typeTupleNamedAny) Read(r Reader) ([]any, error) {
 	return ret, nil
 }
 
-func (t *typeTupleNamedAny) ReadAny(r Reader) (any, error) {
+func (t typeTupleNamedAny) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
 
-func (t *typeTupleNamedAny) WriteAny(w Writer, v any) error {
+func (t typeTupleNamedAny) WriteAny(w Writer, v any) error {
 	value, ok := v.([]any)
 	if !ok {
 		return errors.New("unexpected type")
@@ -78,6 +78,6 @@ func (t *typeTupleNamedAny) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func (t *typeTupleNamedAny) ID() uint64 {
+func (t typeTupleNamedAny) ID() uint64 {
 	return t.id
 }

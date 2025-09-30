@@ -14,9 +14,9 @@ type typeNullable[V any] struct {
 	tstr      string
 }
 
-func Nullable[V any](valueType Type[V]) *typeNullable[V] {
+func Nullable[V any](valueType Type[V]) typeNullable[V] {
 	tbin := append(BinaryTypeNullable[:], valueType.Binary()...)
-	return &typeNullable[V]{
+	return typeNullable[V]{
 		valueType: valueType,
 		id:        BinaryTypeID(tbin),
 		tbin:      tbin,
@@ -24,19 +24,19 @@ func Nullable[V any](valueType Type[V]) *typeNullable[V] {
 	}
 }
 
-func (t *typeNullable[V]) String() string {
+func (t typeNullable[V]) String() string {
 	return t.tstr
 }
 
-func (t *typeNullable[V]) Binary() []byte {
+func (t typeNullable[V]) Binary() []byte {
 	return t.tbin
 }
 
-func (t *typeNullable[V]) ID() uint64 {
+func (t typeNullable[V]) ID() uint64 {
 	return t.id
 }
 
-func (t *typeNullable[V]) Write(w Writer, value *V) error {
+func (t typeNullable[V]) Write(w Writer, value *V) error {
 	if value == nil {
 		return w.WriteByte(0x01)
 	}
@@ -47,7 +47,7 @@ func (t *typeNullable[V]) Write(w Writer, value *V) error {
 	return t.valueType.Write(w, *value)
 }
 
-func (t *typeNullable[V]) Read(r Reader) (*V, error) {
+func (t typeNullable[V]) Read(r Reader) (*V, error) {
 	b, err := r.ReadByte()
 	if err != nil {
 		return nil, err
@@ -61,11 +61,11 @@ func (t *typeNullable[V]) Read(r Reader) (*V, error) {
 	return &value, err
 }
 
-func (t *typeNullable[V]) ReadAny(r Reader) (any, error) {
+func (t typeNullable[V]) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
 
-func (t *typeNullable[V]) WriteAny(w Writer, v any) error {
+func (t typeNullable[V]) WriteAny(w Writer, v any) error {
 	value, ok := v.(*V)
 	if !ok {
 		return errors.New("unexpected type")

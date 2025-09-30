@@ -15,9 +15,9 @@ type typeArrayAny struct {
 	tstr      string
 }
 
-func ArrayAny(valueType Any) *typeArrayAny {
+func ArrayAny(valueType Any) typeArrayAny {
 	tbin := slices.Concat(BinaryTypeArray[:], valueType.Binary())
-	return &typeArrayAny{
+	return typeArrayAny{
 		valueType: valueType,
 		tbin:      tbin,
 		tstr:      fmt.Sprintf("Array(%s)", valueType.String()),
@@ -25,19 +25,19 @@ func ArrayAny(valueType Any) *typeArrayAny {
 	}
 }
 
-func (t *typeArrayAny) String() string {
+func (t typeArrayAny) String() string {
 	return t.tstr
 }
 
-func (t *typeArrayAny) Binary() []byte {
+func (t typeArrayAny) Binary() []byte {
 	return t.tbin
 }
 
-func (t *typeArrayAny) ID() uint64 {
+func (t typeArrayAny) ID() uint64 {
 	return t.id
 }
 
-func (t *typeArrayAny) Write(w Writer, value []any) error {
+func (t typeArrayAny) Write(w Writer, value []any) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (t *typeArrayAny) Write(w Writer, value []any) error {
 	return err
 }
 
-func (t *typeArrayAny) Read(r Reader) ([]any, error) {
+func (t typeArrayAny) Read(r Reader) ([]any, error) {
 	n, err := UVarint.Read(r)
 	if err != nil {
 		return nil, err
@@ -69,11 +69,11 @@ func (t *typeArrayAny) Read(r Reader) ([]any, error) {
 	return ret, nil
 }
 
-func (t *typeArrayAny) ReadAny(r Reader) (any, error) {
+func (t typeArrayAny) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
 
-func (t *typeArrayAny) WriteAny(w Writer, v any) error {
+func (t typeArrayAny) WriteAny(w Writer, v any) error {
 	value, ok := v.([]any)
 	if !ok {
 		return errors.New("unexpected type")

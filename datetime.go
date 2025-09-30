@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var DateTime Type[time.Time] = &typeDateTime{}
+var DateTime Type[time.Time] = typeDateTime{}
 var typeDateTimeID = BinaryTypeID(BinaryTypeDateTime[:])
 
 type typeDateTime struct{}

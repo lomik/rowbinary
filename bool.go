@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-var Bool Type[bool] = &typeBool{}
+var Bool Type[bool] = typeBool{}
 var typeBoolID = BinaryTypeID(BinaryTypeBool[:])
 
 type typeBool struct{}

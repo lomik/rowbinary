@@ -17,7 +17,7 @@ type typeDecimal struct {
 	tstr      string
 }
 
-func Decimal(precision uint8, scale uint8) *typeDecimal {
+func Decimal(precision uint8, scale uint8) typeDecimal {
 	var tbin []byte
 	if precision <= 9 {
 		// decimal32
@@ -26,7 +26,7 @@ func Decimal(precision uint8, scale uint8) *typeDecimal {
 		tbin = []byte{BinaryTypeDecimal64[0], precision, scale}
 	}
 
-	return &typeDecimal{
+	return typeDecimal{
 		precision: precision,
 		scale:     scale,
 		tbin:      tbin,
@@ -35,19 +35,19 @@ func Decimal(precision uint8, scale uint8) *typeDecimal {
 	}
 }
 
-func (t *typeDecimal) String() string {
+func (t typeDecimal) String() string {
 	return t.tstr
 }
 
-func (t *typeDecimal) Binary() []byte {
+func (t typeDecimal) Binary() []byte {
 	return t.tbin
 }
 
-func (t *typeDecimal) ID() uint64 {
+func (t typeDecimal) ID() uint64 {
 	return t.id
 }
 
-func (t *typeDecimal) Write(w Writer, value decimal.Decimal) error {
+func (t typeDecimal) Write(w Writer, value decimal.Decimal) error {
 	// decimal32
 	if t.precision <= 9 {
 		part := uint32(decimal.NewFromBigInt(value.Coefficient(), value.Exponent()+int32(t.scale)).IntPart())
@@ -64,7 +64,7 @@ func (t *typeDecimal) Write(w Writer, value decimal.Decimal) error {
 	return ErrNotImplemented
 }
 
-func (t *typeDecimal) Read(r Reader) (decimal.Decimal, error) {
+func (t typeDecimal) Read(r Reader) (decimal.Decimal, error) {
 	// decimal32
 	if t.precision <= 9 {
 		v, err := Int32.Read(r)
@@ -88,11 +88,11 @@ func (t *typeDecimal) Read(r Reader) (decimal.Decimal, error) {
 	return decimal.Zero, ErrNotImplemented
 }
 
-func (t *typeDecimal) ReadAny(r Reader) (any, error) {
+func (t typeDecimal) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
 
-func (t *typeDecimal) WriteAny(w Writer, v any) error {
+func (t typeDecimal) WriteAny(w Writer, v any) error {
 	value, ok := v.(decimal.Decimal)
 	if !ok {
 		return errors.New("unexpected type")
