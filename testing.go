@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -9,8 +10,13 @@ import (
 	"os"
 	"os/exec"
 	"sync/atomic"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
+
+type testingUnknownType struct{}
 
 // requests clickhouse, caching locally to disk
 // re-running the test can already work without CH. including in CI if you commit fixtures/*
@@ -60,4 +66,75 @@ func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Cli
 
 func (tc *testClient) Close() error {
 	return tc.Exec(context.Background(), "DROP DATABASE "+tc.db)
+}
+
+func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
+	// simple write/read test
+	t.Run(fmt.Sprintf("%s/write_read", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.Write(w, value))
+
+		// read
+		r := NewReader(bytes.NewReader(buf.Bytes()))
+		v2, err := tp.Read(r)
+		assert.NoError(err)
+		assert.Equal(value, v2)
+	})
+
+	// write/read any test
+	t.Run(fmt.Sprintf("%s/write_read_any", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.WriteAny(w, value))
+
+		// read
+		r := NewReader(bytes.NewReader(buf.Bytes()))
+		v2, err := tp.ReadAny(r)
+		assert.NoError(err)
+		assert.Equal(value, v2)
+	})
+
+	// write any wrong type
+	t.Run(fmt.Sprintf("%s/write_any_wrong_type", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.True(tp.WriteAny(w, "hello") != nil || tp.WriteAny(w, 42) != nil)
+	})
+
+	// write any wrong type
+	t.Run(fmt.Sprintf("%s/write_any_wrong_type", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.Error(tp.WriteAny(w, testingUnknownType{}))
+	})
+
+	// read truncated
+	t.Run(fmt.Sprintf("%s/read_truncated", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.WriteAny(w, value))
+
+		// read
+		for i := 0; i < buf.Len()-1; i++ {
+			r := NewReader(bytes.NewReader(buf.Bytes()[:i]))
+			_, err := tp.ReadAny(r)
+			assert.Error(err)
+		}
+	})
 }

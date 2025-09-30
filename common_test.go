@@ -45,7 +45,7 @@ var commonTestData = []struct {
 	{Nullable(Int32), pointer(int32(-42)), "SELECT toNullable(toInt32(-42))"},
 	{Nullable(Int32), null(int32(-42)), "SELECT nullIf(toInt32(-42), toInt32(-42))"},
 	{NullableAny(Int32), pointer(any(int32(-42))), "SELECT toNullable(toInt32(-42))"},
-	{NullableAny(Int32), nil, "SELECT nullIf(toInt32(-42), toInt32(-42))"},
+	{NullableAny(Int32), null(any(int32(-42))), "SELECT nullIf(toInt32(-42), toInt32(-42))"},
 	{DateTime, time.Date(2023, 11, 22, 20, 49, 31, 0, time.UTC), "SELECT toDateTime('2023-11-22 20:49:31')"},
 	{Date, time.Date(2023, 11, 22, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-11-22')"},
 	{Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-03-05')"},

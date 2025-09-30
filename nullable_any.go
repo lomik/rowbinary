@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var _ Any = NullableAny(UInt32)
+var _ Type[*any] = NullableAny(UInt32)
 
 type typeNullableAny struct {
 	id        uint64
@@ -47,7 +47,7 @@ func (t typeNullableAny) Write(w Writer, value *any) error {
 	return t.valueType.WriteAny(w, *value)
 }
 
-func (t typeNullableAny) Read(r Reader) (any, error) {
+func (t typeNullableAny) Read(r Reader) (*any, error) {
 	b, err := r.ReadByte()
 	if err != nil {
 		return nil, err
