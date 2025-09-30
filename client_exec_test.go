@@ -13,9 +13,7 @@ func TestClient_Execute(t *testing.T) {
 	defer tc.Close()
 
 	ctx := context.Background()
-	c := NewClient(ctx, testClickHouseDSN, &ClientOptions{
-		Database: tc.Database(),
-	})
+	c := NewClient(ctx, testClickHouseDSN, WithDatabase(tc.Database()))
 
 	err := c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory AS SELECT 1")
 	assert.NoError(err)

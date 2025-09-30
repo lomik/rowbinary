@@ -1,6 +1,6 @@
 package rowbinary
 
-var _ FormatOption = NewColumn("", UInt8)
+var _ FormatOption = WithColumn("", UInt8)
 
 type Column struct {
 	name string
@@ -12,7 +12,7 @@ func (c Column) applyFormatOption(o *formatOptions) {
 	o.columns = append(o.columns, c)
 }
 
-func NewColumn(name string, tp Any) Column {
+func WithColumn(name string, tp Any) Column {
 	return Column{
 		name: name,
 		tp:   tp,

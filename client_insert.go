@@ -23,7 +23,7 @@ func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *For
 	opts := insertOptions{
 		formatOptions: []FormatOption{
 			RowBinaryWithNamesAndTypes,
-			UseBinaryHeader(true),
+			WithUseBinaryHeader(true),
 		},
 		format:          RowBinaryWithNamesAndTypes,
 		useBinaryHeader: true,

@@ -40,7 +40,7 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 	opts := selectOptions{
 		formatOptions: []FormatOption{
 			RowBinaryWithNamesAndTypes,
-			UseBinaryHeader(true),
+			WithUseBinaryHeader(true),
 		},
 		format:          RowBinaryWithNamesAndTypes,
 		useBinaryHeader: true,

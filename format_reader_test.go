@@ -31,7 +31,7 @@ func TestFormatReader_NewFormatReader(t *testing.T) {
 		assert := assert.New(t)
 
 		buf := bytes.NewReader([]byte{})
-		reader := NewFormatReader(buf, RowBinaryWithNames, NewColumn("test", String), UseBinaryHeader(true))
+		reader := NewFormatReader(buf, RowBinaryWithNames, WithColumn("test", String), WithUseBinaryHeader(true))
 
 		assert.NotNil(reader)
 		assert.Equal(RowBinaryWithNames, reader.options.format)
@@ -56,8 +56,8 @@ func TestFormatReader_RowBinary(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinary,
-			NewColumn("num", UInt32),
-			NewColumn("str", String))
+			WithColumn("num", UInt32),
+			WithColumn("str", String))
 
 		// First read
 		assert.True(reader.Next())
@@ -114,8 +114,8 @@ func TestFormatReader_RowBinaryWithNames(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinaryWithNames,
-			NewColumn("num", UInt32),
-			NewColumn("str", String))
+			WithColumn("num", UInt32),
+			WithColumn("str", String))
 
 		assert.True(reader.Next())
 		num, err := Read(reader, UInt32)
@@ -138,7 +138,7 @@ func TestFormatReader_RowBinaryWithNames(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinaryWithNames,
-			NewColumn("num", UInt32))
+			C("num", UInt32))
 
 		assert.False(reader.Next())
 		assert.Error(reader.Err())
@@ -172,7 +172,7 @@ func TestFormatReader_RowBinaryWithNamesAndTypes(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinaryWithNamesAndTypes,
-			UseBinaryHeader(true))
+			WithUseBinaryHeader(true))
 
 		assert.True(reader.Next())
 		num, err := Read(reader, UInt32)
@@ -197,8 +197,8 @@ func TestFormatReader_RowBinaryWithNamesAndTypes(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinaryWithNamesAndTypes,
-			NewColumn("num", String), // wrong type
-			UseBinaryHeader(true))
+			C("num", String), // wrong type
+			WithUseBinaryHeader(true))
 
 		assert.False(reader.Next())
 		assert.Error(reader.Err())
@@ -223,8 +223,8 @@ func TestFormatReader_Next(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinary,
-			NewColumn("a", UInt32),
-			NewColumn("b", UInt32))
+			C("a", UInt32),
+			C("b", UInt32))
 
 		// Row 1
 		assert.True(reader.Next())
@@ -255,7 +255,7 @@ func TestFormatReader_Next(t *testing.T) {
 		// Empty data
 		reader := NewFormatReader(bytes.NewReader([]byte{}),
 			RowBinary,
-			NewColumn("a", UInt32))
+			C("a", UInt32))
 
 		assert.False(reader.Next())
 		assert.NoError(reader.Err()) // EOF is not an error for Next
@@ -276,8 +276,8 @@ func TestFormatReader_ReadAny(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinary,
-			NewColumn("num", UInt32),
-			NewColumn("str", String))
+			C("num", UInt32),
+			C("str", String))
 
 		assert.True(reader.Next())
 		val1, err := reader.ReadAny()
@@ -299,7 +299,7 @@ func TestFormatReader_ReadAny(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinary,
-			NewColumn("num", UInt32))
+			C("num", UInt32))
 
 		assert.True(reader.Next())
 		_, err := Read(reader, String) // wrong type
@@ -324,7 +324,7 @@ func TestFormatReader_Errors(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinary,
-			NewColumn("str", String))
+			C("str", String))
 
 		assert.True(reader.Next())
 		_, err = reader.ReadAny()
@@ -361,7 +361,7 @@ func TestFormatReader_ReadAfterError(t *testing.T) {
 
 		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
 			RowBinary,
-			NewColumn("str", String))
+			C("str", String))
 
 		assert.True(reader.Next())
 		_, err = reader.ReadAny()

@@ -4,7 +4,7 @@ type useBinaryHeaderType struct {
 	value bool
 }
 
-var _ FormatOption = UseBinaryHeader(false)
+var _ FormatOption = WithUseBinaryHeader(false)
 
 type formatOptions struct {
 	format          Format
@@ -16,7 +16,7 @@ type FormatOption interface {
 	applyFormatOption(*formatOptions)
 }
 
-func UseBinaryHeader(value bool) useBinaryHeaderType {
+func WithUseBinaryHeader(value bool) useBinaryHeaderType {
 	return useBinaryHeaderType{
 		value: value,
 	}

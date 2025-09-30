@@ -18,9 +18,7 @@ func TestClient_Select(t *testing.T) {
 	defer tc.Close()
 
 	ctx := context.Background()
-	c := NewClient(ctx, testClickHouseDSN, &ClientOptions{
-		Database: tc.Database(),
-	})
+	c := NewClient(ctx, testClickHouseDSN, WithDatabase(tc.Database()))
 
 	assert.NoError(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
 		var numbers []uint64
@@ -59,21 +57,21 @@ func TestClient_Select(t *testing.T) {
 		}
 		assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
 		return r.Err()
-	}, RowBinary, NewColumn("", UInt64)))
+	}, RowBinary, C("", UInt64)))
 
 	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
 		for r.Next() {
 			Read(r, UInt64)
 		}
 		return r.Err()
-	}, RowBinary, NewColumn("", UInt32)), "type mismatch")
+	}, RowBinary, C("", UInt32)), "type mismatch")
 
 	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
 		for r.Next() {
 			Read(r, UInt64)
 		}
 		return r.Err()
-	}, UseBinaryHeader(false)), "not implemented")
+	}, WithUseBinaryHeader(false)), "not implemented")
 }
 
 func TestClient_Select_ExternalData(t *testing.T) {

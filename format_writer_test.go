@@ -31,7 +31,7 @@ func TestFormatWriter_NewFormatWriter(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinaryWithNames, NewColumn("test", String), UseBinaryHeader(true))
+		writer := NewFormatWriter(&buf, RowBinaryWithNames, C("test", String), WithUseBinaryHeader(true))
 
 		assert.NotNil(writer)
 		assert.Equal(RowBinaryWithNames, writer.options.format)
@@ -49,7 +49,7 @@ func TestFormatWriter_WriteHeader(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinary, NewColumn("col", UInt32))
+		writer := NewFormatWriter(&buf, RowBinary, C("col", UInt32))
 
 		err := writer.WriteHeader()
 		assert.NoError(err)
@@ -62,7 +62,7 @@ func TestFormatWriter_WriteHeader(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinaryWithNames, NewColumn("col1", UInt32), NewColumn("col2", String))
+		writer := NewFormatWriter(&buf, RowBinaryWithNames, C("col1", UInt32), C("col2", String))
 
 		err := writer.WriteHeader()
 		assert.NoError(err)
@@ -88,7 +88,7 @@ func TestFormatWriter_WriteHeader(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinaryWithNamesAndTypes, NewColumn("col1", UInt32), NewColumn("col2", String))
+		writer := NewFormatWriter(&buf, RowBinaryWithNamesAndTypes, WithColumn("col1", UInt32), WithColumn("col2", String))
 
 		err := writer.WriteHeader()
 		assert.NoError(err)
@@ -122,7 +122,7 @@ func TestFormatWriter_WriteHeader(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinaryWithNamesAndTypes, UseBinaryHeader(true), NewColumn("col1", UInt32), NewColumn("col2", String))
+		writer := NewFormatWriter(&buf, RowBinaryWithNamesAndTypes, WithUseBinaryHeader(true), WithColumn("col1", UInt32), WithColumn("col2", String))
 
 		err := writer.WriteHeader()
 		assert.NoError(err)
@@ -175,7 +175,7 @@ func TestFormatWriter_WriteAny(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinary, NewColumn("num", UInt32), NewColumn("str", String))
+		writer := NewFormatWriter(&buf, RowBinary, C("num", UInt32), C("str", String))
 
 		err := writer.WriteAny(uint32(42), "hello")
 		assert.NoError(err)
@@ -196,7 +196,7 @@ func TestFormatWriter_WriteAny(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinary, NewColumn("a", UInt32), NewColumn("b", String))
+		writer := NewFormatWriter(&buf, RowBinary, C("a", UInt32), C("b", String))
 
 		// First row
 		err := writer.WriteAny(uint32(1), "first")
@@ -231,7 +231,7 @@ func TestFormatWriter_WriteAny(t *testing.T) {
 
 		// Use a writer that will fail
 		failingWriter := &failingWriter{}
-		writer := NewFormatWriter(failingWriter, RowBinary, NewColumn("num", UInt32))
+		writer := NewFormatWriter(failingWriter, RowBinary, C("num", UInt32))
 
 		// First write fails
 		err := writer.WriteAny(uint32(42))
@@ -252,7 +252,7 @@ func TestFormatWriter_Write(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinary, NewColumn("num", UInt32), NewColumn("str", String))
+		writer := NewFormatWriter(&buf, RowBinary, C("num", UInt32), C("str", String))
 
 		err := Write(writer, UInt32, uint32(42))
 		assert.NoError(err)
@@ -276,7 +276,7 @@ func TestFormatWriter_Write(t *testing.T) {
 		assert := assert.New(t)
 
 		var buf bytes.Buffer
-		writer := NewFormatWriter(&buf, RowBinary, NewColumn("num", UInt32))
+		writer := NewFormatWriter(&buf, RowBinary, C("num", UInt32))
 
 		err := Write(writer, String, "hello") // wrong type
 		assert.Error(err)
@@ -289,7 +289,7 @@ func TestFormatWriter_Write(t *testing.T) {
 		assert := assert.New(t)
 
 		failingWriter := &failingWriter{}
-		writer := NewFormatWriter(failingWriter, RowBinary, NewColumn("num", UInt32))
+		writer := NewFormatWriter(failingWriter, RowBinary, C("num", UInt32))
 
 		// First write fails
 		err := Write(writer, UInt32, uint32(42))
@@ -309,7 +309,7 @@ func TestFormatWriter_Errors(t *testing.T) {
 		assert := assert.New(t)
 
 		failingWriter := &failingWriter{}
-		writer := NewFormatWriter(failingWriter, RowBinaryWithNames, NewColumn("col", UInt32))
+		writer := NewFormatWriter(failingWriter, RowBinaryWithNames, C("col", UInt32))
 
 		// WriteHeader should fail due to failing writer
 		err := writer.WriteHeader()
@@ -322,7 +322,7 @@ func TestFormatWriter_Errors(t *testing.T) {
 		assert := assert.New(t)
 
 		failingWriter := &failingWriter{}
-		writer := NewFormatWriter(failingWriter, RowBinary, NewColumn("col", UInt32))
+		writer := NewFormatWriter(failingWriter, RowBinary, C("col", UInt32))
 
 		// First operation fails
 		err1 := writer.WriteAny(uint32(42))

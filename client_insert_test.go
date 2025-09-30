@@ -14,9 +14,7 @@ func TestClient_Insert(t *testing.T) {
 	defer tc.Close()
 
 	ctx := context.Background()
-	c := NewClient(ctx, testClickHouseDSN, &ClientOptions{
-		Database: tc.Database(),
-	})
+	c := NewClient(ctx, testClickHouseDSN, WithDatabase(tc.Database()))
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory"))
 
@@ -27,7 +25,7 @@ func TestClient_Insert(t *testing.T) {
 			}
 		}
 		return nil
-	}, NewColumn("x", String)))
+	}, C("x", String)))
 
 	assert.ErrorContains(c.Insert(ctx, "t1", func(r *FormatWriter) error {
 		for i := range 5 {
@@ -36,6 +34,6 @@ func TestClient_Insert(t *testing.T) {
 			}
 		}
 		return fmt.Errorf("insertion failed")
-	}, NewColumn("x", String)), "insertion failed")
+	}, C("x", String)), "insertion failed")
 
 }
