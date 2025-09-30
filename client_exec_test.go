@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClient_Execute(t *testing.T) {
+func TestClient_Exec(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
 	c := NewTestClient(ctx, testClickHouseDSN)
