@@ -173,6 +173,63 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 			assert.Error(err)
 		}
 	})
+
+	// compare with clickhouse
+	t.Run(fmt.Sprintf("%s/format_RowBinary", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+		body, err := ExecLocal(query + " AS value FORMAT RowBinary SETTINGS session_timezone='UTC'")
+		assert.NoError(err)
+
+		r := NewFormatReader(bytes.NewReader(body), C("value", tp))
+		v, err := Read(r, tp)
+		assert.NoError(err)
+		assert.Equal(value, v)
+
+		var buf bytes.Buffer
+		w := NewFormatWriter(&buf, C("value", tp))
+		assert.NoError(Write(w, tp, value))
+
+		assert.Equal(body, buf.Bytes())
+	})
+
+	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNames", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+		body, err := ExecLocal(query + " AS value FORMAT RowBinaryWithNames SETTINGS session_timezone='UTC'")
+		assert.NoError(err)
+
+		r := NewFormatReader(bytes.NewReader(body), RowBinaryWithNames, C("value", tp))
+		v, err := Read(r, tp)
+		assert.NoError(err)
+		assert.Equal(value, v)
+
+		var buf bytes.Buffer
+		w := NewFormatWriter(&buf, RowBinaryWithNames, C("value", tp))
+		assert.NoError(Write(w, tp, value))
+
+		assert.Equal(body, buf.Bytes())
+	})
+
+	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNamesAndTypes_binary", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+		body, err := ExecLocal(
+			query + ` AS value FORMAT RowBinaryWithNamesAndTypes 
+					SETTINGS 
+						output_format_binary_encode_types_in_binary_format=1, 
+						session_timezone='UTC'`,
+		)
+		assert.NoError(err)
+
+		r := NewFormatReader(bytes.NewReader(body), RowBinaryWithNamesAndTypes, WithUseBinaryHeader(true))
+		v, err := Read(r, tp)
+		assert.NoError(err)
+		assert.Equal(value, v)
+
+		var buf bytes.Buffer
+		w := NewFormatWriter(&buf, RowBinaryWithNamesAndTypes, WithUseBinaryHeader(true), C("value", tp))
+		assert.NoError(Write(w, tp, value))
+
+		assert.Equal(body, buf.Bytes())
+	})
 }
 
 // limitedWriter wraps an io.Writer and limits the total bytes written.

@@ -3,7 +3,6 @@ package rowbinary
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 var UInt64 Type[uint64] = typeUInt64{}
@@ -26,8 +25,7 @@ func (t typeUInt64) ID() uint64 {
 
 func (t typeUInt64) Write(w Writer, value uint64) error {
 	binary.LittleEndian.PutUint64(w.buffer(), value)
-	n, err := w.Write(w.buffer()[:8])
-	fmt.Println(n, err)
+	_, err := w.Write(w.buffer()[:8])
 	return err
 }
 
