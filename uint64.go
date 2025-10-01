@@ -3,7 +3,7 @@ package rowbinary
 import (
 	"encoding/binary"
 	"errors"
-	"io"
+	"fmt"
 )
 
 var UInt64 Type[uint64] = typeUInt64{}
@@ -26,27 +26,9 @@ func (t typeUInt64) ID() uint64 {
 
 func (t typeUInt64) Write(w Writer, value uint64) error {
 	binary.LittleEndian.PutUint64(w.buffer(), value)
-	_, err := w.Write(w.buffer()[:8])
+	n, err := w.Write(w.buffer()[:8])
+	fmt.Println(n, err)
 	return err
-}
-
-func readAtLeast(r Reader, buf []byte, min int) (int, error) {
-	n, err := r.Read(buf)
-	if n == min {
-		return n, nil
-	}
-
-	for n < min && err == nil {
-		var nn int
-		nn, err = r.Read(buf[n:])
-		n += nn
-	}
-	if n >= min {
-		err = nil
-	} else if n > 0 && err == io.EOF {
-		err = io.ErrUnexpectedEOF
-	}
-	return n, err
 }
 
 func (t typeUInt64) Read(r Reader) (uint64, error) {

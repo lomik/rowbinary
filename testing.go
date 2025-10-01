@@ -191,17 +191,25 @@ func newLimitedWriter(w io.Writer, limit int64) *limitedWriter {
 }
 
 // Write writes bytes to the underlying writer, up to the remaining limit.
-func (lw *limitedWriter) Write(p []byte) (n int, err error) {
+func (lw *limitedWriter) Write(p []byte) (int, error) {
 	if lw.total >= lw.N {
 		return 0, io.EOF // Limit reached, return EOF
 	}
 
+	pp := p
+
 	remaining := lw.N - lw.total
 	if int64(len(p)) > remaining {
-		p = p[:remaining] // Truncate the buffer if it exceeds the remaining limit
+		pp = p[:remaining] // Truncate the buffer if it exceeds the remaining limit
 	}
 
-	n, err = lw.W.Write(p)
+	n, err := lw.W.Write(pp)
 	lw.total += int64(n)
-	return n, err
+	if err != nil {
+		return n, err
+	}
+	if n < len(p) {
+		return n, io.EOF
+	}
+	return n, nil
 }
