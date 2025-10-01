@@ -35,18 +35,20 @@ HEADER: X-Clickhouse-Format [RowBinaryWithNamesAndTypes]
 HEADER: Keep-Alive [timeout=30, max=9999]
 */
 
+var _ SelectOption = C("", nil)
+var _ SelectOption = WithUseBinaryHeader(false)
+var _ SelectOption = RowBinary
+var _ SelectOption = WithParam("key", "value")
+var _ SelectOption = WithHeader("key", "value")
+var _ SelectOption = WithExternalData("key", func(w *FormatWriter) error { return nil })
+
 func (c *client) Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error {
 	opts := selectOptions{
-		formatOptions: []FormatOption{
-			RowBinaryWithNamesAndTypes,
-			WithUseBinaryHeader(true),
-		},
-		params: map[string]string{
-			"output_format_binary_encode_types_in_binary_format": "1",
-		},
-		headers: map[string]string{
-			"X-ClickHouse-Format": RowBinaryWithNamesAndTypes.String(),
-		},
+		params:  map[string]string{},
+		headers: map[string]string{},
+	}
+	for _, opt := range c.opts.defaultSelect {
+		opt.applySelectOptions(&opts)
 	}
 	for _, opt := range options {
 		opt.applySelectOptions(&opts)

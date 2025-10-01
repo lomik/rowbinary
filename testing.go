@@ -230,6 +230,28 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 
 		assert.Equal(body, buf.Bytes())
 	})
+
+	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNamesAndTypes_plain", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+		body, err := ExecLocal(
+			query + ` AS value FORMAT RowBinaryWithNamesAndTypes 
+					SETTINGS 
+						output_format_binary_encode_types_in_binary_format=0, 
+						session_timezone='UTC'`,
+		)
+		assert.NoError(err)
+
+		r := NewFormatReader(bytes.NewReader(body), RowBinaryWithNamesAndTypes, WithUseBinaryHeader(false))
+		v, err := Read(r, tp)
+		assert.NoError(err)
+		assert.Equal(value, v)
+
+		var buf bytes.Buffer
+		w := NewFormatWriter(&buf, RowBinaryWithNamesAndTypes, WithUseBinaryHeader(false), C("value", tp))
+		assert.NoError(Write(w, tp, value))
+
+		assert.Equal(body, buf.Bytes())
+	})
 }
 
 // limitedWriter wraps an io.Writer and limits the total bytes written.
@@ -269,4 +291,63 @@ func (lw *limitedWriter) Write(p []byte) (int, error) {
 		return n, io.EOF
 	}
 	return n, nil
+}
+
+func BenchmarkType[T any](b *testing.B, tp Type[T], value T) {
+	b.Run(fmt.Sprintf("%s/Write", tp.String()), func(b *testing.B) {
+		out := NewWriter(io.Discard)
+		for b.Loop() {
+			tp.Write(out, value)
+		}
+	})
+
+	b.Run(fmt.Sprintf("%s/WriteAny", tp.String()), func(b *testing.B) {
+		out := NewWriter(io.Discard)
+		for b.Loop() {
+			tp.WriteAny(out, value)
+		}
+	})
+
+	b.Run(fmt.Sprintf("%s/Read", tp.String()), func(b *testing.B) {
+		buf := new(bytes.Buffer)
+		out := NewWriter(buf)
+		for range 1000 {
+			tp.Write(out, value)
+		}
+		data := buf.Bytes()
+
+		br := bytes.NewReader(data)
+		r := NewReader(br)
+
+		b.ResetTimer()
+
+		for b.Loop() {
+			tp.Read(r)
+			if br.Len() == 0 {
+				br.Reset(data)
+			}
+		}
+	})
+
+	b.Run(fmt.Sprintf("%s/ReadAny", tp.String()), func(b *testing.B) {
+		buf := new(bytes.Buffer)
+		out := NewWriter(buf)
+		for range 1000 {
+			tp.Write(out, value)
+		}
+		data := buf.Bytes()
+
+		br := bytes.NewReader(data)
+		r := NewReader(br)
+
+		b.ResetTimer()
+
+		for b.Loop() {
+			tp.ReadAny(r)
+			if br.Len() == 0 {
+				br.Reset(data)
+			}
+		}
+	})
+
 }

@@ -162,8 +162,15 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 			remote[i].tp = tp
 
 		} else {
-			// @TODO: implement non-binary type decoding
-			return r.setErr(errors.New("not implemented"))
+			tpStr, err := String.Read(r.wrap)
+			if err != nil {
+				return r.setErr(err)
+			}
+			tp, err := DecodeStringType(tpStr)
+			if err != nil {
+				return r.setErr(err)
+			}
+			remote[i].tp = tp
 		}
 	}
 

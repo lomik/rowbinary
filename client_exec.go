@@ -17,10 +17,16 @@ type ExecOption interface {
 	applyExecOptions(*execOptions)
 }
 
+var _ ExecOption = WithParam("key", "value")
+var _ ExecOption = WithHeader("key", "value")
+
 func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) error {
 	opts := execOptions{
 		params:  map[string]string{},
 		headers: map[string]string{},
+	}
+	for _, opt := range c.opts.defaultExec {
+		opt.applyExecOptions(&opts)
 	}
 	for _, opt := range options {
 		opt.applyExecOptions(&opts)

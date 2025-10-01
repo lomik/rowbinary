@@ -63,13 +63,6 @@ func TestClient_Select(t *testing.T) {
 		}
 		return r.Err()
 	}, RowBinary, C("", UInt32)), "type mismatch")
-
-	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
-		for r.Next() {
-			Read(r, UInt64)
-		}
-		return r.Err()
-	}, WithUseBinaryHeader(false)), "not implemented")
 }
 
 func TestClient_Select_ExternalData(t *testing.T) {

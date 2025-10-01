@@ -46,3 +46,8 @@ func (f Format) applyInsertOptions(o *insertOptions) {
 	o.formatOptions = append(o.formatOptions, f)
 	o.format = f
 }
+
+func (f Format) applyClientOptions(opts *clientOptions) {
+	opts.defaultSelect = append(opts.defaultSelect, f)
+	opts.defaultInsert = append(opts.defaultInsert, f)
+}

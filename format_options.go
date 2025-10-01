@@ -43,3 +43,8 @@ func (o useBinaryHeaderType) applyInsertOptions(opts *insertOptions) {
 		opts.params["input_format_binary_decode_types_in_binary_format"] = "0"
 	}
 }
+
+func (o useBinaryHeaderType) applyClientOptions(opts *clientOptions) {
+	opts.defaultSelect = append(opts.defaultSelect, o)
+	opts.defaultInsert = append(opts.defaultInsert, o)
+}

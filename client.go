@@ -23,9 +23,12 @@ type DiscoveryCtx struct {
 }
 
 type clientOptions struct {
-	httpClient *http.Client
-	discovery  func(ctx context.Context, dsn string, kind DiscoveryCtx) (string, error)
-	database   string
+	httpClient    *http.Client
+	discovery     func(ctx context.Context, dsn string, kind DiscoveryCtx) (string, error)
+	database      string
+	defaultSelect []SelectOption
+	defaultInsert []InsertOption
+	defaultExec   []ExecOption
 }
 
 type ClientOption interface {
@@ -40,23 +43,23 @@ type Client interface {
 	Close() error
 }
 
+var _ ClientOption = WithUseBinaryHeader(false)
+var _ ClientOption = RowBinary
+var _ ClientOption = WithParam("key", "value")
+var _ ClientOption = WithHeader("key", "value")
+var _ ClientOption = WithDatabase("default")
+var _ ClientOption = WithHTTPClient(nil)
+var _ ClientOption = WithDiscovery(nil)
+
 // Client represents a ClickHouse client.
 type client struct {
 	dsn  string
 	opts clientOptions
 }
 
-type clientOptionDatabase struct {
-	database string
-}
-
-func (o clientOptionDatabase) applyClientOptions(opts *clientOptions) {
-	opts.database = o.database
-}
-
 // WithDatabase sets the database for the client.
 func WithDatabase(database string) ClientOption {
-	return clientOptionDatabase{database: database}
+	return WithParam("database", database)
 }
 
 type clientOptionHTTPClient struct {
@@ -88,6 +91,10 @@ func WithDiscovery(discovery func(ctx context.Context, dsn string, kind Discover
 // NewClient creates a new ClickHouse client.
 func NewClient(ctx context.Context, dsn string, options ...ClientOption) Client {
 	opts := clientOptions{}
+	// Apply default options
+	WithUseBinaryHeader(true).applyClientOptions(&opts)
+	RowBinaryWithNamesAndTypes.applyClientOptions(&opts)
+
 	for _, opt := range options {
 		if opt != nil {
 			opt.applyClientOptions(&opts)

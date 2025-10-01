@@ -37,6 +37,13 @@ func (o paramOption) applyInsertOptions(opts *insertOptions) {
 func (o paramOption) applyExecOptions(opts *execOptions) {
 	opts.params[o.name] = o.value
 }
+
+func (f paramOption) applyClientOptions(opts *clientOptions) {
+	opts.defaultSelect = append(opts.defaultSelect, f)
+	opts.defaultInsert = append(opts.defaultInsert, f)
+	opts.defaultExec = append(opts.defaultExec, f)
+}
+
 func (o headerOption) applySelectOptions(opts *selectOptions) {
 	opts.headers[o.name] = o.value
 }
@@ -47,4 +54,10 @@ func (o headerOption) applyInsertOptions(opts *insertOptions) {
 
 func (o headerOption) applyExecOptions(opts *execOptions) {
 	opts.headers[o.name] = o.value
+}
+
+func (f headerOption) applyClientOptions(opts *clientOptions) {
+	opts.defaultSelect = append(opts.defaultSelect, f)
+	opts.defaultInsert = append(opts.defaultInsert, f)
+	opts.defaultExec = append(opts.defaultExec, f)
 }

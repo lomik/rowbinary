@@ -19,19 +19,21 @@ type InsertOption interface {
 	applyInsertOptions(*insertOptions)
 }
 
+var _ InsertOption = C("", nil)
+var _ InsertOption = WithUseBinaryHeader(false)
+var _ InsertOption = RowBinary
+var _ InsertOption = WithParam("key", "value")
+var _ InsertOption = WithHeader("key", "value")
+
 func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error {
 	opts := insertOptions{
-		formatOptions: []FormatOption{
-			RowBinaryWithNamesAndTypes,
-			WithUseBinaryHeader(true),
-		},
-		format: RowBinaryWithNamesAndTypes,
-		params: map[string]string{
-			"input_format_binary_decode_types_in_binary_format": "1",
-		},
+		params:  map[string]string{},
 		headers: map[string]string{},
 	}
 
+	for _, opt := range c.opts.defaultInsert {
+		opt.applyInsertOptions(&opts)
+	}
 	for _, opt := range options {
 		opt.applyInsertOptions(&opts)
 	}
