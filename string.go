@@ -3,7 +3,6 @@ package rowbinary
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"io"
 	"unsafe"
 )
@@ -18,11 +17,9 @@ func toBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
-var String Type[string] = typeString{}
+var String Type[string] = MakeTypeWrapAny[string](typeString{})
 
 type typeString struct{}
-
-var typeStringID = BinaryTypeID(BinaryTypeString[:])
 
 func (t typeString) String() string {
 	return "String"
@@ -30,10 +27,6 @@ func (t typeString) String() string {
 
 func (t typeString) Binary() []byte {
 	return BinaryTypeString[:]
-}
-
-func (t typeString) ID() uint64 {
-	return typeStringID
 }
 
 func (t typeString) Write(w Writer, value string) error {
@@ -58,18 +51,6 @@ func (t typeString) Read(r Reader) (string, error) {
 	}
 
 	return string(buf[:n]), nil
-}
-
-func (t typeString) WriteAny(w Writer, v any) error {
-	value, ok := v.(string)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t typeString) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
 }
 
 func StringEncode(s string) []byte {

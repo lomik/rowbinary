@@ -14,8 +14,8 @@ var typeRegistry = struct {
 	m: make(map[string]uint64),
 }
 
-// BinaryTypeID returns unique integer type id for binary representation
-func BinaryTypeID(value []byte) uint64 {
+// binaryTypeID returns unique integer type id for binary representation
+func binaryTypeID(value []byte) uint64 {
 	typeRegistry.RLock()
 	id, ok := typeRegistry.m[string(value)]
 	typeRegistry.RUnlock()

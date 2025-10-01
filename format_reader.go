@@ -222,7 +222,7 @@ func Read[V any](r *FormatReader, tp Type[V]) (V, error) {
 		return value, err
 	}
 
-	if tp.ID() != r.columns[r.index].tp.ID() {
+	if !Eq(tp, r.columns[r.index].tp) {
 		return value, r.setErr(fmt.Errorf("type mismatch. expected %s, got %s", r.columns[r.index].tp.String(), tp.String()))
 	}
 

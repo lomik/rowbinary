@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"errors"
 	"time"
 )
 
@@ -10,8 +9,7 @@ import (
 // NB: works only on UTC, use time.Date, time.Time.AddDate.
 const secInDay = 24 * 60 * 60
 
-var Date Type[time.Time] = typeDate{}
-var typeDateID = BinaryTypeID(BinaryTypeDate[:])
+var Date Type[time.Time] = MakeTypeWrapAny[time.Time](typeDate{})
 
 type typeDate struct{}
 
@@ -21,10 +19,6 @@ func (t typeDate) String() string {
 
 func (t typeDate) Binary() []byte {
 	return BinaryTypeDate[:]
-}
-
-func (t typeDate) ID() uint64 {
-	return typeDateID
 }
 
 func (t typeDate) Write(w Writer, value time.Time) error {
@@ -44,16 +38,4 @@ func (t typeDate) Read(r Reader) (time.Time, error) {
 	}
 	v := time.Unix(int64(n)*secInDay, 0).UTC()
 	return v, nil
-}
-
-func (t typeDate) WriteAny(w Writer, v any) error {
-	value, ok := v.(time.Time)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t typeDate) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
 }

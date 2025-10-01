@@ -1,12 +1,10 @@
 package rowbinary
 
 import (
-	"errors"
 	"math"
 )
 
-var Float64 Type[float64] = typeFloat64{}
-var typeFloat64ID = BinaryTypeID(BinaryTypeFloat64[:])
+var Float64 Type[float64] = MakeTypeWrapAny[float64](typeFloat64{})
 
 type typeFloat64 struct{}
 
@@ -16,10 +14,6 @@ func (t typeFloat64) String() string {
 
 func (t typeFloat64) Binary() []byte {
 	return BinaryTypeFloat64[:]
-}
-
-func (t typeFloat64) ID() uint64 {
-	return typeFloat64ID
 }
 
 func (t typeFloat64) Write(w Writer, value float64) error {
@@ -32,16 +26,4 @@ func (t typeFloat64) Read(r Reader) (float64, error) {
 		return 0, err
 	}
 	return math.Float64frombits(v), nil
-}
-
-func (t typeFloat64) WriteAny(w Writer, v any) error {
-	value, ok := v.(float64)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t typeFloat64) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
 }

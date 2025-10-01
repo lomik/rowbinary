@@ -6,36 +6,30 @@ import (
 	"strings"
 )
 
-type typeTupleAny struct {
-	id         uint64
-	valueTypes []Any
-	tbin       []byte
-	tstr       string
+func TupleAny(valueTypes ...Any) Type[[]any] {
+	return MakeTypeWrapAny(typeTupleAny{
+		valueTypes: valueTypes,
+	})
 }
 
-func TupleAny(valueTypes ...Any) typeTupleAny {
-	var types []string
-	for _, vt := range valueTypes {
-		types = append(types, vt.String())
-	}
-	tbin := append(BinaryTypeTuple[:], UVarintEncode(uint64(len(valueTypes)))...)
-	for _, vt := range valueTypes {
-		tbin = append(tbin, vt.Binary()...)
-	}
-	return typeTupleAny{
-		valueTypes: valueTypes,
-		tbin:       tbin,
-		tstr:       fmt.Sprintf("Tuple(%s)", strings.Join(types, ", ")),
-		id:         BinaryTypeID(tbin),
-	}
+type typeTupleAny struct {
+	valueTypes []Any
 }
 
 func (t typeTupleAny) String() string {
-	return t.tstr
+	var types []string
+	for _, vt := range t.valueTypes {
+		types = append(types, vt.String())
+	}
+	return fmt.Sprintf("Tuple(%s)", strings.Join(types, ", "))
 }
 
 func (t typeTupleAny) Binary() []byte {
-	return t.tbin
+	tbin := append(BinaryTypeTuple[:], UVarintEncode(uint64(len(t.valueTypes)))...)
+	for _, vt := range t.valueTypes {
+		tbin = append(tbin, vt.Binary()...)
+	}
+	return tbin
 }
 
 func (t typeTupleAny) Write(w Writer, value []any) error {
@@ -63,20 +57,4 @@ func (t typeTupleAny) Read(r Reader) ([]any, error) {
 	}
 
 	return ret, nil
-}
-
-func (t typeTupleAny) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeTupleAny) WriteAny(w Writer, v any) error {
-	value, ok := v.([]any)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t typeTupleAny) ID() uint64 {
-	return t.id
 }

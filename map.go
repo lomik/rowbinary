@@ -6,40 +6,27 @@ import (
 	"slices"
 )
 
-var MapUInt32UInt32 Type[map[uint32]uint32] = Map(UInt32, UInt32)
-
-type typeMap[K comparable, V any] struct {
-	id        uint64
-	keyType   Type[K]
-	valueType Type[V]
-	tbin      []byte
-	tstr      string
-}
-
-func Map[K comparable, V any](keyType Type[K], valueType Type[V]) *typeMap[K, V] {
-	tbin := slices.Concat(BinaryTypeMap[:], keyType.Binary(), valueType.Binary())
-	return &typeMap[K, V]{
+func Map[K comparable, V any](keyType Type[K], valueType Type[V]) Type[map[K]V] {
+	return MakeTypeWrapAny(typeMap[K, V]{
 		keyType:   keyType,
 		valueType: valueType,
-		tbin:      tbin,
-		tstr:      fmt.Sprintf("Map(%s, %s)", keyType.String(), valueType.String()),
-		id:        BinaryTypeID(tbin),
-	}
+	})
 }
 
-func (t *typeMap[K, V]) String() string {
-	return t.tstr
+type typeMap[K comparable, V any] struct {
+	keyType   Type[K]
+	valueType Type[V]
 }
 
-func (t *typeMap[K, V]) Binary() []byte {
-	return t.tbin
+func (t typeMap[K, V]) String() string {
+	return fmt.Sprintf("Map(%s, %s)", t.keyType.String(), t.valueType.String())
 }
 
-func (t *typeMap[K, V]) ID() uint64 {
-	return t.id
+func (t typeMap[K, V]) Binary() []byte {
+	return slices.Concat(BinaryTypeMap[:], t.keyType.Binary(), t.valueType.Binary())
 }
 
-func (t *typeMap[K, V]) Write(w Writer, value map[K]V) error {
+func (t typeMap[K, V]) Write(w Writer, value map[K]V) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {
 		return err
@@ -59,7 +46,7 @@ func (t *typeMap[K, V]) Write(w Writer, value map[K]V) error {
 	return nil
 }
 
-func (t *typeMap[K, V]) Read(r Reader) (map[K]V, error) {
+func (t typeMap[K, V]) Read(r Reader) (map[K]V, error) {
 	n, err := UVarint.Read(r)
 	if err != nil {
 		return nil, err
@@ -82,7 +69,7 @@ func (t *typeMap[K, V]) Read(r Reader) (map[K]V, error) {
 	return ret, nil
 }
 
-func (t *typeMap[K, V]) WriteAny(w Writer, v any) error {
+func (t typeMap[K, V]) WriteAny(w Writer, v any) error {
 	value, ok := v.(map[K]V)
 	if !ok {
 		return errors.New("unexpected type")
@@ -90,6 +77,6 @@ func (t *typeMap[K, V]) WriteAny(w Writer, v any) error {
 	return t.Write(w, value)
 }
 
-func (t *typeMap[K, V]) ReadAny(r Reader) (any, error) {
+func (t typeMap[K, V]) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }

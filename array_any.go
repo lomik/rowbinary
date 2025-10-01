@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 )
@@ -9,32 +8,19 @@ import (
 var _ Any = ArrayAny(UInt32)
 
 type typeArrayAny struct {
-	id        uint64
 	valueType Any
-	tbin      []byte
-	tstr      string
 }
 
-func ArrayAny(valueType Any) typeArrayAny {
-	tbin := slices.Concat(BinaryTypeArray[:], valueType.Binary())
-	return typeArrayAny{
-		valueType: valueType,
-		tbin:      tbin,
-		tstr:      fmt.Sprintf("Array(%s)", valueType.String()),
-		id:        BinaryTypeID(tbin),
-	}
+func ArrayAny(valueType Any) Type[[]any] {
+	return MakeTypeWrapAny(typeArrayAny{valueType: valueType})
 }
 
 func (t typeArrayAny) String() string {
-	return t.tstr
+	return fmt.Sprintf("Array(%s)", t.valueType.String())
 }
 
 func (t typeArrayAny) Binary() []byte {
-	return t.tbin
-}
-
-func (t typeArrayAny) ID() uint64 {
-	return t.id
+	return slices.Concat(BinaryTypeArray[:], t.valueType.Binary())
 }
 
 func (t typeArrayAny) Write(w Writer, value []any) error {
@@ -67,16 +53,4 @@ func (t typeArrayAny) Read(r Reader) ([]any, error) {
 	}
 
 	return ret, nil
-}
-
-func (t typeArrayAny) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeArrayAny) WriteAny(w Writer, v any) error {
-	value, ok := v.([]any)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
 }

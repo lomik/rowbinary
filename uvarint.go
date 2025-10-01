@@ -3,10 +3,9 @@ package rowbinary
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 )
 
-var UVarint Type[uint64] = typeUVarint{}
+var UVarint Type[uint64] = MakeTypeWrapAny[uint64](typeUVarint{})
 
 type typeUVarint struct{}
 
@@ -16,10 +15,6 @@ func (t typeUVarint) String() string {
 
 func (t typeUVarint) Binary() []byte {
 	return BinaryTypeNothing[:]
-}
-
-func (t typeUVarint) ID() uint64 {
-	return typeNothingID
 }
 
 func (t typeUVarint) Write(w Writer, x uint64) error {
@@ -40,18 +35,6 @@ func (t typeUVarint) Write(w Writer, x uint64) error {
 
 func (t typeUVarint) Read(r Reader) (uint64, error) {
 	return binary.ReadUvarint(r)
-}
-
-func (t typeUVarint) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeUVarint) WriteAny(w Writer, v any) error {
-	value, ok := v.(uint64)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
 }
 
 func UVarintEncode(x uint64) []byte {

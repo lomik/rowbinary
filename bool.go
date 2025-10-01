@@ -1,11 +1,6 @@
 package rowbinary
 
-import (
-	"errors"
-)
-
-var Bool Type[bool] = typeBool{}
-var typeBoolID = BinaryTypeID(BinaryTypeBool[:])
+var Bool Type[bool] = MakeTypeWrapAny[bool](typeBool{})
 
 type typeBool struct{}
 
@@ -15,10 +10,6 @@ func (t typeBool) String() string {
 
 func (t typeBool) Binary() []byte {
 	return BinaryTypeBool[:]
-}
-
-func (t typeBool) ID() uint64 {
-	return typeBoolID
 }
 
 func (t typeBool) Write(w Writer, value bool) error {
@@ -31,16 +22,4 @@ func (t typeBool) Write(w Writer, value bool) error {
 func (t typeBool) Read(r Reader) (bool, error) {
 	v, err := UInt8.Read(r)
 	return v == 1, err
-}
-
-func (t typeBool) WriteAny(w Writer, v any) error {
-	value, ok := v.(bool)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t typeBool) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
 }

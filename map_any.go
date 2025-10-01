@@ -1,45 +1,31 @@
 package rowbinary
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 )
 
-var _ Any = MapAny(UInt32, UInt32)
-
-type typeMapAny struct {
-	id        uint64
-	keyType   Any
-	valueType Any
-	tbin      []byte
-	tstr      string
-}
-
-func MapAny(keyType Any, valueType Any) *typeMapAny {
-	tbin := slices.Concat(BinaryTypeMap[:], keyType.Binary(), valueType.Binary())
-	return &typeMapAny{
+func MapAny(keyType Any, valueType Any) Type[map[any]any] {
+	return MakeTypeWrapAny(typeMapAny{
 		keyType:   keyType,
 		valueType: valueType,
-		tbin:      tbin,
-		tstr:      fmt.Sprintf("Map(%s, %s)", keyType.String(), valueType.String()),
-		id:        BinaryTypeID(tbin),
-	}
+	})
 }
 
-func (t *typeMapAny) String() string {
-	return t.tstr
+type typeMapAny struct {
+	keyType   Any
+	valueType Any
 }
 
-func (t *typeMapAny) Binary() []byte {
-	return t.tbin
+func (t typeMapAny) String() string {
+	return fmt.Sprintf("Map(%s, %s)", t.keyType.String(), t.valueType.String())
 }
 
-func (t *typeMapAny) ID() uint64 {
-	return t.id
+func (t typeMapAny) Binary() []byte {
+	return slices.Concat(BinaryTypeMap[:], t.keyType.Binary(), t.valueType.Binary())
 }
 
-func (t *typeMapAny) Write(w Writer, value map[any]any) error {
+func (t typeMapAny) Write(w Writer, value map[any]any) error {
 	err := UVarint.Write(w, uint64(len(value)))
 	if err != nil {
 		return err
@@ -59,7 +45,7 @@ func (t *typeMapAny) Write(w Writer, value map[any]any) error {
 	return nil
 }
 
-func (t *typeMapAny) Read(r Reader) (map[any]any, error) {
+func (t typeMapAny) Read(r Reader) (map[any]any, error) {
 	n, err := UVarint.Read(r)
 	if err != nil {
 		return nil, err
@@ -80,16 +66,4 @@ func (t *typeMapAny) Read(r Reader) (map[any]any, error) {
 	}
 
 	return ret, nil
-}
-
-func (t *typeMapAny) WriteAny(w Writer, v any) error {
-	value, ok := v.(map[any]any)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t *typeMapAny) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
 }

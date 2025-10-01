@@ -1,50 +1,34 @@
 package rowbinary
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/shopspring/decimal"
 )
 
-var _ Type[decimal.Decimal] = Decimal(18, 4)
-
-type typeDecimal struct {
-	id        uint64
-	precision uint8
-	scale     uint8
-	tbin      []byte
-	tstr      string
-}
-
-func Decimal(precision uint8, scale uint8) typeDecimal {
-	var tbin []byte
-	if precision <= 9 {
-		// decimal32
-		tbin = []byte{BinaryTypeDecimal32[0], precision, scale}
-	} else {
-		tbin = []byte{BinaryTypeDecimal64[0], precision, scale}
-	}
-
-	return typeDecimal{
+func Decimal(precision uint8, scale uint8) Type[decimal.Decimal] {
+	return MakeTypeWrapAny(typeDecimal{
 		precision: precision,
 		scale:     scale,
-		tbin:      tbin,
-		tstr:      fmt.Sprintf("Decimal(%d, %d)", precision, scale),
-		id:        BinaryTypeID(tbin),
-	}
+	})
+}
+
+type typeDecimal struct {
+	precision uint8
+	scale     uint8
 }
 
 func (t typeDecimal) String() string {
-	return t.tstr
+	return fmt.Sprintf("Decimal(%d, %d)", t.precision, t.scale)
 }
 
 func (t typeDecimal) Binary() []byte {
-	return t.tbin
-}
-
-func (t typeDecimal) ID() uint64 {
-	return t.id
+	if t.precision <= 9 {
+		// decimal32
+		return []byte{BinaryTypeDecimal32[0], t.precision, t.scale}
+	} else {
+		return []byte{BinaryTypeDecimal64[0], t.precision, t.scale}
+	}
 }
 
 func (t typeDecimal) Write(w Writer, value decimal.Decimal) error {
@@ -86,16 +70,4 @@ func (t typeDecimal) Read(r Reader) (decimal.Decimal, error) {
 	// todo: decimal128, decimal256
 
 	return decimal.Zero, ErrNotImplemented
-}
-
-func (t typeDecimal) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeDecimal) WriteAny(w Writer, v any) error {
-	value, ok := v.(decimal.Decimal)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
 }

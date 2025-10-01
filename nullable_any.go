@@ -1,39 +1,25 @@
 package rowbinary
 
 import (
-	"errors"
 	"fmt"
 )
 
-var _ Type[*any] = NullableAny(UInt32)
-
 type typeNullableAny struct {
-	id        uint64
 	valueType Any
-	tbin      []byte
-	tstr      string
 }
 
-func NullableAny(valueType Any) typeNullableAny {
-	tbin := append(BinaryTypeNullable[:], valueType.Binary()...)
-	return typeNullableAny{
+func NullableAny(valueType Any) Type[*any] {
+	return MakeTypeWrapAny(typeNullableAny{
 		valueType: valueType,
-		tbin:      tbin,
-		tstr:      fmt.Sprintf("Nullable(%s)", valueType.String()),
-		id:        BinaryTypeID(tbin),
-	}
+	})
 }
 
 func (t typeNullableAny) String() string {
-	return t.tstr
+	return fmt.Sprintf("Nullable(%s)", t.valueType.String())
 }
 
 func (t typeNullableAny) Binary() []byte {
-	return t.tbin
-}
-
-func (t typeNullableAny) ID() uint64 {
-	return t.id
+	return append(BinaryTypeNullable[:], t.valueType.Binary()...)
 }
 
 func (t typeNullableAny) Write(w Writer, value *any) error {
@@ -60,19 +46,4 @@ func (t typeNullableAny) Read(r Reader) (*any, error) {
 	value, err := t.valueType.ReadAny(r)
 
 	return &value, err
-}
-
-func (t typeNullableAny) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeNullableAny) WriteAny(w Writer, v any) error {
-	if v == nil {
-		return t.Write(w, nil)
-	}
-	value, ok := v.(*any)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
 }
