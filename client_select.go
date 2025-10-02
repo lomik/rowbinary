@@ -54,7 +54,7 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 		opt.applySelectOptions(&opts)
 	}
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindSelect}, opts.params, opts.headers)
+	req, err := c.newRequest(ctx, DiscoveryCtx{Method: ClientMethodSelect}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}

@@ -32,7 +32,7 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 		opt.applyExecOptions(&opts)
 	}
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Kind: ClientKindExecute}, opts.params, opts.headers)
+	req, err := c.newRequest(ctx, DiscoveryCtx{Method: ClientMethodExecute}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}

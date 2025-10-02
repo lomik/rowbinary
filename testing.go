@@ -19,15 +19,27 @@ import (
 
 type testingUnknownType struct{}
 
-// requests clickhouse, caching locally to disk
-// re-running the test can already work without CH. including in CI if you commit fixtures/*
+// ExecLocal executes a ClickHouse query locally using the 'clickhouse local' command and caches the result to disk.
+//
+// It takes a query string as input, computes a SHA256 hash of the query to generate a unique filename,
+// and stores the result in the 'fixtures/' directory. If the result is already cached, it reads from the file
+// instead of re-executing the query. This is primarily used for testing purposes to avoid repeated executions
+// of the same query, especially in CI environments where fixtures can be committed.
+//
+// Parameters:
+//   - query: The ClickHouse query string to execute.
+//
+// Returns:
+//   - []byte: The binary output of the query.
+//   - error: An error if the command fails or file operations encounter issues.
+//
+// Note: The function assumes 'clickhouse' is available in the system PATH.
+// The query is executed with default settings unless specified in the query string.
 func ExecLocal(query string) ([]byte, error) {
 	h := sha256.New()
 	h.Write([]byte(query))
 	key := fmt.Sprintf("%x", h.Sum(nil))
 	filename := fmt.Sprintf("fixtures/ch_%s.bin", key)
-
-	// fmt.Println(filename, query)
 
 	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
 		body, err := exec.Command("clickhouse", "local", "--query", query).Output()
@@ -35,7 +47,7 @@ func ExecLocal(query string) ([]byte, error) {
 			return nil, err
 		}
 
-		err = os.WriteFile(filename, body, 0600)
+		err = os.WriteFile(filename, body, 0644)
 		return body, err
 	}
 	// #nosec G304
@@ -49,7 +61,25 @@ type testClient struct {
 	db string
 }
 
-func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) *testClient {
+// NewTestClient creates a new test client with an isolated database for testing purposes.
+//
+// It generates a unique database name using an atomic counter and current timestamp,
+// creates a new ClickHouse client connected to that database, and executes a CREATE DATABASE
+// command to ensure the database exists. The client is configured with the provided DSN and options,
+// and the database is set to the newly created one.
+//
+// Parameters:
+//   - ctx: Context for the client creation.
+//   - dsn: Data Source Name for connecting to ClickHouse.
+//   - options: Optional client configuration options.
+//
+// Returns:
+//   - Client: A test client instance that wraps the standard Client with database isolation.
+//     The client automatically manages the database lifecycle.
+//
+// Note: The function will log.Fatal if database creation fails. The returned client should be
+// closed using its Close method to drop the database.
+func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Client {
 	db := fmt.Sprintf("db_%d_%d", testClientCounter.Add(1), time.Now().UnixNano())
 	c := NewClient(ctx, dsn, append(options, WithDatabase(db))...)
 

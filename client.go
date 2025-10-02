@@ -10,16 +10,16 @@ const headerClickhouseQueryID = "X-ClickHouse-Query-Id"
 const headerUserAgent = "User-Agent"
 const httpUserAgent = "rowbinary/v0.1.0"
 
-type ClientKind int
+type ClientMethod int
 
 const (
-	ClientKindSelect  ClientKind = 1
-	ClientKindInsert  ClientKind = 2
-	ClientKindExecute ClientKind = 3
+	ClientMethodSelect  ClientMethod = 1
+	ClientMethodInsert  ClientMethod = 2
+	ClientMethodExecute ClientMethod = 3
 )
 
 type DiscoveryCtx struct {
-	Kind ClientKind
+	Method ClientMethod
 }
 
 type clientOptions struct {
