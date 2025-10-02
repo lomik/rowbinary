@@ -49,15 +49,14 @@ type testClient struct {
 	db string
 }
 
-func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Client {
+func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) *testClient {
 	db := fmt.Sprintf("db_%d_%d", testClientCounter.Add(1), time.Now().UnixNano())
-	defaultClient := NewClient(context.Background(), dsn, append(options, WithDatabase("default"))...)
+	c := NewClient(ctx, dsn, append(options, WithDatabase(db))...)
 
-	err := defaultClient.Exec(context.Background(), "CREATE DATABASE "+db)
+	err := c.Exec(context.Background(), "CREATE DATABASE "+db, WithDatabase("default"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defaultClient.Close()
 
 	return &testClient{
 		Client: NewClient(ctx, dsn, append(options, WithDatabase(db))...),
@@ -67,6 +66,10 @@ func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Cli
 
 func (tc *testClient) Close() error {
 	return tc.Exec(context.Background(), "DROP DATABASE "+tc.db)
+}
+
+func (tc *testClient) Database() string {
+	return tc.db
 }
 
 func TestType[T any](t *testing.T, tp Type[T], value T, query string) {

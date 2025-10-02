@@ -25,7 +25,6 @@ type DiscoveryCtx struct {
 type clientOptions struct {
 	httpClient    *http.Client
 	discovery     func(ctx context.Context, dsn string, kind DiscoveryCtx) (string, error)
-	database      string
 	defaultSelect []SelectOption
 	defaultInsert []InsertOption
 	defaultExec   []ExecOption
@@ -39,7 +38,6 @@ type Client interface {
 	Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error
 	Exec(ctx context.Context, query string, options ...ExecOption) error
 	Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error
-	Database() string
 	Close() error
 }
 
@@ -58,7 +56,7 @@ type client struct {
 }
 
 // WithDatabase sets the database for the client.
-func WithDatabase(database string) ClientOption {
+func WithDatabase(database string) paramOption {
 	return WithParam("database", database)
 }
 
@@ -137,12 +135,6 @@ func (c *client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, pp map[s
 	headers := http.Header{}
 	headers.Set(headerUserAgent, httpUserAgent)
 
-	if c.opts.database != "" {
-		values.Set("database", c.opts.database)
-	} else {
-		values.Set("database", "default")
-	}
-
 	for k, v := range pp {
 		values.Set(k, v)
 	}
@@ -175,11 +167,4 @@ func (c *client) do(req *http.Request) (*http.Response, error) {
 
 func (c *client) Close() error {
 	return nil
-}
-
-func (c *client) Database() string {
-	if c.opts.database != "" {
-		return c.opts.database
-	}
-	return "default"
 }

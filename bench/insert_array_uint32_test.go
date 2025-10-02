@@ -100,7 +100,12 @@ func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 
 	for b.Loop() {
 		batch, err := conn.PrepareBatch(ctx, "INSERT INTO t")
-		assert.NoError(err)
+		if !assert.NoError(err) {
+			return
+		}
+		if !assert.NotNil(batch) {
+			return
+		}
 
 		for range 100000 {
 			batch.Append(data)
