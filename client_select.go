@@ -133,6 +133,9 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
 	}
 
+	// px := &ReadSizeProxy{Reader: resp.Body}
+	// defer px.Close()
+
 	fr := NewFormatReader(resp.Body, opts.formatOptions...)
 	if err := readFunc(fr); err != nil {
 		return err
@@ -140,3 +143,22 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 
 	return nil
 }
+
+// type ReadSizeProxy struct {
+// 	io.Reader
+// 	Total int64
+// }
+
+// func (r *ReadSizeProxy) Read(p []byte) (n int, err error) {
+// 	n, err = r.Reader.Read(p)
+// 	// fmt.Println("n=", n, " total=", r.Total+int64(n))
+// 	r.Total += int64(n)
+// 	return n, err
+// }
+
+// func (r *ReadSizeProxy) Close() error {
+// 	if closer, ok := r.Reader.(io.Closer); ok {
+// 		return closer.Close()
+// 	}
+// 	return nil
+// }

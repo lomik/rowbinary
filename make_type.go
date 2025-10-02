@@ -3,7 +3,7 @@ package rowbinary
 import "errors"
 
 func MakeType[T any](tp PreType[T]) Type[T] {
-	return typeWrapper[T]{
+	return &typeWrapper[T]{
 		PreType: tp,
 		tbin:    tp.Binary(),
 		tstr:    tp.String(),
@@ -18,17 +18,17 @@ func WrapAny[T any](tp BaseType[T]) PreType[T] {
 }
 
 func MakeTypeWrapAny[T any](tp BaseType[T]) Type[T] {
-	return MakeType[T](WrapAny[T](tp))
+	return MakeType(WrapAny(tp))
 }
 
 type typeWrapper[T any] struct {
 	PreType[T]
+	tid  uint64
 	tbin []byte
 	tstr string
-	tid  uint64
 }
 
-func (t typeWrapper[T]) id() uint64 {
+func (t *typeWrapper[T]) id() uint64 {
 	return t.tid
 }
 
@@ -36,7 +36,7 @@ func (t typeWrapper[T]) String() string {
 	return t.tstr
 }
 
-func (t typeWrapper[T]) Binary() []byte {
+func (t *typeWrapper[T]) Binary() []byte {
 	return t.tbin
 }
 
