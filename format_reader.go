@@ -207,13 +207,19 @@ func (r *FormatReader) ReadAny() (any, error) {
 		return nil, err
 	}
 
-	if r.index >= len(r.columns) {
-		return nil, r.setErr(fmt.Errorf("no more columns to read"))
-	}
-
 	value, err := r.columns[r.index].tp.ReadAny(r.wrap)
 	r.nextColumn()
 	return value, r.setErr(err)
+}
+
+func (r *FormatReader) ScanAny(dest any) error {
+	if err := r.check(); err != nil {
+		return err
+	}
+
+	err := r.columns[r.index].tp.ScanAny(r.wrap, dest)
+	r.nextColumn()
+	return r.setErr(err)
 }
 
 func Read[V any](r *FormatReader, tp Type[V]) (V, error) {
@@ -229,4 +235,18 @@ func Read[V any](r *FormatReader, tp Type[V]) (V, error) {
 	value, err := tp.Read(r.wrap)
 	r.nextColumn()
 	return value, r.setErr(err)
+}
+
+func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
+	if err := r.check(); err != nil {
+		return err
+	}
+
+	if tp.id() != r.columns[r.index].tp.id() {
+		return r.setErr(fmt.Errorf("type mismatch. expected %s, got %s", r.columns[r.index].tp.String(), tp.String()))
+	}
+
+	err := tp.Scan(r.wrap, v)
+	r.nextColumn()
+	return r.setErr(err)
 }

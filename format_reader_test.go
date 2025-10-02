@@ -308,6 +308,66 @@ func TestFormatReader_ReadAny(t *testing.T) {
 	})
 }
 
+func TestFormatReader_Scan(t *testing.T) {
+	t.Parallel()
+
+	t.Run("successful scan", func(t *testing.T) {
+		t.Parallel()
+		assert := assert.New(t)
+
+		var buf bytes.Buffer
+		writer := NewWriter(&buf)
+		require.NoError(t, UInt32.Write(writer, 42))
+		require.NoError(t, String.Write(writer, "test"))
+
+		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
+			RowBinary,
+			C("num", UInt32),
+			C("str", String))
+
+		assert.True(reader.Next())
+		var val1 uint32
+		err := Scan(reader, UInt32, &val1)
+		assert.NoError(err)
+		assert.Equal(uint32(42), val1)
+
+		var val2 string
+		err = Scan(reader, String, &val2)
+		assert.NoError(err)
+		assert.Equal("test", val2)
+	})
+}
+
+func TestFormatReader_ScanAny(t *testing.T) {
+	t.Parallel()
+
+	t.Run("successful scan", func(t *testing.T) {
+		t.Parallel()
+		assert := assert.New(t)
+
+		var buf bytes.Buffer
+		writer := NewWriter(&buf)
+		require.NoError(t, UInt32.Write(writer, 42))
+		require.NoError(t, String.Write(writer, "test"))
+
+		reader := NewFormatReader(bytes.NewReader(buf.Bytes()),
+			RowBinary,
+			C("num", UInt32),
+			C("str", String))
+
+		assert.True(reader.Next())
+		var val1 uint32
+		err := reader.ScanAny(&val1)
+		assert.NoError(err)
+		assert.Equal(uint32(42), val1)
+
+		var val2 string
+		err = reader.ScanAny(&val2)
+		assert.NoError(err)
+		assert.Equal("test", val2)
+	})
+}
+
 func TestFormatReader_Errors(t *testing.T) {
 	t.Parallel()
 

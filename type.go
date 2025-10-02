@@ -9,6 +9,7 @@ type PreType[T any] interface {
 	BaseType[T]
 	ReadAny(r Reader) (any, error)
 	WriteAny(w Writer, v any) error
+	ScanAny(r Reader, v any) error
 }
 
 type BaseType[T any] interface {
@@ -23,6 +24,7 @@ type Any interface {
 	String() string
 	Binary() []byte
 	ReadAny(r Reader) (any, error)
+	ScanAny(r Reader, v any) error
 	WriteAny(w Writer, v any) error
 	id() uint64
 }

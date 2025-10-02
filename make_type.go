@@ -1,6 +1,9 @@
 package rowbinary
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 func MakeType[T any](tp PreType[T]) Type[T] {
 	return &typeWrapper[T]{
@@ -46,6 +49,14 @@ type typeWrapperAny[T any] struct {
 
 func (t typeWrapperAny[T]) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
+}
+
+func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
+	value, ok := v.(*T)
+	if !ok {
+		return fmt.Errorf("unexpected type: %T, expected *%T", v, new(T))
+	}
+	return t.Scan(r, value)
 }
 
 func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {

@@ -176,6 +176,24 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		}
 	})
 
+	// scan truncated
+	t.Run(fmt.Sprintf("%s/scan_truncated", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.WriteAny(w, value))
+
+		// scan
+		var v2 T
+		for i := 0; i < buf.Len()-1; i++ {
+			r := NewReader(bytes.NewReader(buf.Bytes()[:i]))
+			err := tp.Scan(r, &v2)
+			assert.Error(err)
+		}
+	})
+
 	// write truncated
 	t.Run(fmt.Sprintf("%s/write_truncated", tp.String()), func(t *testing.T) {
 		assert := assert.New(t)
