@@ -27,3 +27,12 @@ func (t typeFloat64) Read(r Reader) (float64, error) {
 	}
 	return math.Float64frombits(v), nil
 }
+
+func (t typeFloat64) Scan(r Reader, v *float64) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

@@ -71,3 +71,12 @@ func (t typeDecimal) Read(r Reader) (decimal.Decimal, error) {
 
 	return decimal.Zero, ErrNotImplemented
 }
+
+func (t typeDecimal) Scan(r Reader, v *decimal.Decimal) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

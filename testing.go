@@ -106,6 +106,23 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.Equal(value, v2)
 	})
 
+	// scan test
+	t.Run(fmt.Sprintf("%s/scan", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		// write
+		var buf bytes.Buffer
+		w := NewWriter(&buf)
+		assert.NoError(tp.Write(w, value))
+
+		// scan
+		r := NewReader(bytes.NewReader(buf.Bytes()))
+		var v2 T
+		err := tp.Scan(r, &v2)
+		assert.NoError(err)
+		assert.Equal(value, v2)
+	})
+
 	// write/read any test
 	t.Run(fmt.Sprintf("%s/write_any_read", tp.String()), func(t *testing.T) {
 		assert := assert.New(t)
@@ -347,6 +364,29 @@ func BenchmarkType[T any](b *testing.B, tp Type[T], value T) {
 
 		for b.Loop() {
 			tp.ReadAny(r)
+			if br.Len() == 0 {
+				br.Reset(data)
+			}
+		}
+	})
+
+	b.Run(fmt.Sprintf("%s/Scan", tp.String()), func(b *testing.B) {
+		buf := new(bytes.Buffer)
+		out := NewWriter(buf)
+		for range 1000 {
+			tp.Write(out, value)
+		}
+		data := buf.Bytes()
+
+		br := bytes.NewReader(data)
+		r := NewReader(br)
+
+		var v T
+
+		b.ResetTimer()
+
+		for b.Loop() {
+			tp.Scan(r, &v)
 			if br.Len() == 0 {
 				br.Reset(data)
 			}

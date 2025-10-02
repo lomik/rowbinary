@@ -57,3 +57,21 @@ func (t typeArray[V]) Read(r Reader) ([]V, error) {
 
 	return ret, nil
 }
+
+func (t typeArray[V]) Scan(r Reader, v *[]V) error {
+	n, err := UVarint.Read(r)
+	if err != nil {
+		return err
+	}
+
+	*v = (*v)[:0]
+	for i := uint64(0); i < n; i++ {
+		s, err := t.valueType.Read(r)
+		if err != nil {
+			return err
+		}
+		*v = append(*v, s)
+	}
+
+	return nil
+}

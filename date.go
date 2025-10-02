@@ -39,3 +39,12 @@ func (t typeDate) Read(r Reader) (time.Time, error) {
 	v := time.Unix(int64(n)*secInDay, 0).UTC()
 	return v, nil
 }
+
+func (t typeDate) Scan(r Reader, v *time.Time) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

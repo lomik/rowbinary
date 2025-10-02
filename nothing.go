@@ -19,3 +19,12 @@ func (t typeNothing) Write(w Writer, value any) error {
 func (t typeNothing) Read(r Reader) (any, error) {
 	return nil, nil
 }
+
+func (t typeNothing) Scan(r Reader, v *any) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

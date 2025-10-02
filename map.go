@@ -80,3 +80,12 @@ func (t typeMap[K, V]) WriteAny(w Writer, v any) error {
 func (t typeMap[K, V]) ReadAny(r Reader) (any, error) {
 	return t.Read(r)
 }
+
+func (t typeMap[K, V]) Scan(r Reader, v *map[K]V) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

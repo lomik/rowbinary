@@ -3,7 +3,6 @@ package rowbinary
 import (
 	"bytes"
 	"encoding/binary"
-	"io"
 	"unsafe"
 )
 
@@ -44,13 +43,27 @@ func (t typeString) Read(r Reader) (string, error) {
 		return "", err
 	}
 
-	buf := make([]byte, n)
-	_, err = io.ReadAtLeast(r, buf, int(n))
+	buf, err := r.Peek(int(n))
 	if err != nil {
 		return "", err
 	}
 
-	return string(buf[:n]), nil
+	ret := string(buf[:n])
+	_, err = r.Discard(int(n))
+	if err != nil {
+		return "", err
+	}
+
+	return ret, nil
+}
+
+func (t typeString) Scan(r Reader, v *string) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
 }
 
 func StringEncode(s string) []byte {

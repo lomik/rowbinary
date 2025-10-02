@@ -20,3 +20,12 @@ func (t typeInt64) Read(r Reader) (int64, error) {
 	v, err := UInt64.Read(r)
 	return int64(v), err
 }
+
+func (t typeInt64) Scan(r Reader, v *int64) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

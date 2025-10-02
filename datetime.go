@@ -30,3 +30,12 @@ func (t typeDateTime) Read(r Reader) (time.Time, error) {
 	}
 	return time.Unix(int64(n), 0).UTC(), nil
 }
+
+func (t typeDateTime) Scan(r Reader, v *time.Time) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

@@ -58,3 +58,16 @@ func (t typeTupleAny) Read(r Reader) ([]any, error) {
 
 	return ret, nil
 }
+
+func (t typeTupleAny) Scan(r Reader, v *[]any) error {
+	*v = (*v)[:0]
+	for i := 0; i < len(t.valueTypes); i++ {
+		s, err := t.valueTypes[i].ReadAny(r)
+		if err != nil {
+			return err
+		}
+		*v = append(*v, s)
+	}
+
+	return nil
+}

@@ -31,3 +31,12 @@ func (t typeUInt32) Read(r Reader) (uint32, error) {
 	r.Discard(4)
 	return ret, nil
 }
+
+func (t typeUInt32) Scan(r Reader, v *uint32) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

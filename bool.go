@@ -23,3 +23,12 @@ func (t typeBool) Read(r Reader) (bool, error) {
 	v, err := UInt8.Read(r)
 	return v == 1, err
 }
+
+func (t typeBool) Scan(r Reader, v *bool) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

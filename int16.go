@@ -20,3 +20,12 @@ func (t typeInt16) Read(r Reader) (int16, error) {
 	v, err := UInt16.Read(r)
 	return int16(v), err
 }
+
+func (t typeInt16) Scan(r Reader, v *int16) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

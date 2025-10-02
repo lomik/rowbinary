@@ -16,6 +16,7 @@ type BaseType[T any] interface {
 	Binary() []byte // https://clickhouse.com/docs/sql-reference/data-types/data-types-binary-encoding
 	Read(r Reader) (T, error)
 	Write(w Writer, v T) error
+	Scan(r Reader, v *T) error
 }
 
 type Any interface {

@@ -9,12 +9,12 @@ type CustomTuple struct {
 	Name string
 }
 
-var CustomTupleType rowbinary.Type[CustomTuple] = rowbinary.MakeTypeWrapAny[CustomTuple](customTupleType{})
-
 var customTupleTypeOrigin = rowbinary.TupleNamedAny(
 	rowbinary.C("id", rowbinary.UInt32),
 	rowbinary.C("name", rowbinary.String),
 )
+
+var CustomTupleType rowbinary.Type[CustomTuple] = rowbinary.MakeTypeWrapAny[CustomTuple](customTupleType{})
 
 type customTupleType struct{}
 
@@ -48,5 +48,14 @@ func (t customTupleType) Write(w rowbinary.Writer, v CustomTuple) error {
 	if err := rowbinary.String.Write(w, v.Name); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (t customTupleType) Scan(r rowbinary.Reader, v *CustomTuple) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
 	return nil
 }

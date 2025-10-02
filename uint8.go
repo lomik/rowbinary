@@ -23,3 +23,12 @@ func (t typeUInt8) Read(r Reader) (uint8, error) {
 	}
 	return b, nil
 }
+
+func (t typeUInt8) Scan(r Reader, v *uint8) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

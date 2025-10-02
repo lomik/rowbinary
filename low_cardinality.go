@@ -31,3 +31,12 @@ func (t typeLowCardinality[V]) Write(w Writer, value V) error {
 func (t typeLowCardinality[V]) Read(r Reader) (V, error) {
 	return t.valueType.Read(r)
 }
+
+func (t typeLowCardinality[V]) Scan(r Reader, v *V) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}

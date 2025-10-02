@@ -46,6 +46,7 @@ func TestBase(t *testing.T) {
 	TestType(t, Decimal(18, 4), decimal.New(42000, -4), "SELECT toDecimal64(4.2, 4)")
 	TestType(t, Decimal(18, 4), decimal.New(-42000, -4), "SELECT toDecimal64(-4.2, 4)")
 	TestType(t, Map(String, String), map[string]string{"key": "value"}, "SELECT map('key', 'value')")
+	TestType(t, Map(UInt32, Map(String, String)), map[uint32]map[string]string{42: {"key": "value"}}, "SELECT map(toUInt32(42), map('key', 'value'))")
 	TestType(t, MapAny(String, String), map[any]any{"key": "value"}, "SELECT map('key', 'value')")
 	TestType(t, Nullable(Int32), pointer(int32(-42)), "SELECT toNullable(toInt32(-42))")
 	TestType(t, Nullable(Int32), null(int32(-42)), "SELECT nullIf(toInt32(-42), toInt32(-42))")

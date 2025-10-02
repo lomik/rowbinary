@@ -54,3 +54,12 @@ func (t typeArrayAny) Read(r Reader) ([]any, error) {
 
 	return ret, nil
 }
+
+func (t typeArrayAny) Scan(r Reader, v *[]any) error {
+	val, err := t.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = val
+	return nil
+}
