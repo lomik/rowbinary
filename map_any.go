@@ -85,11 +85,7 @@ func (t typeMapAny) Read(r Reader) (map[any]any, error) {
 	return ret, nil
 }
 
-func (t typeMapAny) Scan(r Reader, v *map[any]any) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeMapAny) Scan(r Reader, v *map[any]any) (err error) {
+	*v, err = t.Read(r)
+	return
 }

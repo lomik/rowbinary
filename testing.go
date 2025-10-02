@@ -56,7 +56,7 @@ func ExecLocal(query string) ([]byte, error) {
 
 var testClientCounter atomic.Uint64
 
-type testClient struct {
+type TestClient struct {
 	Client
 	db string
 }
@@ -79,7 +79,7 @@ type testClient struct {
 //
 // Note: The function will log.Fatal if database creation fails. The returned client should be
 // closed using its Close method to drop the database.
-func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Client {
+func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) *TestClient {
 	db := fmt.Sprintf("db_%d_%d", testClientCounter.Add(1), time.Now().UnixNano())
 	c := NewClient(ctx, dsn, append(options, WithDatabase(db))...)
 
@@ -88,17 +88,17 @@ func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) Cli
 		log.Fatal(err)
 	}
 
-	return &testClient{
+	return &TestClient{
 		Client: NewClient(ctx, dsn, append(options, WithDatabase(db))...),
 		db:     db,
 	}
 }
 
-func (tc *testClient) Close() error {
+func (tc *TestClient) Close() error {
 	return tc.Exec(context.Background(), "DROP DATABASE "+tc.db)
 }
 
-func (tc *testClient) Database() string {
+func (tc *TestClient) Database() string {
 	return tc.db
 }
 

@@ -63,11 +63,7 @@ func (t typeNullableAny) Read(r Reader) (*any, error) {
 	return &value, err
 }
 
-func (t typeNullableAny) Scan(r Reader, v **any) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
+	*v, err = t.Read(r)
+	return
 }

@@ -17,18 +17,10 @@ func (t typeUInt8) Write(w Writer, value uint8) error {
 }
 
 func (t typeUInt8) Read(r Reader) (uint8, error) {
-	b, err := r.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-	return b, nil
+	return r.ReadByte()
 }
 
-func (t typeUInt8) Scan(r Reader, v *uint8) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeUInt8) Scan(r Reader, v *uint8) (err error) {
+	*v, err = t.Read(r)
+	return
 }

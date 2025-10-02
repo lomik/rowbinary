@@ -32,11 +32,7 @@ func (t typeUInt16) Read(r Reader) (uint16, error) {
 	return ret, nil
 }
 
-func (t typeUInt16) Scan(r Reader, v *uint16) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeUInt16) Scan(r Reader, v *uint16) (err error) {
+	*v, err = t.Read(r)
+	return
 }

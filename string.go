@@ -57,13 +57,9 @@ func (t typeString) Read(r Reader) (string, error) {
 	return ret, nil
 }
 
-func (t typeString) Scan(r Reader, v *string) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeString) Scan(r Reader, v *string) (err error) {
+	*v, err = t.Read(r)
+	return
 }
 
 func StringEncode(s string) []byte {

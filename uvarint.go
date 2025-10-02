@@ -37,13 +37,9 @@ func (t typeUVarint) Read(r Reader) (uint64, error) {
 	return binary.ReadUvarint(r)
 }
 
-func (t typeUVarint) Scan(r Reader, v *uint64) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeUVarint) Scan(r Reader, v *uint64) (err error) {
+	*v, err = t.Read(r)
+	return
 }
 
 func UVarintEncode(x uint64) []byte {

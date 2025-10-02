@@ -20,11 +20,7 @@ func (t typeNothing) Read(r Reader) (any, error) {
 	return nil, nil
 }
 
-func (t typeNothing) Scan(r Reader, v *any) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeNothing) Scan(r Reader, v *any) (err error) {
+	*v, err = t.Read(r)
+	return
 }

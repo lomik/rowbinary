@@ -21,11 +21,7 @@ func (t typeInt32) Read(r Reader) (int32, error) {
 	return int32(v), err
 }
 
-func (t typeInt32) Scan(r Reader, v *int32) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeInt32) Scan(r Reader, v *int32) (err error) {
+	*v, err = t.Read(r)
+	return
 }

@@ -42,11 +42,7 @@ func (t typeUUID) Read(r Reader) (uuid.UUID, error) {
 	return ret, err
 }
 
-func (t typeUUID) Scan(r Reader, v *uuid.UUID) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+func (t typeUUID) Scan(r Reader, v *uuid.UUID) (err error) {
+	*v, err = t.Read(r)
+	return
 }
