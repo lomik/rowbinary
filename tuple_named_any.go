@@ -11,6 +11,20 @@ type typeTupleNamedAny struct {
 	columns []Column
 }
 
+// TupleNamedAny creates a Type for encoding and decoding named tuples with dynamic types in RowBinary format.
+//
+// It constructs a type handler for tuples where each element has a name and type,
+// represented as a slice of 'any'. The tuple is encoded as a sequence of values in the order
+// of the provided columns. The number of elements in the slice must match the number of columns.
+//
+// Parameters:
+//   - columns: A variadic list of Column definitions, each containing a name and Any type handler.
+//
+// Returns:
+//   - Type[[]any]: A type instance that can read/write named tuples with dynamic types in RowBinary format.
+//
+// Note: The length of the slice must exactly match the number of columns. Column names are used
+// for metadata but do not affect the binary encoding. Type safety is not enforced at compile time.
 func TupleNamedAny(columns ...Column) Type[[]any] {
 	return MakeTypeWrapAny(typeTupleNamedAny{
 		columns: columns,

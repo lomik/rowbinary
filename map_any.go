@@ -5,6 +5,23 @@ import (
 	"slices"
 )
 
+// MapAny creates a Type for encoding and decoding maps with dynamic types in RowBinary format.
+//
+// It constructs a type handler for maps where keys and values are of type 'any',
+// using the provided Any type handlers for serialization. This allows for heterogeneous
+// key-value pairs where types are determined at runtime. The map is encoded as a sequence
+// of key-value pairs, preceded by the number of entries as a UVarint.
+//
+// Parameters:
+//   - keyType: The Any type handler for the map keys.
+//   - valueType: The Any type handler for the map values.
+//
+// Returns:
+//   - Type[map[any]any]: A type instance that can read/write maps with dynamic types in RowBinary format.
+//
+// Note: Since keys and values are 'any', type safety is not enforced at compile time.
+// Ensure that the provided Any types match the actual data types to avoid runtime errors.
+// The order of key-value pairs in the encoded output is not guaranteed.
 func MapAny(keyType Any, valueType Any) Type[map[any]any] {
 	return MakeTypeWrapAny(typeMapAny{
 		keyType:   keyType,

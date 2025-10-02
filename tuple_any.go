@@ -6,6 +6,20 @@ import (
 	"strings"
 )
 
+// TupleAny creates a Type for encoding and decoding tuples with dynamic types in RowBinary format.
+//
+// It constructs a type handler for tuples where each element can have a different type,
+// represented as a slice of 'any'. The tuple is encoded as a sequence of values in the order
+// of the provided Any type handlers. The number of elements must match the number of valueTypes.
+//
+// Parameters:
+//   - valueTypes: A variadic list of Any type handlers for each tuple element.
+//
+// Returns:
+//   - Type[[]any]: A type instance that can read/write tuples with dynamic types in RowBinary format.
+//
+// Note: The length of the slice must exactly match the number of valueTypes. Type safety is not
+// enforced at compile time; ensure the data matches the provided Any types to avoid runtime errors.
 func TupleAny(valueTypes ...Any) Type[[]any] {
 	return MakeTypeWrapAny(typeTupleAny{
 		valueTypes: valueTypes,

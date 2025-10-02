@@ -6,6 +6,21 @@ import (
 	"slices"
 )
 
+// Map creates a Type for encoding and decoding maps in RowBinary format.
+//
+// It constructs a type handler for maps with keys of type K and values of type V,
+// using the provided keyType and valueType for serialization. The map is encoded
+// as a sequence of key-value pairs, preceded by the number of entries as a UVarint.
+//
+// Parameters:
+//   - keyType: The Type handler for the map keys (K must be comparable).
+//   - valueType: The Type handler for the map values.
+//
+// Returns:
+//   - Type[map[K]V]: A type instance that can read/write maps in RowBinary format.
+//
+// Note: The order of key-value pairs in the encoded output is not guaranteed to match
+// the iteration order of the map, as Go maps are unordered.
 func Map[K comparable, V any](keyType Type[K], valueType Type[V]) Type[map[K]V] {
 	return MakeTypeWrapAny(typeMap[K, V]{
 		keyType:   keyType,

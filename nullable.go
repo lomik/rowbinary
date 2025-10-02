@@ -4,6 +4,20 @@ import (
 	"fmt"
 )
 
+// Nullable creates a Type for encoding and decoding nullable values in RowBinary format.
+//
+// It constructs a type handler for values that can be nil, represented as a pointer to V.
+// In RowBinary, nullable values are encoded with a leading byte: 0x01 indicates null,
+// and 0x00 indicates a present value followed by the value's encoding.
+//
+// Parameters:
+//   - valueType: The Type handler for the underlying value type V.
+//
+// Returns:
+//   - Type[*V]: A type instance that can read/write nullable values in RowBinary format.
+//
+// Note: Use a pointer (*V) to represent nullable values. A nil pointer encodes as null,
+// and a non-nil pointer encodes the dereferenced value.
 func Nullable[V any](valueType Type[V]) Type[*V] {
 	return MakeTypeWrapAny(typeNullable[V]{
 		valueType: valueType,

@@ -8,6 +8,21 @@ type typeNullableAny struct {
 	valueType Any
 }
 
+// NullableAny creates a Type for encoding and decoding nullable values with dynamic types in RowBinary format.
+//
+// It constructs a type handler for values that can be nil, represented as a pointer to 'any'.
+// This allows for nullable values where the type is determined at runtime. In RowBinary,
+// nullable values are encoded with a leading byte: 0x01 indicates null, and 0x00 indicates
+// a present value followed by the value's encoding using the provided Any type handler.
+//
+// Parameters:
+//   - valueType: The Any type handler for the underlying value type.
+//
+// Returns:
+//   - Type[*any]: A type instance that can read/write nullable values with dynamic types in RowBinary format.
+//
+// Note: Use a pointer (*any) to represent nullable values. A nil pointer encodes as null,
+// and a non-nil pointer encodes the dereferenced value. Type safety is not enforced at compile time.
 func NullableAny(valueType Any) Type[*any] {
 	return MakeTypeWrapAny(typeNullableAny{
 		valueType: valueType,
