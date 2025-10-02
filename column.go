@@ -7,6 +7,10 @@ type Column struct {
 	tp   Any
 }
 
+type Columns struct {
+	cols []Column
+}
+
 // applyFormatOption implements FormatReaderOption.
 func (c Column) applyFormatOption(o *formatOptions) {
 	o.columns = append(o.columns, c)
@@ -48,4 +52,12 @@ func (c Column) Type() Any {
 
 func (c Column) String() string {
 	return c.Name() + " " + c.Type().String()
+}
+
+func (c Columns) Len() int {
+	return len(c.cols)
+}
+
+func (c Columns) At(i int) Column {
+	return c.cols[i]
 }

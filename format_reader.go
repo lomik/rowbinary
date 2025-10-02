@@ -202,6 +202,24 @@ func (r *FormatReader) readHeader() error {
 	return fmt.Errorf("unknown format: %v", r.options.format)
 }
 
+func (r *FormatReader) Columns() (*Columns, error) {
+	if err := r.check(); err != nil {
+		return nil, err
+	}
+
+	return &Columns{cols: r.columns}, nil
+}
+
+func (r *FormatReader) Column(i int) (Column, error) {
+	if err := r.check(); err != nil {
+		return Column{}, err
+	}
+	if i < 0 || i >= len(r.columns) {
+		return Column{}, r.setErr(fmt.Errorf("column index out of bounds: %d", i))
+	}
+	return r.columns[i], nil
+}
+
 func (r *FormatReader) ReadAny() (any, error) {
 	if err := r.check(); err != nil {
 		return nil, err
