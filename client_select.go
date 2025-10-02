@@ -133,7 +133,8 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
 	}
 
-	if err := readFunc(NewFormatReader(resp.Body, opts.formatOptions...)); err != nil {
+	fr := NewFormatReader(resp.Body, opts.formatOptions...)
+	if err := readFunc(fr); err != nil {
 		return err
 	}
 

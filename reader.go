@@ -13,5 +13,8 @@ type Reader interface {
 }
 
 func NewReader(r io.Reader) Reader {
+	if rr, ok := r.(Reader); ok {
+		return rr
+	}
 	return bufio.NewReaderSize(r, 1024*1024)
 }
