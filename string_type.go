@@ -94,6 +94,8 @@ func DecodeStringType(t string) (Any, error) {
 		return Float64, nil
 	case "Date":
 		return Date, nil
+	case "Date32":
+		return Date32, nil
 	case "DateTime":
 		return DateTime, nil
 	case "DateTime64":

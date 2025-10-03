@@ -18,7 +18,8 @@ func null[V any](_ V) *V {
 
 func TestBase(t *testing.T) {
 	TestType(t, Nullable(Nothing), null(any(nil)), "SELECT NULL")
-	TestType(t, String, "hello world", "CREATE TEMPORARY TABLE my_temp_table (id UInt64, value String) ENGINE=Memory; SELECT toString('hello world')")
+	TestType(t, String, "hello world", "SELECT toString('hello world')")
+	TestType(t, StringBytes, []byte("hello world"), "SELECT toString('hello world')")
 	TestType(t, String, "", "SELECT toString('')")
 	TestType(t, UInt8, uint8(42), "SELECT toUInt8(42)")
 	TestType(t, UInt16, uint16(42), "SELECT toUInt16(42)")
@@ -55,7 +56,6 @@ func TestBase(t *testing.T) {
 	TestType(t, DateTime, time.Date(2023, 11, 22, 20, 49, 31, 0, time.UTC), "SELECT toDateTime('2023-11-22 20:49:31')")
 	TestType(t, Date, time.Date(2023, 11, 22, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-11-22')")
 	TestType(t, Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-03-05')")
-	TestType(t, Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-03-05')")
 	TestType(t, TupleAny(UInt32, String), []any{uint32(42), "hello world"}, "SELECT tuple(toUInt32(42), 'hello world')")
 	TestType(t, LowCardinality(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp")
 	TestType(t, LowCardinalityAny(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp")
@@ -63,6 +63,11 @@ func TestBase(t *testing.T) {
 	TestType(t, Bool, true, "SELECT true")
 	TestType(t, FixedString(10), []byte("hello\x00\x00\x00\x00\x00"), "SELECT toFixedString('hello', 10)")
 	TestType(t, TupleNamedAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"}, "CREATE TEMPORARY TABLE named_tuples (`value` Tuple(i UInt32, s String)) ENGINE = Memory; INSERT INTO named_tuples VALUES ((42, 'hello world')); SELECT value FROM named_tuples")
+	// TestType(t, Date32, time.Date(1899, 12, 10, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1899-12-10')")
+	TestType(t, Date32, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1900-01-01')")
+	TestType(t, Date32, time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1970-01-01')")
+	TestType(t, Date32, time.Date(2025, 7, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2025-07-05')")
+	TestType(t, Date32, time.Date(2250, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2250-03-05')")
 }
 
 func BenchmarkBase(b *testing.B) {

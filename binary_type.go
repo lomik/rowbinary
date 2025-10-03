@@ -104,7 +104,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeDate:
 		return Date, nil
 	case BinaryTypeDate32:
-		return nil, errors.New("not implemented")
+		return Date32, nil
 	case BinaryTypeDateTime:
 		return DateTime, nil
 	case BinaryTypeDateTimeWithTimeZone:

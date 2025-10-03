@@ -27,7 +27,7 @@ func (t typeDate) Write(w Writer, value time.Time) error {
 	}
 
 	v := time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
-	days := uint16((v.Unix()) / secInDay)
+	days := uint16(v.Unix() / secInDay)
 	return UInt16.Write(w, days)
 }
 
