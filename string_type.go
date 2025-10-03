@@ -106,6 +106,10 @@ func DecodeStringType(t string) (Any, error) {
 		return nil, errors.New("not implemented")
 	case "UUID":
 		return UUID, nil
+	case "IPv4":
+		return IPv4, nil
+	case "IPv6":
+		return IPv6, nil
 	}
 
 	funcName, funcArgs, err := decodeStringTypeParseFunc(t)
@@ -211,6 +215,25 @@ func DecodeStringType(t string) (Any, error) {
 		}
 
 		// named tuple
+		var columns []Column
+		for _, arg := range funcArgs {
+			argArr := decodeStringTypeSplitRoot(arg, ' ')
+			if len(argArr) != 2 {
+				return nil, fmt.Errorf("can't parse named tuple element: %#v", arg)
+			}
+			elemType, err := DecodeStringType(argArr[1])
+			if err != nil {
+				return nil, err
+			}
+			columns = append(columns, Column{name: argArr[0], tp: elemType})
+		}
+		return TupleNamedAny(columns...), nil
+
+	case "Nested":
+		if len(funcArgs) == 0 {
+			return nil, fmt.Errorf("Nested must have at least one argument: %#v", t)
+		}
+
 		var columns []Column
 		for _, arg := range funcArgs {
 			argArr := decodeStringTypeSplitRoot(arg, ' ')

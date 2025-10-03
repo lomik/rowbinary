@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"net/netip"
 	"testing"
 	"time"
 
@@ -35,6 +36,8 @@ func TestBase(t *testing.T) {
 	TestType(t, Int64, int64(-42), "SELECT toInt64(-42)")
 	TestType(t, Float64, float64(123.123), "SELECT toFloat64(123.123)")
 	TestType(t, Float32, float32(123.123), "SELECT toFloat32(123.123)")
+	TestType(t, IPv4, netip.MustParseAddr("127.0.0.1").As4(), "SELECT toIPv4('127.0.0.1')")
+	TestType(t, IPv6, netip.MustParseAddr("2001:db8::68").As16(), "SELECT toIPv6('2001:db8::68')")
 	TestType(t, Array(UInt32), []uint32{3123213123, 42, 0}, "SELECT [toUInt32(3123213123), toUInt32(42), toUInt32(0)]")
 	TestType(t, Array(String), []string{"hello world", "string2", ""}, "SELECT ['hello world', 'string2', '']")
 	TestType(t, Array(Int64), []int64{123123123213123, -2, 0}, "SELECT [toInt64(123123123213123), toInt64(-2), toInt64(0)]")
@@ -62,13 +65,26 @@ func TestBase(t *testing.T) {
 	TestType(t, Bool, false, "SELECT false")
 	TestType(t, Bool, true, "SELECT true")
 	TestType(t, FixedString(10), []byte("hello\x00\x00\x00\x00\x00"), "SELECT toFixedString('hello', 10)")
-	TestType(t, TupleNamedAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"}, "CREATE TEMPORARY TABLE named_tuples (`value` Tuple(i UInt32, s String)) ENGINE = Memory; INSERT INTO named_tuples VALUES ((42, 'hello world')); SELECT value FROM named_tuples")
+	TestType(t, TupleNamedAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"}, "CREATE TEMPORARY TABLE tmp (`value` Tuple(i UInt32, s String)) ENGINE = Memory; INSERT INTO tmp VALUES ((42, 'hello world')); SELECT value FROM tmp")
 	// TestType(t, Date32, time.Date(1899, 12, 10, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1899-12-10')")
 	TestType(t, Date32, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1900-01-01')")
 	TestType(t, Date32, time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1970-01-01')")
 	TestType(t, Date32, time.Date(2025, 7, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2025-07-05')")
 	TestType(t, Date32, time.Date(2250, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2250-03-05')")
 	TestType(t, DateTimeTZ("Asia/Istanbul"), time.Date(2025, 3, 11, 23, 43, 2, 0, must(time.LoadLocation("Asia/Istanbul"))), "SELECT toDateTime('2025-03-11 23:43:02', 'Asia/Istanbul')")
+	TestType(t, Array(TupleNamedAny(C("i", UInt32), C("s", String))),
+		[][]any{
+			{uint32(1), "sss"},
+			{uint32(42), "hello world"},
+		}, `
+		CREATE TEMPORARY TABLE tmp (
+		value Nested (
+			i UInt32,
+			s String
+		)) ENGINE = Memory;
+		INSERT INTO tmp VALUES ([1,42], ['sss','hello world']);
+		SELECT value FROM tmp
+		`)
 }
 
 func BenchmarkBase(b *testing.B) {

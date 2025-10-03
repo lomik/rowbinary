@@ -210,9 +210,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return MapAny(keyType, valueType), nil
 	case BinaryTypeIPv4:
-		return nil, errors.New("not implemented")
+		return IPv4, nil
 	case BinaryTypeIPv6:
-		return nil, errors.New("not implemented")
+		return IPv6, nil
 	case BinaryTypeVariant:
 		return nil, errors.New("not implemented")
 	case BinaryTypeDynamic:
@@ -223,8 +223,24 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		return Bool, nil
 	case BinaryTypeSimpleAggregateFunction:
 		return nil, errors.New("not implemented")
-	case BinaryTypeNested:
-		return nil, errors.New("not implemented")
+	case BinaryTypeNested: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><nested_type_encoding_1>...<var_uint_name_size_N><name_data_N><nested_type_encoding_N>
+		n, err := binary.ReadUvarint(r)
+		if err != nil {
+			return nil, err
+		}
+		columns := make([]Column, 0, n)
+		for i := 0; i < int(n); i++ {
+			name, err := String.Read(r)
+			if err != nil {
+				return nil, err
+			}
+			tp, err := DecodeBinaryType(r)
+			if err != nil {
+				return nil, err
+			}
+			columns = append(columns, Column{name: name, tp: tp})
+		}
+		return ArrayAny(TupleNamedAny(columns...)), nil
 	case BinaryTypeJSON:
 		return nil, errors.New("not implemented")
 	case BinaryTypeBFloat16:
