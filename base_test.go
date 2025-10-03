@@ -68,6 +68,7 @@ func TestBase(t *testing.T) {
 	TestType(t, Date32, time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1970-01-01')")
 	TestType(t, Date32, time.Date(2025, 7, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2025-07-05')")
 	TestType(t, Date32, time.Date(2250, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2250-03-05')")
+	TestType(t, DateTimeTZ("Asia/Istanbul"), time.Date(2025, 3, 11, 23, 43, 2, 0, must(time.LoadLocation("Asia/Istanbul"))), "SELECT toDateTime('2025-03-11 23:43:02', 'Asia/Istanbul')")
 }
 
 func BenchmarkBase(b *testing.B) {

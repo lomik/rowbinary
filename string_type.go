@@ -158,6 +158,15 @@ func DecodeStringType(t string) (Any, error) {
 		}
 		return LowCardinalityAny(elemType), nil
 
+	case "DateTime":
+		if len(funcArgs) != 1 {
+			return nil, fmt.Errorf("DateTime must have exactly one argument: %#v", t)
+		}
+		if len(funcArgs[0]) < 3 || funcArgs[0][0] != '\'' || funcArgs[0][len(funcArgs[0])-1] != '\'' {
+			return nil, fmt.Errorf("Invalid argument of DateTime: %#v", t)
+		}
+		return DateTimeTZ(funcArgs[0][1 : len(funcArgs[0])-1]), nil
+
 	case "Decimal":
 		if len(funcArgs) != 2 {
 			return nil, fmt.Errorf("Decimal must have exactly two arguments: %#v", t)
