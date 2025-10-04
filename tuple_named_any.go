@@ -64,7 +64,8 @@ func (t typeTupleNamedAny) Write(w Writer, value []any) error {
 func (t typeTupleNamedAny) Scan(r Reader, v *[]any) error {
 	*v = (*v)[:0]
 	for i := 0; i < len(t.columns); i++ {
-		s, err := t.columns[i].Type().ReadAny(r)
+		var s any
+		err := t.columns[i].Type().ScanAny(r, &s)
 		if err != nil {
 			return err
 		}

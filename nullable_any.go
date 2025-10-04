@@ -60,7 +60,8 @@ func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
 		return nil
 	}
 
-	x, err := t.valueType.ReadAny(r)
+	var x any
+	err = t.valueType.ScanAny(r, &x)
 	if err != nil {
 		return err
 	}

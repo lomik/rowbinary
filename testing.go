@@ -115,20 +115,6 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	bodyEncoded, err := ExecLocal(query + " AS value FORMAT RowBinary SETTINGS session_timezone='UTC'")
 	assert.NoError(t, err)
 
-	// Read from clickhouse
-	t.Run(fmt.Sprintf("%s/read%s", tp.String(), caller), func(t *testing.T) {
-		assert := assert.New(t)
-
-		r := NewReader(bytes.NewBuffer(bodyEncoded))
-		v, err := tp.Read(r)
-		assert.NoError(err)
-		assert.Equal(value, v)
-
-		tail, err := io.ReadAll(r)
-		assert.NoError(err)
-		assert.Empty(tail)
-	})
-
 	// compare Write with clickhouse
 	t.Run(fmt.Sprintf("%s/write%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
@@ -138,21 +124,6 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		w := NewWriter(&buf)
 		assert.NoError(tp.Write(w, value))
 		assert.Equal(bodyEncoded, buf.Bytes())
-	})
-
-	// ReadAny from clickhouse
-	t.Run(fmt.Sprintf("%s/read_any%s", tp.String(), caller), func(t *testing.T) {
-		assert := assert.New(t)
-
-		// read
-		r := NewReader(bytes.NewBuffer(bodyEncoded))
-		v, err := tp.ReadAny(r)
-		assert.NoError(err)
-		assert.Equal(value, v)
-
-		tail, err := io.ReadAll(r)
-		assert.NoError(err)
-		assert.Empty(tail)
 	})
 
 	// Scan test
@@ -195,23 +166,6 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		var buf bytes.Buffer
 		w := NewWriter(&buf)
 		assert.Error(tp.WriteAny(w, testingUnknownType{}))
-	})
-
-	// read truncated
-	t.Run(fmt.Sprintf("%s/read_truncated%s", tp.String(), caller), func(t *testing.T) {
-		assert := assert.New(t)
-
-		// write
-		var buf bytes.Buffer
-		w := NewWriter(&buf)
-		assert.NoError(tp.WriteAny(w, value))
-
-		// read
-		for i := 0; i < buf.Len()-1; i++ {
-			r := NewReader(bytes.NewReader(buf.Bytes()[:i]))
-			_, err := tp.Read(r)
-			assert.Error(err)
-		}
 	})
 
 	// scan truncated

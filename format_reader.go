@@ -224,24 +224,19 @@ func (r *FormatReader) Column(i int) (Column, error) {
 	return r.columns[i], nil
 }
 
-func (r *FormatReader) ReadAny() (any, error) {
-	if err := r.check(); err != nil {
-		return nil, err
-	}
-
-	value, err := r.columns[r.index].tp.ReadAny(r.wrap)
-	r.nextColumn()
-	return value, r.setErr(err)
-}
-
-func (r *FormatReader) ScanAny(dest any) error {
-	if err := r.check(); err != nil {
+func (r *FormatReader) Scan(dest ...any) error {
+	err := r.check()
+	if err != nil {
 		return err
 	}
-
-	err := r.columns[r.index].tp.ScanAny(r.wrap, dest)
-	r.nextColumn()
-	return r.setErr(err)
+	for i := 0; i < len(dest); i++ {
+		err = r.columns[r.index].tp.ScanAny(r.wrap, dest[i])
+		if err != nil {
+			return r.setErr(err)
+		}
+		r.nextColumn()
+	}
+	return nil
 }
 
 func Read[V any](r *FormatReader, tp Type[V]) (V, error) {

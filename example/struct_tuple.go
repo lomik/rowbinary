@@ -26,21 +26,6 @@ func (t structTupleType) Binary() []byte {
 	return structTupleTypeOrigin.Binary()
 }
 
-func (t structTupleType) Read(r rowbinary.Reader) (StructTuple, error) {
-	id, err := rowbinary.UInt32.Read(r)
-	if err != nil {
-		return StructTuple{}, err
-	}
-	name, err := rowbinary.StringBytes.Read(r)
-	if err != nil {
-		return StructTuple{}, err
-	}
-	return StructTuple{
-		ID:   id,
-		Name: name,
-	}, nil
-}
-
 func (t structTupleType) Write(w rowbinary.Writer, v StructTuple) error {
 	if err := rowbinary.UInt32.Write(w, v.ID); err != nil {
 		return err

@@ -77,13 +77,3 @@ func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
 	}
 	return t.Write(w, value)
 }
-
-func (t typeWrapperAny[T]) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeWrapperAny[T]) Read(r Reader) (T, error) {
-	var v T
-	err := t.Scan(r, &v)
-	return v, err
-}

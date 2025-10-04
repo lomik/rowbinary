@@ -70,12 +70,13 @@ func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
 	}
 	*ret = make(map[any]any, int(n))
 	for i := uint64(0); i < n; i++ {
-		k, err := t.keyType.ReadAny(r)
+		var k, v any
+		err = t.keyType.ScanAny(r, &k)
 		if err != nil {
 			return err
 		}
 
-		v, err := t.valueType.ReadAny(r)
+		err = t.valueType.ScanAny(r, &v)
 		if err != nil {
 			return err
 		}

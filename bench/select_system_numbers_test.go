@@ -48,8 +48,9 @@ func BenchmarkRowbinary_Select_SystemNumbers_Any(b *testing.B) {
 		assert.NoError(
 			c.Select(ctx, "SELECT * FROM system.numbers LIMIT 1000000", func(r *rowbinary.FormatReader) error {
 				cnt := 0
+				var x any
 				for r.Next() {
-					if _, err := r.ReadAny(); err != nil {
+					if err := r.Scan(&x); err != nil {
 						return err
 					}
 					cnt++

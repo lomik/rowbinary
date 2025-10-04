@@ -52,7 +52,8 @@ func (t typeArrayAny) Scan(r Reader, v *[]any) error {
 	}
 
 	for i := uint64(0); i < n; i++ {
-		value, err := t.valueType.ReadAny(r)
+		var value any
+		err := t.valueType.ScanAny(r, &value)
 		if err != nil {
 			return err
 		}
