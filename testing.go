@@ -140,6 +140,10 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		v, err := tp.ReadAny(r)
 		assert.NoError(err)
 		assert.Equal(value, v)
+
+		tail, err := io.ReadAll(r)
+		assert.NoError(err)
+		assert.Empty(tail)
 	})
 
 	// Scan test
