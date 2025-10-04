@@ -71,7 +71,7 @@ func TestBase(t *testing.T) {
 	TestType(t, Date32, time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1970-01-01')")
 	TestType(t, Date32, time.Date(2025, 7, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2025-07-05')")
 	TestType(t, Date32, time.Date(2250, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2250-03-05')")
-	TestType(t, DateTimeTZ("Asia/Istanbul"), time.Date(2025, 3, 11, 23, 43, 2, 0, must(time.LoadLocation("Asia/Istanbul"))), "SELECT toDateTime('2025-03-11 23:43:02', 'Asia/Istanbul')")
+	TestType(t, DateTimeTZ("Asia/Shanghai"), time.Date(2025, 3, 11, 23, 43, 2, 0, must(time.LoadLocation("Asia/Shanghai"))), "SELECT toDateTime('2025-03-11 23:43:02', 'Asia/Shanghai')")
 	TestType(t, Array(TupleNamedAny(C("i", UInt32), C("s", String))),
 		[][]any{
 			{uint32(1), "sss"},
@@ -100,6 +100,21 @@ func TestBase(t *testing.T) {
 		INSERT INTO tmp VALUES ('ios');
 		SELECT value FROM tmp
 		`)
+	TestType(t, DateTime64(9),
+		time.Date(2023, 11, 22, 20, 49, 31, 123456789, time.UTC),
+		"SELECT toDateTime64('2023-11-22 20:49:31.123456789', 9)")
+
+	TestType(t, DateTime64(3),
+		time.Date(2023, 11, 22, 20, 49, 31, 123000000, time.UTC),
+		"SELECT makeDateTime64(2023,11,22,20,49,31,123, 3)")
+
+	TestType(t, DateTime64TZ(9, "Asia/Shanghai"),
+		time.Date(2023, 11, 22, 20, 49, 31, 123456789, must(time.LoadLocation("Asia/Shanghai"))),
+		"SELECT toDateTime64('2023-11-22 20:49:31.123456789', 9, 'Asia/Shanghai')")
+
+	TestType(t, DateTime64TZ(3, "Asia/Shanghai"),
+		time.Date(2023, 11, 22, 20, 49, 31, 123000000, must(time.LoadLocation("Asia/Shanghai"))),
+		"SELECT makeDateTime64(2023,11,22,20,49,31,123, 3, 'Asia/Shanghai')")
 }
 
 func BenchmarkBase(b *testing.B) {

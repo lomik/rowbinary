@@ -113,10 +113,22 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			return nil, err
 		}
 		return DateTimeTZ(name), nil
-	case BinaryTypeDateTime64:
-		return nil, errors.New("not implemented")
-	case BinaryTypeDateTime64WithTimeZone:
-		return nil, errors.New("not implemented")
+	case BinaryTypeDateTime64: // <uint8_precision>
+		size, err := UInt8.Read(r)
+		if err != nil {
+			return nil, err
+		}
+		return DateTime64(size), nil
+	case BinaryTypeDateTime64WithTimeZone: // <uint8_precision><var_uint_time_zone_name_size><time_zone_name_data>
+		size, err := UInt8.Read(r)
+		if err != nil {
+			return nil, err
+		}
+		name, err := String.Read(r)
+		if err != nil {
+			return nil, err
+		}
+		return DateTime64TZ(size, name), nil
 	case BinaryTypeString:
 		return String, nil
 	case BinaryTypeFixedString: // <var_uint_size>

@@ -185,6 +185,22 @@ func DecodeStringType(t string) (Any, error) {
 		}
 		return DateTimeTZ(unquote(funcArgs[0])), nil
 
+	case "DateTime64":
+		if len(funcArgs) < 1 {
+			return nil, fmt.Errorf("DateTime64 must have at least one argument: %#v", t)
+		}
+		if len(funcArgs) > 2 {
+			return nil, fmt.Errorf("DateTime64 must have at most two arguments: %#v", t)
+		}
+		precision, err := strconv.Atoi(funcArgs[0])
+		if err != nil {
+			return nil, fmt.Errorf("can't parse DateTime64 precision: %w", err)
+		}
+		if len(funcArgs) == 1 {
+			return DateTime64(uint8(precision)), nil
+		}
+		return DateTime64TZ(uint8(precision), unquote(funcArgs[1])), nil
+
 	case "Decimal":
 		if len(funcArgs) != 2 {
 			return nil, fmt.Errorf("Decimal must have exactly two arguments: %#v", t)

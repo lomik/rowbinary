@@ -103,70 +103,65 @@ func (tc *TestClient) Database() string {
 }
 
 func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
-	// simple write/read test
-	t.Run(fmt.Sprintf("%s/write_read", tp.String()), func(t *testing.T) {
+	bodyEncoded, err := ExecLocal(query + " AS value FORMAT RowBinary SETTINGS session_timezone='UTC'")
+	assert.NoError(t, err)
+
+	// Read from clickhouse
+	t.Run(fmt.Sprintf("%s/read", tp.String()), func(t *testing.T) {
+		assert := assert.New(t)
+
+		r := NewReader(bytes.NewBuffer(bodyEncoded))
+		v, err := tp.Read(r)
+		assert.NoError(err)
+		assert.Equal(value, v)
+
+		tail, err := io.ReadAll(r)
+		assert.NoError(err)
+		assert.Empty(tail)
+	})
+
+	// compare Write with clickhouse
+	t.Run(fmt.Sprintf("%s/write", tp.String()), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
 		var buf bytes.Buffer
 		w := NewWriter(&buf)
 		assert.NoError(tp.Write(w, value))
-
-		// read
-		r := NewReader(bytes.NewReader(buf.Bytes()))
-		v2, err := tp.Read(r)
-		assert.NoError(err)
-		assert.Equal(value, v2)
-
+		assert.Equal(bodyEncoded, buf.Bytes())
 	})
 
-	// write/read any test
-	t.Run(fmt.Sprintf("%s/write_read_any", tp.String()), func(t *testing.T) {
+	// ReadAny from clickhouse
+	t.Run(fmt.Sprintf("%s/read_any", tp.String()), func(t *testing.T) {
 		assert := assert.New(t)
 
-		// write
-		var buf bytes.Buffer
-		w := NewWriter(&buf)
-		assert.NoError(tp.Write(w, value))
-
 		// read
-		r := NewReader(bytes.NewReader(buf.Bytes()))
-		v2, err := tp.ReadAny(r)
+		r := NewReader(bytes.NewBuffer(bodyEncoded))
+		v, err := tp.ReadAny(r)
 		assert.NoError(err)
-		assert.Equal(value, v2)
+		assert.Equal(value, v)
 	})
 
-	// scan test
+	// Scan test
 	t.Run(fmt.Sprintf("%s/scan", tp.String()), func(t *testing.T) {
 		assert := assert.New(t)
-
-		// write
-		var buf bytes.Buffer
-		w := NewWriter(&buf)
-		assert.NoError(tp.Write(w, value))
-
 		// scan
-		r := NewReader(bytes.NewReader(buf.Bytes()))
+		r := NewReader(bytes.NewBuffer(bodyEncoded))
 		var v2 T
 		err := tp.Scan(r, &v2)
 		assert.NoError(err)
 		assert.Equal(value, v2)
 	})
 
-	// write/read any test
-	t.Run(fmt.Sprintf("%s/write_any_read", tp.String()), func(t *testing.T) {
+	// compare WriteAny with clickhouse
+	t.Run(fmt.Sprintf("%s/write_any", tp.String()), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
 		var buf bytes.Buffer
 		w := NewWriter(&buf)
 		assert.NoError(tp.WriteAny(w, value))
-
-		// read
-		r := NewReader(bytes.NewReader(buf.Bytes()))
-		v2, err := tp.Read(r)
-		assert.NoError(err)
-		assert.Equal(value, v2)
+		assert.Equal(bodyEncoded, buf.Bytes())
 	})
 
 	// write any wrong type
