@@ -22,7 +22,7 @@ func (t typeUInt16) Write(w Writer, v uint16) error {
 	return err
 }
 
-func (t typeUInt16) Scan(r Reader, v *uint16) (err error) {
+func (t typeUInt16) Scan(r Reader, v *uint16) error {
 	b, err := r.Peek(2)
 	if err != nil {
 		return err
@@ -31,5 +31,5 @@ func (t typeUInt16) Scan(r Reader, v *uint16) (err error) {
 	if _, err = r.Discard(2); err != nil {
 		return err
 	}
-	return
+	return nil
 }

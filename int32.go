@@ -1,5 +1,7 @@
 package rowbinary
 
+import "encoding/binary"
+
 var Int32 Type[int32] = MakeTypeWrapAny[int32](typeInt32{})
 
 type typeInt32 struct{}
@@ -16,9 +18,14 @@ func (t typeInt32) Write(w Writer, value int32) error {
 	return UInt32.Write(w, uint32(value))
 }
 
-func (t typeInt32) Scan(r Reader, v *int32) (err error) {
-	var u uint32
-	err = UInt32.Scan(r, &u)
-	*v = int32(u)
-	return err
+func (t typeInt32) Scan(r Reader, v *int32) error {
+	b, err := r.Peek(4)
+	if err != nil {
+		return err
+	}
+	*v = int32(binary.LittleEndian.Uint32(b))
+	if _, err = r.Discard(4); err != nil {
+		return err
+	}
+	return nil
 }

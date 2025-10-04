@@ -17,8 +17,7 @@ func (t typeInt8) Write(w Writer, value int8) error {
 }
 
 func (t typeInt8) Scan(r Reader, v *int8) (err error) {
-	var u uint8
-	err = UInt8.Scan(r, &u)
-	*v = int8(u)
+	b, err := r.ReadByte()
+	*v = int8(b)
 	return err
 }
