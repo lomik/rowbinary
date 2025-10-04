@@ -47,10 +47,6 @@ type typeWrapperAny[T any] struct {
 	BaseType[T]
 }
 
-func (t typeWrapperAny[T]) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
 func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
 	value, ok := v.(*T)
 	if !ok {
@@ -65,4 +61,10 @@ func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
 		return errors.New("unexpected type")
 	}
 	return t.Write(w, value)
+}
+
+func (t typeWrapperAny[T]) ReadAny(r Reader) (any, error) {
+	var v T
+	err := t.Scan(r, &v)
+	return v, err
 }

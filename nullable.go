@@ -47,21 +47,16 @@ func (t typeNullable[V]) Write(w Writer, value *V) error {
 	return t.valueType.Write(w, *value)
 }
 
-func (t typeNullable[V]) Read(r Reader) (*V, error) {
+func (t typeNullable[V]) Scan(r Reader, v **V) error {
 	b, err := r.ReadByte()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if b == 0x01 {
-		return nil, nil
+		*v = nil
+		return nil
 	}
 
-	value, err := t.valueType.Read(r)
-	return &value, err
-}
-
-func (t typeNullable[V]) Scan(r Reader, v **V) (err error) {
-	*v, err = t.Read(r)
-	return
+	return t.valueType.Scan(r, *v)
 }

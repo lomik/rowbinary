@@ -16,12 +16,9 @@ func (t typeInt16) Write(w Writer, value int16) error {
 	return UInt16.Write(w, uint16(value))
 }
 
-func (t typeInt16) Read(r Reader) (int16, error) {
-	v, err := UInt16.Read(r)
-	return int16(v), err
-}
-
 func (t typeInt16) Scan(r Reader, v *int16) (err error) {
-	*v, err = t.Read(r)
-	return
+	var u uint16
+	err = UInt16.Scan(r, &u)
+	*v = int16(u)
+	return err
 }

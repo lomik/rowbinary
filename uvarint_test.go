@@ -16,7 +16,8 @@ func TestReader_Uvarint(t *testing.T) {
 
 	r := NewReader(bytes.NewReader(body))
 
-	value, err := UVarint.Read(r)
+	var value uint64
+	err = UVarint.Scan(r, &value)
 	assert.NoError(err)
 	assert.Equal(uint64(4), value)
 }

@@ -16,12 +16,9 @@ func (t typeInt64) Write(w Writer, value int64) error {
 	return UInt64.Write(w, uint64(value))
 }
 
-func (t typeInt64) Read(r Reader) (int64, error) {
-	v, err := UInt64.Read(r)
-	return int64(v), err
-}
-
 func (t typeInt64) Scan(r Reader, v *int64) (err error) {
-	*v, err = t.Read(r)
-	return
+	var u uint64
+	err = UInt64.Scan(r, &u)
+	*v = int64(u)
+	return err
 }

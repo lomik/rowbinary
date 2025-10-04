@@ -29,20 +29,18 @@ func (t typeUUID) Write(w Writer, value uuid.UUID) error {
 	return err
 }
 
-func (t typeUUID) Read(r Reader) (uuid.UUID, error) {
+func (t typeUUID) Scan(r Reader, v *uuid.UUID) error {
 	b, err := r.Peek(16)
 	if err != nil {
-		return uuid.UUID{}, err
+		return err
 	}
 
 	swap64(b)
-	ret, err := uuid.FromBytes(b)
-	r.Discard(16)
+	err = v.UnmarshalBinary(b)
+	if err != nil {
+		return err
+	}
 
-	return ret, err
-}
-
-func (t typeUUID) Scan(r Reader, v *uuid.UUID) (err error) {
-	*v, err = t.Read(r)
-	return
+	_, err = r.Discard(16)
+	return err
 }

@@ -48,22 +48,15 @@ func (t typeNullableAny) Write(w Writer, value *any) error {
 	return t.valueType.WriteAny(w, *value)
 }
 
-func (t typeNullableAny) Read(r Reader) (*any, error) {
+func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
 	b, err := r.ReadByte()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if b == 0x01 {
-		return nil, nil
+		*v = nil
+		return nil
 	}
-
-	value, err := t.valueType.ReadAny(r)
-
-	return &value, err
-}
-
-func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
-	*v, err = t.Read(r)
-	return
+	return t.valueType.ScanAny(r, *v)
 }

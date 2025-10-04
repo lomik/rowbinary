@@ -16,11 +16,7 @@ func (t typeUInt8) Write(w Writer, value uint8) error {
 	return w.WriteByte(value)
 }
 
-func (t typeUInt8) Read(r Reader) (uint8, error) {
-	return r.ReadByte()
-}
-
 func (t typeUInt8) Scan(r Reader, v *uint8) (err error) {
-	*v, err = t.Read(r)
+	*v, err = r.ReadByte()
 	return
 }

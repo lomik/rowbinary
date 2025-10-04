@@ -22,17 +22,14 @@ func (t typeUInt64) Write(w Writer, value uint64) error {
 	return err
 }
 
-func (t typeUInt64) Read(r Reader) (uint64, error) {
+func (t typeUInt64) Scan(r Reader, v *uint64) (err error) {
 	b, err := r.Peek(8)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	ret := binary.LittleEndian.Uint64(b)
-	r.Discard(8)
-	return ret, nil
-}
-
-func (t typeUInt64) Scan(r Reader, v *uint64) (err error) {
-	*v, err = t.Read(r)
+	*v = binary.LittleEndian.Uint64(b)
+	if _, err = r.Discard(8); err != nil {
+		return err
+	}
 	return
 }

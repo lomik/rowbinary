@@ -28,11 +28,6 @@ func (t typeLowCardinality[V]) Write(w Writer, value V) error {
 	return t.valueType.Write(w, value)
 }
 
-func (t typeLowCardinality[V]) Read(r Reader) (V, error) {
-	return t.valueType.Read(r)
-}
-
 func (t typeLowCardinality[V]) Scan(r Reader, v *V) (err error) {
-	*v, err = t.Read(r)
-	return
+	return t.valueType.Scan(r, v)
 }

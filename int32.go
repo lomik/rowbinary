@@ -16,12 +16,9 @@ func (t typeInt32) Write(w Writer, value int32) error {
 	return UInt32.Write(w, uint32(value))
 }
 
-func (t typeInt32) Read(r Reader) (int32, error) {
-	v, err := UInt32.Read(r)
-	return int32(v), err
-}
-
 func (t typeInt32) Scan(r Reader, v *int32) (err error) {
-	*v, err = t.Read(r)
-	return
+	var u uint32
+	err = UInt32.Scan(r, &u)
+	*v = int32(u)
+	return err
 }

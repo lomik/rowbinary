@@ -2,7 +2,6 @@ package rowbinary
 
 import (
 	"encoding/binary"
-	"io"
 )
 
 var StringBytes Type[[]byte] = MakeTypeWrapAny[[]byte](typeStringBytes{})
@@ -24,17 +23,6 @@ func (t typeStringBytes) Write(w Writer, value []byte) error {
 	}
 	_, err = w.Write(value)
 	return err
-}
-
-func (t typeStringBytes) Read(r Reader) ([]byte, error) {
-	n, err := binary.ReadUvarint(r)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]byte, n)
-	_, err = io.ReadAtLeast(r, out, int(n))
-	return out, err
 }
 
 func (t typeStringBytes) Scan(r Reader, v *[]byte) (err error) {

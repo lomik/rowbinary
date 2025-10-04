@@ -37,29 +37,20 @@ func (t typeString) Write(w Writer, value string) error {
 	return err
 }
 
-func (t typeString) Read(r Reader) (string, error) {
+func (t typeString) Scan(r Reader, v *string) (err error) {
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	buf, err := r.Peek(int(n))
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	ret := string(buf[:n])
+	*v = string(buf[:n])
 	_, err = r.Discard(int(n))
-	if err != nil {
-		return "", err
-	}
-
-	return ret, nil
-}
-
-func (t typeString) Scan(r Reader, v *string) (err error) {
-	*v, err = t.Read(r)
-	return
+	return err
 }
 
 func StringEncode(s string) []byte {

@@ -108,23 +108,27 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeDateTime:
 		return DateTime, nil
 	case BinaryTypeDateTimeWithTimeZone:
-		name, err := String.Read(r)
+		var name string
+		err := String.Scan(r, &name)
 		if err != nil {
 			return nil, err
 		}
 		return DateTimeTZ(name), nil
 	case BinaryTypeDateTime64: // <uint8_precision>
-		size, err := UInt8.Read(r)
+		var size uint8
+		err := UInt8.Scan(r, &size)
 		if err != nil {
 			return nil, err
 		}
 		return DateTime64(size), nil
 	case BinaryTypeDateTime64WithTimeZone: // <uint8_precision><var_uint_time_zone_name_size><time_zone_name_data>
-		size, err := UInt8.Read(r)
+		var name string
+		var size uint8
+		err := String.Scan(r, &name)
 		if err != nil {
 			return nil, err
 		}
-		name, err := String.Read(r)
+		err = UInt8.Scan(r, &size)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +136,8 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeString:
 		return String, nil
 	case BinaryTypeFixedString: // <var_uint_size>
-		size, err := UVarint.Read(r)
+		var size uint64
+		err := UVarint.Scan(r, &size)
 		if err != nil {
 			return nil, err
 		}
@@ -144,11 +149,13 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		mp := make(map[string]int8, n)
 		for i := 0; i < int(n); i++ {
-			name, err := String.Read(r)
+			var name string
+			err := String.Scan(r, &name)
 			if err != nil {
 				return nil, err
 			}
-			value, err := Int8.Read(r)
+			var value int8
+			err = Int8.Scan(r, &value)
 			if err != nil {
 				return nil, err
 			}
@@ -162,11 +169,13 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		mp := make(map[string]int16)
 		for i := 0; i < int(n); i++ {
-			name, err := String.Read(r)
+			var name string
+			err := String.Scan(r, &name)
 			if err != nil {
 				return nil, err
 			}
-			value, err := Int16.Read(r)
+			var value int16
+			err = Int16.Scan(r, &value)
 			if err != nil {
 				return nil, err
 			}
@@ -174,11 +183,12 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return Enum16(mp), nil
 	case BinaryTypeDecimal32, BinaryTypeDecimal64, BinaryTypeDecimal128, BinaryTypeDecimal256: // <uint8_precision><uint8_scale>
-		precision, err := UInt8.Read(r)
+		var precision, scale uint8
+		err := UInt8.Scan(r, &precision)
 		if err != nil {
 			return nil, err
 		}
-		scale, err := UInt8.Read(r)
+		err = UInt8.Scan(r, &scale)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +222,8 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		columns := make([]Column, 0, n)
 		for i := 0; i < int(n); i++ {
-			name, err := String.Read(r)
+			var name string
+			err := String.Scan(r, &name)
 			if err != nil {
 				return nil, err
 			}
@@ -274,7 +285,8 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		columns := make([]Column, 0, n)
 		for i := 0; i < int(n); i++ {
-			name, err := String.Read(r)
+			var name string
+			err := String.Scan(r, &name)
 			if err != nil {
 				return nil, err
 			}

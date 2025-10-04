@@ -19,16 +19,11 @@ func (t typeBool) Write(w Writer, value bool) error {
 	return UInt8.Write(w, 0)
 }
 
-func (t typeBool) Read(r Reader) (bool, error) {
-	v, err := UInt8.Read(r)
-	return v == 1, err
-}
-
 func (t typeBool) Scan(r Reader, v *bool) error {
-	val, err := t.Read(r)
+	val, err := r.ReadByte()
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = val == 1
 	return nil
 }
