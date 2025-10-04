@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"encoding/binary"
 	"math"
 )
 
@@ -21,11 +22,13 @@ func (t typeFloat64) Write(w Writer, value float64) error {
 }
 
 func (t typeFloat64) Scan(r Reader, v *float64) error {
-	var n uint64
-	err := UInt64.Scan(r, &n)
+	b, err := r.Peek(8)
 	if err != nil {
 		return err
 	}
-	*v = math.Float64frombits(n)
+	*v = math.Float64frombits(binary.LittleEndian.Uint64(b))
+	if _, err = r.Discard(8); err != nil {
+		return err
+	}
 	return nil
 }
