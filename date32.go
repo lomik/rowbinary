@@ -25,20 +25,12 @@ func (t typeDate32) Write(w Writer, value time.Time) error {
 	return Int32.Write(w, days)
 }
 
-func (t typeDate32) Read(r Reader) (time.Time, error) {
-	n, err := Int32.Read(r)
-	if err != nil {
-		return time.Time{}, err
-	}
-	v := time.Unix(int64(n)*secInDay, 0).UTC()
-	return v, nil
-}
-
 func (t typeDate32) Scan(r Reader, v *time.Time) error {
-	val, err := t.Read(r)
+	var n int32
+	err := Int32.Scan(r, &n)
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = time.Unix(int64(n)*secInDay, 0).UTC()
 	return nil
 }

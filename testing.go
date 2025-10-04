@@ -10,6 +10,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -103,11 +105,18 @@ func (tc *TestClient) Database() string {
 }
 
 func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
+	_, file, no, ok := runtime.Caller(1)
+	if !ok {
+		file = "unknown"
+		no = 0
+	}
+	caller := fmt.Sprintf("(%s:%d)", filepath.Base(file), no)
+
 	bodyEncoded, err := ExecLocal(query + " AS value FORMAT RowBinary SETTINGS session_timezone='UTC'")
 	assert.NoError(t, err)
 
 	// Read from clickhouse
-	t.Run(fmt.Sprintf("%s/read", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/read%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		r := NewReader(bytes.NewBuffer(bodyEncoded))
@@ -121,7 +130,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// compare Write with clickhouse
-	t.Run(fmt.Sprintf("%s/write", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/write%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -132,7 +141,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// ReadAny from clickhouse
-	t.Run(fmt.Sprintf("%s/read_any", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/read_any%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// read
@@ -147,7 +156,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// Scan test
-	t.Run(fmt.Sprintf("%s/scan", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/scan%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 		// scan
 		r := NewReader(bytes.NewBuffer(bodyEncoded))
@@ -158,7 +167,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// compare WriteAny with clickhouse
-	t.Run(fmt.Sprintf("%s/write_any", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/write_any%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -169,7 +178,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// write any wrong type
-	t.Run(fmt.Sprintf("%s/write_any_wrong_type", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/write_any_wrong_type%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -179,7 +188,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// write any wrong type
-	t.Run(fmt.Sprintf("%s/write_any_wrong_type", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/write_any_wrong_type%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -189,7 +198,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// read truncated
-	t.Run(fmt.Sprintf("%s/read_truncated", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/read_truncated%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -206,7 +215,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// scan truncated
-	t.Run(fmt.Sprintf("%s/scan_truncated", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/scan_truncated%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -224,7 +233,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// write truncated
-	t.Run(fmt.Sprintf("%s/write_truncated", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/write_truncated%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -242,7 +251,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	})
 
 	// compare with clickhouse
-	t.Run(fmt.Sprintf("%s/format_RowBinary", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/format_RowBinary%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 		body, err := ExecLocal(query + " AS value FORMAT RowBinary SETTINGS session_timezone='UTC'")
 		assert.NoError(err)
@@ -259,7 +268,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.Equal(body, buf.Bytes())
 	})
 
-	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNames", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNames%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 		body, err := ExecLocal(query + " AS value FORMAT RowBinaryWithNames SETTINGS session_timezone='UTC'")
 		assert.NoError(err)
@@ -276,7 +285,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.Equal(body, buf.Bytes())
 	})
 
-	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNamesAndTypes_binary", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNamesAndTypes_binary%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 		body, err := ExecLocal(
 			query + ` AS value FORMAT RowBinaryWithNamesAndTypes 
@@ -298,7 +307,7 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.Equal(body, buf.Bytes())
 	})
 
-	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNamesAndTypes_plain", tp.String()), func(t *testing.T) {
+	t.Run(fmt.Sprintf("%s/format_RowBinaryWithNamesAndTypes_plain%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 		body, err := ExecLocal(
 			query + ` AS value FORMAT RowBinaryWithNamesAndTypes 
@@ -361,63 +370,21 @@ func (lw *limitedWriter) Write(p []byte) (int, error) {
 }
 
 func BenchmarkType[T any](b *testing.B, tp Type[T], value T) {
-	b.Run(fmt.Sprintf("%s/Write", tp.String()), func(b *testing.B) {
+	_, file, no, ok := runtime.Caller(1)
+	if !ok {
+		file = "unknown"
+		no = 0
+	}
+	caller := fmt.Sprintf("(%s:%d)", filepath.Base(file), no)
+
+	b.Run(fmt.Sprintf("%s/Write%s", tp.String(), caller), func(b *testing.B) {
 		out := NewWriter(io.Discard)
 		for b.Loop() {
 			tp.Write(out, value)
 		}
 	})
 
-	b.Run(fmt.Sprintf("%s/WriteAny", tp.String()), func(b *testing.B) {
-		out := NewWriter(io.Discard)
-		for b.Loop() {
-			tp.WriteAny(out, value)
-		}
-	})
-
-	b.Run(fmt.Sprintf("%s/Read", tp.String()), func(b *testing.B) {
-		buf := new(bytes.Buffer)
-		out := NewWriter(buf)
-		for range 1000 {
-			tp.Write(out, value)
-		}
-		data := buf.Bytes()
-
-		br := bytes.NewReader(data)
-		r := NewReader(br)
-
-		b.ResetTimer()
-
-		for b.Loop() {
-			tp.Read(r)
-			if br.Len() == 0 {
-				br.Reset(data)
-			}
-		}
-	})
-
-	b.Run(fmt.Sprintf("%s/ReadAny", tp.String()), func(b *testing.B) {
-		buf := new(bytes.Buffer)
-		out := NewWriter(buf)
-		for range 1000 {
-			tp.Write(out, value)
-		}
-		data := buf.Bytes()
-
-		br := bytes.NewReader(data)
-		r := NewReader(br)
-
-		b.ResetTimer()
-
-		for b.Loop() {
-			tp.ReadAny(r)
-			if br.Len() == 0 {
-				br.Reset(data)
-			}
-		}
-	})
-
-	b.Run(fmt.Sprintf("%s/Scan", tp.String()), func(b *testing.B) {
+	b.Run(fmt.Sprintf("%s/Scan%s", tp.String(), caller), func(b *testing.B) {
 		buf := new(bytes.Buffer)
 		out := NewWriter(buf)
 		for range 1000 {

@@ -20,19 +20,12 @@ func (t typeFloat32) Write(w Writer, value float32) error {
 	return UInt32.Write(w, math.Float32bits(value))
 }
 
-func (t typeFloat32) Read(r Reader) (float32, error) {
-	v, err := UInt32.Read(r)
-	if err != nil {
-		return 0, err
-	}
-	return math.Float32frombits(v), nil
-}
-
 func (t typeFloat32) Scan(r Reader, v *float32) error {
-	val, err := t.Read(r)
+	var n uint32
+	err := UInt32.Scan(r, &n)
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = math.Float32frombits(n)
 	return nil
 }

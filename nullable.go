@@ -58,5 +58,11 @@ func (t typeNullable[V]) Scan(r Reader, v **V) error {
 		return nil
 	}
 
-	return t.valueType.Scan(r, *v)
+	x, err := t.valueType.Read(r)
+	if err != nil {
+		return err
+	}
+	*v = &x
+
+	return nil
 }

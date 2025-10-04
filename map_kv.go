@@ -1,7 +1,7 @@
 package rowbinary
 
 import (
-	"errors"
+	"encoding/binary"
 	"fmt"
 	"slices"
 )
@@ -46,59 +46,26 @@ func (t typeMapKV[K, V]) Write(w Writer, value *KV[K, V]) error {
 	})
 }
 
-func (t typeMapKV[K, V]) Read(r Reader) (*KV[K, V], error) {
-	ret := NewKV[K, V]()
-	n, err := UVarint.Read(r)
-	if err != nil {
-		return ret, err
-	}
-
-	for i := uint64(0); i < n; i++ {
-		k, err := t.keyType.Read(r)
-		if err != nil {
-			return ret, err
-		}
-
-		v, err := t.valueType.Read(r)
-		if err != nil {
-			return ret, err
-		}
-		ret.Append(k, v)
-	}
-
-	return ret, nil
-}
-
-func (t typeMapKV[K, V]) WriteAny(w Writer, v any) error {
-	value, ok := v.(*KV[K, V])
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
-}
-
-func (t typeMapKV[K, V]) ReadAny(r Reader) (any, error) {
-	return t.Read(r)
-}
-
-func (t typeMapKV[K, V]) Scan(r Reader, ret **KV[K, V]) (err error) {
+func (t typeMapKV[K, V]) Scan(r Reader, ret **KV[K, V]) error {
 	if *ret == nil {
 		*ret = NewKV[K, V]()
 	}
 	(*ret).Reset()
 
-	n, err := UVarint.Read(r)
+	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return err
 	}
 
 	for i := uint64(0); i < n; i++ {
-		k, err := t.keyType.Read(r)
+		var k K
+		var v V
+		err = t.keyType.Scan(r, &k)
 		if err != nil {
 			return err
 		}
 
-		v, err := t.valueType.Read(r)
+		err = t.valueType.Scan(r, &v)
 		if err != nil {
 			return err
 		}

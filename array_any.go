@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"encoding/binary"
 	"fmt"
 	"slices"
 )
@@ -37,29 +38,29 @@ func (t typeArrayAny) Write(w Writer, value []any) error {
 	return err
 }
 
-func (t typeArrayAny) Read(r Reader) ([]any, error) {
-	n, err := UVarint.Read(r)
-	if err != nil {
-		return nil, err
-	}
-
-	ret := make([]any, 0, int(n))
-	for i := uint64(0); i < n; i++ {
-		s, err := t.valueType.ReadAny(r)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, s)
-	}
-
-	return ret, nil
-}
-
 func (t typeArrayAny) Scan(r Reader, v *[]any) error {
-	val, err := t.Read(r)
+	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return err
 	}
-	*v = val
+	if *v == nil {
+		*v = make([]any, int(n))
+	} else if len(*v) >= int(n) {
+		*v = (*v)[:n]
+	} else {
+		*v = append(*v, make([]any, int(n)-len(*v))...)
+	}
+
+	for i := uint64(0); i < n; i++ {
+		value, err := t.valueType.ReadAny(r)
+		if err != nil {
+			return err
+		}
+		(*v)[i] = value
+		// if err := t.valueType.ScanAny(r, &(*v)[i]); err != nil {
+		// 	return err
+		// }
+	}
+
 	return nil
 }

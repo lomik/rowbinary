@@ -63,20 +63,17 @@ func (t typeEnum8) Write(w Writer, value string) error {
 	return Int8.Write(w, v)
 }
 
-func (t typeEnum8) Read(r Reader) (string, error) {
-	v, err := Int8.Read(r)
+func (t typeEnum8) Scan(r Reader, v *string) error {
+	var val int8
+	err := Int8.Scan(r, &val)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	ret, ok := t.mp1[v]
+	var ok bool
+	*v, ok = t.mp1[val]
 	if !ok {
-		return "", fmt.Errorf("invalid enum value %d", v)
+		return fmt.Errorf("invalid enum value %d", val)
 	}
-	return ret, nil
-}
-
-func (t typeEnum8) Scan(r Reader, v *string) (err error) {
-	*v, err = t.Read(r)
-	return
+	return nil
 }

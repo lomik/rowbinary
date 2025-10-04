@@ -48,35 +48,30 @@ func (t typeDecimal) Write(w Writer, value decimal.Decimal) error {
 	return ErrNotImplemented
 }
 
-func (t typeDecimal) Read(r Reader) (decimal.Decimal, error) {
+func (t typeDecimal) Scan(r Reader, v *decimal.Decimal) error {
 	// decimal32
 	if t.precision <= 9 {
-		v, err := Int32.Read(r)
+		var n int32
+		err := Int32.Scan(r, &n)
 		if err != nil {
-			return decimal.Zero, err
+			return err
 		}
-		return decimal.New(int64(v), -int32(t.scale)), nil
+		*v = decimal.New(int64(n), -int32(t.scale))
+		return nil
 	}
 
 	// decimal64
 	if t.precision <= 18 {
-		v, err := Int64.Read(r)
+		var n int64
+		err := Int64.Scan(r, &n)
 		if err != nil {
-			return decimal.Zero, err
+			return err
 		}
-		return decimal.New(int64(v), -int32(t.scale)), nil
+		*v = decimal.New(int64(n), -int32(t.scale))
+		return nil
 	}
 
 	// todo: decimal128, decimal256
 
-	return decimal.Zero, ErrNotImplemented
-}
-
-func (t typeDecimal) Scan(r Reader, v *decimal.Decimal) error {
-	val, err := t.Read(r)
-	if err != nil {
-		return err
-	}
-	*v = val
-	return nil
+	return ErrNotImplemented
 }

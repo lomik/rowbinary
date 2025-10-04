@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func (t typeDate) Binary() []byte {
 
 func (t typeDate) Write(w Writer, value time.Time) error {
 	if value.Year() < 1970 {
-		return UInt16.Write(w, 0)
+		return fmt.Errorf("invalid date: %s", value)
 	}
 
 	v := time.Date(value.Year(), value.Month(), value.Day(), 0, 0, 0, 0, time.UTC)
@@ -31,20 +32,12 @@ func (t typeDate) Write(w Writer, value time.Time) error {
 	return UInt16.Write(w, days)
 }
 
-func (t typeDate) Read(r Reader) (time.Time, error) {
-	n, err := UInt16.Read(r)
-	if err != nil {
-		return time.Time{}, err
-	}
-	v := time.Unix(int64(n)*secInDay, 0).UTC()
-	return v, nil
-}
-
 func (t typeDate) Scan(r Reader, v *time.Time) error {
-	val, err := t.Read(r)
+	var n uint16
+	err := UInt16.Scan(r, &n)
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = time.Unix(int64(n)*secInDay, 0).UTC()
 	return nil
 }

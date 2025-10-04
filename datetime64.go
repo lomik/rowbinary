@@ -35,19 +35,12 @@ func intPow(base, exponent int64) int64 {
 	return result
 }
 
-func (t typeDateTime64) Read(r Reader) (time.Time, error) {
-	n, err := Int64.Read(r)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return time.Unix(0, n*intPow(10, 9-t.precision)).UTC(), nil
-}
-
 func (t typeDateTime64) Scan(r Reader, v *time.Time) error {
-	val, err := t.Read(r)
+	var n int64
+	err := Int64.Scan(r, &n)
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = time.Unix(0, n*intPow(10, 9-t.precision)).UTC()
 	return nil
 }

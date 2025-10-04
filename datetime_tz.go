@@ -37,26 +37,16 @@ func (t typeDateTimeTZ) Write(w Writer, value time.Time) error {
 	return UInt32.Write(w, uint32(value.Unix()))
 }
 
-func (t typeDateTimeTZ) Read(r Reader) (time.Time, error) {
-	if t.locErr != nil {
-		return time.Time{}, t.locErr
-	}
-
-	n, err := UInt32.Read(r)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return time.Unix(int64(n), 0).In(t.loc), nil
-}
-
 func (t typeDateTimeTZ) Scan(r Reader, v *time.Time) error {
 	if t.locErr != nil {
 		return t.locErr
 	}
-	val, err := t.Read(r)
+
+	var n uint32
+	err := UInt32.Scan(r, &n)
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = time.Unix(int64(n), 0).In(t.loc)
 	return nil
 }

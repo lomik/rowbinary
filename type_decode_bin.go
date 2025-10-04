@@ -124,11 +124,11 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeDateTime64WithTimeZone: // <uint8_precision><var_uint_time_zone_name_size><time_zone_name_data>
 		var name string
 		var size uint8
-		err := String.Scan(r, &name)
+		err := UInt8.Scan(r, &size)
 		if err != nil {
 			return nil, err
 		}
-		err = UInt8.Scan(r, &size)
+		err = String.Scan(r, &name)
 		if err != nil {
 			return nil, err
 		}

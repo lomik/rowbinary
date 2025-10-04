@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -104,7 +105,7 @@ func (r *FormatReader) readHeaderRowBinaryWithNames() error {
 	}
 
 	// read number of columns
-	n, err := UVarint.Read(r.wrap)
+	n, err := binary.ReadUvarint(r.wrap)
 	if err != nil {
 		return r.setErr(err)
 	}
@@ -113,7 +114,8 @@ func (r *FormatReader) readHeaderRowBinaryWithNames() error {
 
 	// read names and match types from options
 	for i := 0; i < int(n); i++ {
-		name, err := String.Read(r.wrap)
+		var name string
+		err = String.Scan(r.wrap, &name)
 		if err != nil {
 			return r.setErr(err)
 		}
@@ -137,7 +139,7 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 	}
 
 	// read number of columns
-	n, err := UVarint.Read(r.wrap)
+	n, err := binary.ReadUvarint(r.wrap)
 	if err != nil {
 		return r.setErr(err)
 	}
@@ -146,7 +148,8 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 
 	// read names
 	for i := 0; i < int(n); i++ {
-		name, err := String.Read(r.wrap)
+		var name string
+		err = String.Scan(r.wrap, &name)
 		if err != nil {
 			return r.setErr(err)
 		}
@@ -162,7 +165,8 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 			remote[i].tp = tp
 
 		} else {
-			tpStr, err := String.Read(r.wrap)
+			var tpStr string
+			err = String.Scan(r.wrap, &tpStr)
 			if err != nil {
 				return r.setErr(err)
 			}
@@ -250,7 +254,7 @@ func Read[V any](r *FormatReader, tp Type[V]) (V, error) {
 		return value, r.setErr(fmt.Errorf("type mismatch. expected %s, got %s", r.columns[r.index].tp.String(), tp.String()))
 	}
 
-	value, err := tp.Read(r.wrap)
+	err := tp.Scan(r.wrap, &value)
 	r.nextColumn()
 	return value, r.setErr(err)
 }

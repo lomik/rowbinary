@@ -48,11 +48,26 @@ type typeWrapperAny[T any] struct {
 }
 
 func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
-	value, ok := v.(*T)
-	if !ok {
-		return fmt.Errorf("unexpected type: %T, expected *%T", v, new(T))
+	var value T
+	err := t.Scan(r, &value)
+	if err != nil {
+		return err
 	}
-	return t.Scan(r, value)
+	if p, ok := v.(**T); ok {
+		*p = &value
+		return nil
+	}
+	if p, ok := v.(*T); ok {
+		*p = value
+		return nil
+	}
+
+	if p, ok := v.(*any); ok {
+		*p = value
+		return nil
+	}
+
+	return fmt.Errorf("unexpected type %T", v)
 }
 
 func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
@@ -64,6 +79,10 @@ func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
 }
 
 func (t typeWrapperAny[T]) ReadAny(r Reader) (any, error) {
+	return t.Read(r)
+}
+
+func (t typeWrapperAny[T]) Read(r Reader) (T, error) {
 	var v T
 	err := t.Scan(r, &v)
 	return v, err

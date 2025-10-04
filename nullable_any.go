@@ -24,7 +24,7 @@ type typeNullableAny struct {
 // Note: Use a pointer (*any) to represent nullable values. A nil pointer encodes as null,
 // and a non-nil pointer encodes the dereferenced value. Type safety is not enforced at compile time.
 func NullableAny(valueType Any) Type[*any] {
-	return MakeTypeWrapAny(typeNullableAny{
+	return MakeTypeWrapAny[*any](typeNullableAny{
 		valueType: valueType,
 	})
 }
@@ -45,7 +45,8 @@ func (t typeNullableAny) Write(w Writer, value *any) error {
 	if err != nil {
 		return err
 	}
-	return t.valueType.WriteAny(w, *value)
+	err = t.valueType.WriteAny(w, *value)
+	return err
 }
 
 func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
@@ -58,5 +59,11 @@ func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
 		*v = nil
 		return nil
 	}
-	return t.valueType.ScanAny(r, *v)
+
+	x, err := t.valueType.ReadAny(r)
+	if err != nil {
+		return err
+	}
+	*v = &x
+	return nil
 }

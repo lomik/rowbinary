@@ -10,6 +10,7 @@ type PreType[T any] interface {
 	WriteAny(w Writer, v any) error
 	ScanAny(r Reader, v any) error
 	ReadAny(r Reader) (any, error)
+	Read(r Reader) (T, error)
 }
 
 type BaseType[T any] interface {

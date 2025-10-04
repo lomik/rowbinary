@@ -20,19 +20,12 @@ func (t typeFloat64) Write(w Writer, value float64) error {
 	return UInt64.Write(w, math.Float64bits(value))
 }
 
-func (t typeFloat64) Read(r Reader) (float64, error) {
-	v, err := UInt64.Read(r)
-	if err != nil {
-		return 0, err
-	}
-	return math.Float64frombits(v), nil
-}
-
 func (t typeFloat64) Scan(r Reader, v *float64) error {
-	val, err := t.Read(r)
+	var n uint64
+	err := UInt64.Scan(r, &n)
 	if err != nil {
 		return err
 	}
-	*v = val
+	*v = math.Float64frombits(n)
 	return nil
 }

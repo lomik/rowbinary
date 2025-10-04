@@ -1,6 +1,7 @@
 package rowbinary
 
 import (
+	"encoding/binary"
 	"fmt"
 	"slices"
 )
@@ -62,30 +63,24 @@ func (t typeMapAny) Write(w Writer, value map[any]any) error {
 	return nil
 }
 
-func (t typeMapAny) Read(r Reader) (map[any]any, error) {
-	n, err := UVarint.Read(r)
+func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
+	n, err := binary.ReadUvarint(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	ret := make(map[any]any, int(n))
+	*ret = make(map[any]any, int(n))
 	for i := uint64(0); i < n; i++ {
 		k, err := t.keyType.ReadAny(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		v, err := t.valueType.ReadAny(r)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		ret[k] = v
+		(*ret)[k] = v
 	}
 
-	return ret, nil
-}
-
-func (t typeMapAny) Scan(r Reader, v *map[any]any) (err error) {
-	*v, err = t.Read(r)
-	return
+	return nil
 }
