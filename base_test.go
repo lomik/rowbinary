@@ -78,11 +78,26 @@ func TestBase(t *testing.T) {
 			{uint32(42), "hello world"},
 		}, `
 		CREATE TEMPORARY TABLE tmp (
-		value Nested (
-			i UInt32,
-			s String
-		)) ENGINE = Memory;
+			value Nested (
+				i UInt32,
+				s String
+			)
+		) ENGINE = Memory;
 		INSERT INTO tmp VALUES ([1,42], ['sss','hello world']);
+		SELECT value FROM tmp
+		`)
+	TestType(t, Enum8(map[string]int8{"android": 1, "ios": 2, "windows": -10}), "ios", `
+		CREATE TEMPORARY TABLE tmp (
+			value Enum('android'=1, 'ios'=2, 'windows'=-10)
+		) ENGINE = Memory;
+		INSERT INTO tmp VALUES ('ios');
+		SELECT value FROM tmp
+		`)
+	TestType(t, Enum16(map[string]int16{"android": 1024, "ios": 2248, "windows": -3000}), "ios", `
+		CREATE TEMPORARY TABLE tmp (
+			value Enum('android'=1024, 'ios'=2248, 'windows'=-3000)
+		) ENGINE = Memory;
+		INSERT INTO tmp VALUES ('ios');
 		SELECT value FROM tmp
 		`)
 }

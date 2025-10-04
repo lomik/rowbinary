@@ -125,10 +125,42 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			return nil, err
 		}
 		return FixedString(int(size)), nil
-	case BinaryTypeEnum8:
-		return nil, errors.New("not implemented")
-	case BinaryTypeEnum16:
-		return nil, errors.New("not implemented")
+	case BinaryTypeEnum8: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><int8_value_1>...<var_uint_name_size_N><name_data_N><int8_value_N>
+		n, err := binary.ReadUvarint(r)
+		if err != nil {
+			return nil, err
+		}
+		mp := make(map[string]int8, n)
+		for i := 0; i < int(n); i++ {
+			name, err := String.Read(r)
+			if err != nil {
+				return nil, err
+			}
+			value, err := Int8.Read(r)
+			if err != nil {
+				return nil, err
+			}
+			mp[name] = value
+		}
+		return Enum8(mp), nil
+	case BinaryTypeEnum16: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><int16_little_endian_value_1>...><var_uint_name_size_N><name_data_N><int16_little_endian_value_N>
+		n, err := binary.ReadUvarint(r)
+		if err != nil {
+			return nil, err
+		}
+		mp := make(map[string]int16)
+		for i := 0; i < int(n); i++ {
+			name, err := String.Read(r)
+			if err != nil {
+				return nil, err
+			}
+			value, err := Int16.Read(r)
+			if err != nil {
+				return nil, err
+			}
+			mp[name] = value
+		}
+		return Enum16(mp), nil
 	case BinaryTypeDecimal32, BinaryTypeDecimal64, BinaryTypeDecimal128, BinaryTypeDecimal256: // <uint8_precision><uint8_scale>
 		precision, err := UInt8.Read(r)
 		if err != nil {

@@ -7,6 +7,23 @@ import (
 	"strings"
 )
 
+func quote(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return "'" + s + "'"
+}
+
+func unquote(s string) string {
+	s = strings.TrimSpace(s)
+	if len(s) < 2 || s[0] != '\'' || s[len(s)-1] != '\'' {
+		return s
+	}
+	s = s[1 : len(s)-1]
+	s = strings.ReplaceAll(s, `\'`, `'`)
+	s = strings.ReplaceAll(s, `\\`, `\`)
+	return s
+}
+
 func decodeStringTypeSplitRoot(t string, sep byte) []string {
 	s := t
 	var ret []string
@@ -166,10 +183,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("DateTime must have exactly one argument: %#v", t)
 		}
-		if len(funcArgs[0]) < 3 || funcArgs[0][0] != '\'' || funcArgs[0][len(funcArgs[0])-1] != '\'' {
-			return nil, fmt.Errorf("Invalid argument of DateTime: %#v", t)
-		}
-		return DateTimeTZ(funcArgs[0][1 : len(funcArgs[0])-1]), nil
+		return DateTimeTZ(unquote(funcArgs[0])), nil
 
 	case "Decimal":
 		if len(funcArgs) != 2 {
@@ -228,6 +242,39 @@ func DecodeStringType(t string) (Any, error) {
 			columns = append(columns, Column{name: argArr[0], tp: elemType})
 		}
 		return TupleNamedAny(columns...), nil
+
+	case "Enum8":
+		// Enum8('windows' = -10, 'android' = 1, 'ios' = 2)
+		mp := make(map[string]int8)
+		for _, arg := range funcArgs {
+			argArr := decodeStringTypeSplitRoot(arg, ' ')
+			if len(argArr) != 3 || argArr[1] != "=" {
+				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
+			}
+			name := unquote(argArr[0])
+			value, err := strconv.Atoi(argArr[2])
+			if err != nil {
+				return nil, fmt.Errorf("can't parse enum value: %w", err)
+			}
+			mp[name] = int8(value)
+		}
+		return Enum8(mp), nil
+	case "Enum16":
+		// Enum16('windows' = -10, 'android' = 1, 'ios' = 2)
+		mp := make(map[string]int16)
+		for _, arg := range funcArgs {
+			argArr := decodeStringTypeSplitRoot(arg, ' ')
+			if len(argArr) != 3 || argArr[1] != "=" {
+				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
+			}
+			name := unquote(argArr[0])
+			value, err := strconv.Atoi(argArr[2])
+			if err != nil {
+				return nil, fmt.Errorf("can't parse enum value: %w", err)
+			}
+			mp[name] = int16(value)
+		}
+		return Enum16(mp), nil
 
 	case "Nested":
 		if len(funcArgs) == 0 {

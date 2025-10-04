@@ -20,7 +20,7 @@ type typeDateTimeTZ struct {
 }
 
 func (t typeDateTimeTZ) String() string {
-	return fmt.Sprintf("DateTime('%s')", t.tz)
+	return fmt.Sprintf("DateTime(%s)", quote(t.tz))
 }
 
 func (t typeDateTimeTZ) Binary() []byte {
