@@ -22,21 +22,23 @@ func BenchmarkChBench_Rowbinary(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Select(ctx, "SELECT * FROM system.numbers_mt LIMIT 500000000", func(r *rowbinary.FormatReader) error {
-				max := uint64(0)
-				var v uint64
-				for r.Next() {
-					err := rowbinary.Scan(r, rowbinary.UInt64, &v)
-					if err != nil {
-						return err
+			c.Select(ctx,
+				"SELECT * FROM system.numbers_mt LIMIT 500000000",
+				rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
+					max := uint64(0)
+					var v uint64
+					for r.Next() {
+						err := rowbinary.Scan(r, rowbinary.UInt64, &v)
+						if err != nil {
+							return err
+						}
+						if v > max {
+							max = v
+						}
 					}
-					if v > max {
-						max = v
-					}
-				}
-				assert.Equal(uint64(499999999), max)
-				return nil
-			}),
+					assert.Equal(uint64(499999999), max)
+					return nil
+				})),
 		)
 	}
 

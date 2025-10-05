@@ -28,14 +28,16 @@ func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
-				for range 100000 {
-					if err := rowbinary.Write(r, arrayUInt32, data); err != nil {
-						return err
+			c.Insert(ctx, "t",
+				rowbinary.C("x", arrayUInt32),
+				rowbinary.WithFormatWriter(func(r *rowbinary.FormatWriter) error {
+					for range 100000 {
+						if err := rowbinary.Write(r, arrayUInt32, data); err != nil {
+							return err
+						}
 					}
-				}
-				return nil
-			}, rowbinary.C("x", arrayUInt32)),
+					return nil
+				})),
 		)
 	}
 
@@ -59,14 +61,16 @@ func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
-				for range 100000 {
-					if err := r.WriteAny(data); err != nil {
-						return err
+			c.Insert(ctx, "t",
+				rowbinary.C("x", arrayUInt32),
+				rowbinary.WithFormatWriter(func(r *rowbinary.FormatWriter) error {
+					for range 100000 {
+						if err := r.WriteAny(data); err != nil {
+							return err
+						}
 					}
-				}
-				return nil
-			}, rowbinary.C("x", arrayUInt32)),
+					return nil
+				})),
 		)
 	}
 

@@ -19,17 +19,19 @@ func BenchmarkRowbinary_Select_SystemNumbers(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Select(ctx, "SELECT * FROM system.numbers LIMIT 1000000", func(r *rowbinary.FormatReader) error {
-				cnt := 0
-				for r.Next() {
-					if _, err := rowbinary.Read(r, rowbinary.UInt64); err != nil {
-						return err
+			c.Select(ctx, "SELECT * FROM system.numbers LIMIT 1000000",
+				rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
+					cnt := 0
+					var x uint64
+					for r.Next() {
+						if err := rowbinary.Scan(r, rowbinary.UInt64, &x); err != nil {
+							return err
+						}
+						cnt++
 					}
-					cnt++
-				}
-				assert.Equal(1000000, cnt)
-				return r.Err()
-			}),
+					assert.Equal(1000000, cnt)
+					return r.Err()
+				})),
 		)
 	}
 
@@ -46,18 +48,19 @@ func BenchmarkRowbinary_Select_SystemNumbers_Any(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Select(ctx, "SELECT * FROM system.numbers LIMIT 1000000", func(r *rowbinary.FormatReader) error {
-				cnt := 0
-				var x any
-				for r.Next() {
-					if err := r.Scan(&x); err != nil {
-						return err
+			c.Select(ctx, "SELECT * FROM system.numbers LIMIT 1000000",
+				rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
+					cnt := 0
+					var x any
+					for r.Next() {
+						if err := r.Scan(&x); err != nil {
+							return err
+						}
+						cnt++
 					}
-					cnt++
-				}
-				assert.Equal(1000000, cnt)
-				return r.Err()
-			}),
+					assert.Equal(1000000, cnt)
+					return r.Err()
+				})),
 		)
 	}
 

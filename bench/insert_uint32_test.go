@@ -21,14 +21,16 @@ func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
-				for i := range uint32(100000) {
-					if err := rowbinary.Write(r, rowbinary.UInt32, i); err != nil {
-						return err
+			c.Insert(ctx, "t",
+				rowbinary.C("x", rowbinary.UInt32),
+				rowbinary.WithFormatWriter(func(r *rowbinary.FormatWriter) error {
+					for i := range uint32(100000) {
+						if err := rowbinary.Write(r, rowbinary.UInt32, i); err != nil {
+							return err
+						}
 					}
-				}
-				return nil
-			}, rowbinary.C("x", rowbinary.UInt32)),
+					return nil
+				})),
 		)
 	}
 
@@ -47,14 +49,16 @@ func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 
 	for b.Loop() {
 		assert.NoError(
-			c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
-				for i := range uint32(100000) {
-					if err := r.WriteAny(i); err != nil {
-						return err
+			c.Insert(ctx, "t",
+				rowbinary.C("x", rowbinary.UInt32),
+				rowbinary.WithFormatWriter(func(r *rowbinary.FormatWriter) error {
+					for i := range uint32(100000) {
+						if err := r.WriteAny(i); err != nil {
+							return err
+						}
 					}
-				}
-				return nil
-			}, rowbinary.C("x", rowbinary.UInt32)),
+					return nil
+				})),
 		)
 	}
 

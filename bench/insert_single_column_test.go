@@ -46,14 +46,16 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 
 		for b.Loop() {
 			assert.NoError(
-				c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
-					for range count {
-						if err := rowbinary.Write(r, tp, value); err != nil {
-							return err
+				c.Insert(ctx, "t",
+					rowbinary.C("x", tp),
+					rowbinary.WithFormatWriter(func(r *rowbinary.FormatWriter) error {
+						for range count {
+							if err := rowbinary.Write(r, tp, value); err != nil {
+								return err
+							}
 						}
-					}
-					return nil
-				}, rowbinary.C("x", tp)),
+						return nil
+					})),
 			)
 		}
 
@@ -73,14 +75,16 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 
 		for b.Loop() {
 			assert.NoError(
-				c.Insert(ctx, "t", func(r *rowbinary.FormatWriter) error {
-					for range count {
-						if err := r.WriteAny(value); err != nil {
-							return err
+				c.Insert(ctx, "t",
+					rowbinary.C("x", tp),
+					rowbinary.WithFormatWriter(func(r *rowbinary.FormatWriter) error {
+						for range count {
+							if err := r.WriteAny(value); err != nil {
+								return err
+							}
 						}
-					}
-					return nil
-				}, rowbinary.C("x", tp)),
+						return nil
+					})),
 			)
 		}
 
