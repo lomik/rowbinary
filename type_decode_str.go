@@ -291,25 +291,6 @@ func DecodeStringType(t string) (Any, error) {
 			mp[name] = int16(value)
 		}
 		return Enum16(mp), nil
-
-	case "Nested":
-		if len(funcArgs) == 0 {
-			return nil, fmt.Errorf("Nested must have at least one argument: %#v", t)
-		}
-
-		var columns []Column
-		for _, arg := range funcArgs {
-			argArr := decodeStringTypeSplitRoot(arg, ' ')
-			if len(argArr) != 2 {
-				return nil, fmt.Errorf("can't parse named tuple element: %#v", arg)
-			}
-			elemType, err := DecodeStringType(argArr[1])
-			if err != nil {
-				return nil, err
-			}
-			columns = append(columns, Column{name: argArr[0], tp: elemType})
-		}
-		return TupleNamedAny(columns...), nil
 	}
 
 	return nil, fmt.Errorf("can' parse type: %#v", t)

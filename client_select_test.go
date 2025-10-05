@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"context"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -125,4 +126,85 @@ func TestClient_Select_ExternalData(t *testing.T) {
 			C("value", UInt64),
 		),
 	))
+}
+
+func TestClient_Select_WithBodyReader(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
+
+	var body []byte
+	assert.NoError(c.Select(ctx,
+		"SELECT 42 AS value",
+		WithBodyReader(func(r io.Reader) error {
+			var err error
+			body, err = io.ReadAll(r)
+			return err
+		}),
+	))
+
+	// Verify the body is not empty
+	assert.NotEmpty(body)
+}
+
+func TestClient_Select_WithHeader(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
+
+	// Test with a custom header - ClickHouse may ignore unknown headers
+	assert.NoError(c.Select(ctx,
+		"SELECT 1 AS value",
+		WithHeader("X-Test-Header", "test-value"),
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint8
+
+			for r.Next() {
+				var num uint8
+				Scan(r, UInt8, &num)
+				numbers = append(numbers, num)
+			}
+			assert.Equal([]uint8{1}, numbers)
+			return r.Err()
+		}),
+	))
+}
+
+func TestClient_Select_CancelledContext(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := NewTestClient(ctx, testClickHouseDSN)
+	defer c.Close()
+
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cancel() // Cancel immediately
+
+	err := c.Select(cancelCtx,
+		"SELECT 1 AS value",
+		WithFormatReader(func(r *FormatReader) error {
+			return nil
+		}),
+	)
+	assert.Error(err)
+	assert.Contains(err.Error(), "context canceled")
+}
+
+func TestClient_Select_InvalidDSN(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+
+	// Create client with invalid DSN
+	c := NewClient(ctx, "http://invalid-host:8123")
+
+	err := c.Select(ctx,
+		"SELECT 1 AS value",
+		WithFormatReader(func(r *FormatReader) error {
+			return nil
+		}),
+	)
+	assert.Error(err)
+	// Should contain connection error
+	assert.Contains(err.Error(), "dial tcp") // or similar connection error
 }
