@@ -60,20 +60,6 @@ func (t typeTupleAny) Write(w Writer, value []any) error {
 	return nil
 }
 
-// func (t typeTupleAny) Read(r Reader) ([]any, error) {
-// 	ret := make([]any, 0, len(t.valueTypes))
-// 	for i := 0; i < len(t.valueTypes); i++ {
-// 		var s any
-// 		s, err := t.valueTypes[i].ReadAny(r)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		ret = append(ret, s)
-// 	}
-
-// 	return ret, nil
-// }
-
 func (t typeTupleAny) Scan(r Reader, v *[]any) error {
 	*v = (*v)[:0]
 	for i := 0; i < len(t.valueTypes); i++ {
