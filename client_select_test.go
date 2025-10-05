@@ -27,7 +27,9 @@ func TestClient_Select(t *testing.T) {
 			var numbers []uint64
 
 			for r.Next() {
-				numbers = append(numbers, must(Read(r, UInt64)))
+				var num uint64
+				Scan(r, UInt64, &num)
+				numbers = append(numbers, num)
 			}
 			assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
 			return r.Err()
@@ -43,7 +45,8 @@ func TestClient_Select(t *testing.T) {
 				if i > 1000 {
 					return errors.New("infinite loop")
 				}
-				Read(r, UInt32)
+				var num uint32
+				Scan(r, UInt32, &num)
 			}
 			return r.Err()
 		}),
@@ -54,7 +57,8 @@ func TestClient_Select(t *testing.T) {
 		RowBinary,
 		WithFormatReader(func(r *FormatReader) error {
 			for r.Next() {
-				Read(r, UInt64)
+				var num uint64
+				Scan(r, UInt64, &num)
 			}
 			return r.Err()
 		}),
@@ -68,7 +72,9 @@ func TestClient_Select(t *testing.T) {
 			var numbers []uint64
 
 			for r.Next() {
-				numbers = append(numbers, must(Read(r, UInt64)))
+				var num uint64
+				Scan(r, UInt64, &num)
+				numbers = append(numbers, num)
 			}
 			assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
 			return r.Err()
@@ -79,8 +85,10 @@ func TestClient_Select(t *testing.T) {
 		C("", UInt32),
 		WithFormatReader(func(r *FormatReader) error {
 			for r.Next() {
-				Read(r, UInt64)
+				var num uint64
+				Scan(r, UInt64, &num)
 			}
+
 			return r.Err()
 		})), "type mismatch")
 }
@@ -98,7 +106,9 @@ func TestClient_Select_ExternalData(t *testing.T) {
 			var numbers []uint64
 
 			for r.Next() {
-				numbers = append(numbers, must(Read(r, UInt64)))
+				var num uint64
+				assert.NoError(Scan(r, UInt64, &num))
+				numbers = append(numbers, num)
 			}
 			assert.Equal([]uint64{4}, numbers)
 			return r.Err()

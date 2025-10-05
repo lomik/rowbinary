@@ -239,21 +239,6 @@ func (r *FormatReader) Scan(dest ...any) error {
 	return nil
 }
 
-func Read[V any](r *FormatReader, tp Type[V]) (V, error) {
-	var value V
-	if err := r.check(); err != nil {
-		return value, err
-	}
-
-	if tp.id() != r.columns[r.index].tp.id() {
-		return value, r.setErr(fmt.Errorf("type mismatch. expected %s, got %s", r.columns[r.index].tp.String(), tp.String()))
-	}
-
-	err := tp.Scan(r.wrap, &value)
-	r.nextColumn()
-	return value, r.setErr(err)
-}
-
 func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
 	if err := r.check(); err != nil {
 		return err

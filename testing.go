@@ -211,7 +211,8 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.NoError(err)
 
 		r := NewFormatReader(bytes.NewReader(body), C("value", tp))
-		v, err := Read(r, tp)
+		var v T
+		err = Scan(r, tp, &v)
 		assert.NoError(err)
 		assert.Equal(value, v)
 
@@ -228,7 +229,8 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.NoError(err)
 
 		r := NewFormatReader(bytes.NewReader(body), RowBinaryWithNames, C("value", tp))
-		v, err := Read(r, tp)
+		var v T
+		err = Scan(r, tp, &v)
 		assert.NoError(err)
 		assert.Equal(value, v)
 
@@ -250,7 +252,8 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.NoError(err)
 
 		r := NewFormatReader(bytes.NewReader(body), RowBinaryWithNamesAndTypes, WithUseBinaryHeader(true))
-		v, err := Read(r, tp)
+		var v T
+		err = Scan(r, tp, &v)
 		assert.NoError(err)
 		assert.Equal(value, v)
 
@@ -272,7 +275,8 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.NoError(err)
 
 		r := NewFormatReader(bytes.NewReader(body), RowBinaryWithNamesAndTypes, WithUseBinaryHeader(false))
-		v, err := Read(r, tp)
+		var v T
+		err = Scan(r, tp, &v)
 		assert.NoError(err)
 		assert.Equal(value, v)
 
