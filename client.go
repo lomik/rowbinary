@@ -60,7 +60,7 @@ type Client interface {
 	//
 	// Note: The query results are streamed and processed incrementally via the readFunc. For external data,
 	// the method uses multipart/form-data encoding. Default select options from the client configuration are applied first.
-	Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error
+	Select(ctx context.Context, query string, options ...SelectOption) error
 
 	// Exec executes an arbitrary SQL query (e.g., CREATE, DROP, ALTER) against the ClickHouse server.
 	//
@@ -95,7 +95,7 @@ type Client interface {
 	//
 	// Note: The data is streamed to the server as it's written by writeFunc. Default insert options from the client
 	// configuration are applied first. The format header is automatically written before invoking writeFunc.
-	Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error
+	Insert(ctx context.Context, table string, options ...InsertOption) error
 
 	Close() error
 }

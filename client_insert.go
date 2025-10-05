@@ -13,6 +13,8 @@ type insertOptions struct {
 	format        Format
 	params        map[string]string
 	headers       map[string]string
+	formatWriter  func(w *FormatWriter) error
+	bodyWriter    func(w io.Writer) error
 }
 
 type InsertOption interface {
@@ -25,7 +27,7 @@ var _ InsertOption = RowBinary
 var _ InsertOption = WithParam("key", "value")
 var _ InsertOption = WithHeader("key", "value")
 
-func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *FormatWriter) error, options ...InsertOption) error {
+func (c *client) Insert(ctx context.Context, table string, options ...InsertOption) error {
 	opts := insertOptions{
 		params:  map[string]string{},
 		headers: map[string]string{},
@@ -53,14 +55,27 @@ func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *For
 		bw := bufio.NewWriterSize(w, 1024*1024)
 		defer bw.Flush()
 
-		writer := NewFormatWriter(bw, opts.formatOptions...)
-		if err := writer.WriteHeader(); err != nil {
-			w.CloseWithError(err)
+		if opts.formatWriter != nil {
+			writer := NewFormatWriter(bw, opts.formatOptions...)
+			if err := writer.WriteHeader(); err != nil {
+				w.CloseWithError(err)
+				return
+			}
+
+			if err := opts.formatWriter(writer); err != nil {
+				_ = w.CloseWithError(err)
+				return
+			}
+
 			return
 		}
 
-		if err := writeFunc(writer); err != nil {
-			_ = w.CloseWithError(err)
+		if opts.bodyWriter != nil {
+			if err := opts.bodyWriter(bw); err != nil {
+				_ = w.CloseWithError(err)
+				return
+			}
+			return
 		}
 	}()
 
@@ -80,4 +95,28 @@ func (c *client) Insert(ctx context.Context, table string, writeFunc func(w *For
 	}
 
 	return nil
+}
+
+type formatWriterOption struct {
+	formatWriter func(w *FormatWriter) error
+}
+
+func WithFormatWriter(fw func(w *FormatWriter) error) InsertOption {
+	return formatWriterOption{formatWriter: fw}
+}
+
+func (o formatWriterOption) applyInsertOptions(opts *insertOptions) {
+	opts.formatWriter = o.formatWriter
+}
+
+type bodyWriterOption struct {
+	bodyWriter func(w io.Writer) error
+}
+
+func WithBodyWriter(bw func(w io.Writer) error) InsertOption {
+	return bodyWriterOption{bodyWriter: bw}
+}
+
+func (o bodyWriterOption) applyInsertOptions(opts *insertOptions) {
+	opts.bodyWriter = o.bodyWriter
 }

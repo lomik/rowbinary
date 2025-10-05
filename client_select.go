@@ -15,6 +15,8 @@ type selectOptions struct {
 	externalData  []externalData
 	params        map[string]string
 	headers       map[string]string
+	formatReader  func(r *FormatReader) error
+	bodyReader    func(r io.Reader) error
 }
 
 type SelectOption interface {
@@ -41,8 +43,10 @@ var _ SelectOption = RowBinary
 var _ SelectOption = WithParam("key", "value")
 var _ SelectOption = WithHeader("key", "value")
 var _ SelectOption = WithExternalData("key", func(w *FormatWriter) error { return nil })
+var _ SelectOption = WithFormatReader(nil)
+var _ SelectOption = WithBodyReader(nil)
 
-func (c *client) Select(ctx context.Context, query string, readFunc func(r *FormatReader) error, options ...SelectOption) error {
+func (c *client) Select(ctx context.Context, query string, options ...SelectOption) error {
 	opts := selectOptions{
 		params:  map[string]string{},
 		headers: map[string]string{},
@@ -136,29 +140,44 @@ func (c *client) Select(ctx context.Context, query string, readFunc func(r *Form
 	// px := &ReadSizeProxy{Reader: resp.Body}
 	// defer px.Close()
 
-	fr := NewFormatReader(resp.Body, opts.formatOptions...)
-	if err := readFunc(fr); err != nil {
-		return err
+	if opts.formatReader != nil {
+		fr := NewFormatReader(resp.Body, opts.formatOptions...)
+		if err := opts.formatReader(fr); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if opts.bodyReader != nil {
+		if err := opts.bodyReader(resp.Body); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return nil
 }
 
-// type ReadSizeProxy struct {
-// 	io.Reader
-// 	Total int64
-// }
+func WithFormatReader(cb func(r *FormatReader) error) SelectOption {
+	return formatReaderOption{cb: cb}
+}
 
-// func (r *ReadSizeProxy) Read(p []byte) (n int, err error) {
-// 	n, err = r.Reader.Read(p)
-// 	// fmt.Println("n=", n, " total=", r.Total+int64(n))
-// 	r.Total += int64(n)
-// 	return n, err
-// }
+type formatReaderOption struct {
+	cb func(r *FormatReader) error
+}
 
-// func (r *ReadSizeProxy) Close() error {
-// 	if closer, ok := r.Reader.(io.Closer); ok {
-// 		return closer.Close()
-// 	}
-// 	return nil
-// }
+func (f formatReaderOption) applySelectOptions(opts *selectOptions) {
+	opts.formatReader = f.cb
+}
+
+func WithBodyReader(cb func(r io.Reader) error) SelectOption {
+	return bodyReaderOption{cb: cb}
+}
+
+type bodyReaderOption struct {
+	cb func(r io.Reader) error
+}
+
+func (b bodyReaderOption) applySelectOptions(opts *selectOptions) {
+	opts.bodyReader = b.cb
+}

@@ -21,51 +21,68 @@ func TestClient_Select(t *testing.T) {
 	c := NewTestClient(ctx, testClickHouseDSN)
 	defer c.Close()
 
-	assert.NoError(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
-		var numbers []uint64
+	assert.NoError(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint64
 
-		for r.Next() {
-			numbers = append(numbers, must(Read(r, UInt64)))
-		}
-		assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
-		return r.Err()
-	}))
-
-	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
-		i := 0
-		for r.Next() {
-			i++
-			if i > 1000 {
-				return errors.New("infinite loop")
+			for r.Next() {
+				numbers = append(numbers, must(Read(r, UInt64)))
 			}
-			Read(r, UInt32)
-		}
-		return r.Err()
-	}), "type mismatch")
+			assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
+			return r.Err()
+		}),
+	))
 
-	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
-		for r.Next() {
-			Read(r, UInt64)
-		}
-		return r.Err()
-	}, RowBinary), "columns must be set")
+	assert.ErrorContains(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		WithFormatReader(func(r *FormatReader) error {
+			i := 0
+			for r.Next() {
+				i++
+				if i > 1000 {
+					return errors.New("infinite loop")
+				}
+				Read(r, UInt32)
+			}
+			return r.Err()
+		}),
+	), "type mismatch")
 
-	assert.NoError(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
-		var numbers []uint64
+	assert.ErrorContains(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		RowBinary,
+		WithFormatReader(func(r *FormatReader) error {
+			for r.Next() {
+				Read(r, UInt64)
+			}
+			return r.Err()
+		}),
+	), "columns must be set")
 
-		for r.Next() {
-			numbers = append(numbers, must(Read(r, UInt64)))
-		}
-		assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
-		return r.Err()
-	}, RowBinary, C("", UInt64)))
+	assert.NoError(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		RowBinary,
+		C("", UInt64),
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint64
 
-	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5", func(r *FormatReader) error {
-		for r.Next() {
-			Read(r, UInt64)
-		}
-		return r.Err()
-	}, RowBinary, C("", UInt32)), "type mismatch")
+			for r.Next() {
+				numbers = append(numbers, must(Read(r, UInt64)))
+			}
+			assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
+			return r.Err()
+		})))
+
+	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5",
+		RowBinary,
+		C("", UInt32),
+		WithFormatReader(func(r *FormatReader) error {
+			for r.Next() {
+				Read(r, UInt64)
+			}
+			return r.Err()
+		})), "type mismatch")
 }
 
 func TestClient_Select_ExternalData(t *testing.T) {
@@ -75,24 +92,27 @@ func TestClient_Select_ExternalData(t *testing.T) {
 	c := NewTestClient(ctx, testClickHouseDSN)
 	defer c.Close()
 
-	assert.NoError(c.Select(ctx, "SELECT max(value) FROM data1", func(r *FormatReader) error {
-		var numbers []uint64
+	assert.NoError(c.Select(ctx,
+		"SELECT max(value) FROM data1",
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint64
 
-		for r.Next() {
-			numbers = append(numbers, must(Read(r, UInt64)))
-		}
-		assert.Equal([]uint64{4}, numbers)
-		return r.Err()
-	}, WithExternalData(
-		"data1",
-		func(w *FormatWriter) error {
-			for i := range uint64(5) {
-				if err := Write(w, UInt64, i); err != nil {
-					return err
-				}
+			for r.Next() {
+				numbers = append(numbers, must(Read(r, UInt64)))
 			}
-			return nil
-		},
-		C("value", UInt64),
-	)))
+			assert.Equal([]uint64{4}, numbers)
+			return r.Err()
+		}),
+		WithExternalData("data1",
+			func(w *FormatWriter) error {
+				for i := range uint64(5) {
+					if err := Write(w, UInt64, i); err != nil {
+						return err
+					}
+				}
+				return nil
+			},
+			C("value", UInt64),
+		),
+	))
 }
