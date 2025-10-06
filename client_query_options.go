@@ -10,13 +10,14 @@ type headerOption struct {
 	value string
 }
 
-var _ SelectOption = WithParam("", "")
-var _ InsertOption = WithParam("", "")
-var _ ExecOption = WithParam("", "")
+type dsnOption struct {
+	dsn string
+}
 
-var _ SelectOption = WithHeader("", "")
-var _ InsertOption = WithHeader("", "")
-var _ ExecOption = WithHeader("", "")
+// WithDSN sets the DSN for the request.
+func WithDSN(dsn string) dsnOption {
+	return dsnOption{dsn: dsn}
+}
 
 func WithHeader(name, value string) headerOption {
 	return headerOption{name: name, value: value}
@@ -60,4 +61,22 @@ func (f headerOption) applyClientOptions(opts *clientOptions) {
 	opts.defaultSelect = append(opts.defaultSelect, f)
 	opts.defaultInsert = append(opts.defaultInsert, f)
 	opts.defaultExec = append(opts.defaultExec, f)
+}
+
+func (o dsnOption) applySelectOptions(opts *selectOptions) {
+	opts.dsn = o.dsn
+}
+
+func (o dsnOption) applyInsertOptions(opts *insertOptions) {
+	opts.dsn = o.dsn
+}
+
+func (o dsnOption) applyExecOptions(opts *execOptions) {
+	opts.dsn = o.dsn
+}
+
+func (o dsnOption) applyClientOptions(opts *clientOptions) {
+	opts.defaultSelect = append(opts.defaultSelect, o)
+	opts.defaultInsert = append(opts.defaultInsert, o)
+	opts.defaultExec = append(opts.defaultExec, o)
 }

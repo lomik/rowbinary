@@ -197,7 +197,7 @@ func TestClient_Select_InvalidDSN(t *testing.T) {
 	ctx := context.Background()
 
 	// Create client with invalid DSN
-	c := NewClient(ctx, "http://invalid-host:8123")
+	c := NewClient(ctx, WithDSN("http://invalid-host:8123"))
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 

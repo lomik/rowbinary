@@ -11,6 +11,7 @@ import (
 )
 
 type selectOptions struct {
+	dsn           string
 	formatOptions []FormatOption
 	externalData  []externalData
 	params        map[string]string
@@ -45,6 +46,7 @@ var _ SelectOption = WithHeader("key", "value")
 var _ SelectOption = WithExternalData("key", func(w *FormatWriter) error { return nil })
 var _ SelectOption = WithFormatReader(nil)
 var _ SelectOption = WithBodyReader(nil)
+var _ SelectOption = WithDSN("http://localhost:8123")
 
 func (c *client) Select(ctx context.Context, query string, options ...SelectOption) error {
 	opts := selectOptions{
@@ -58,7 +60,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		opt.applySelectOptions(&opts)
 	}
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Method: ClientMethodSelect}, opts.params, opts.headers)
+	req, err := c.newRequest(ctx, opts.dsn, DiscoveryCtx{Method: ClientMethodSelect}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}

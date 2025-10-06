@@ -9,6 +9,7 @@ import (
 )
 
 type execOptions struct {
+	dsn     string
 	params  map[string]string
 	headers map[string]string
 }
@@ -19,6 +20,7 @@ type ExecOption interface {
 
 var _ ExecOption = WithParam("key", "value")
 var _ ExecOption = WithHeader("key", "value")
+var _ ExecOption = WithDSN("http://localhost:8123")
 
 func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) error {
 	opts := execOptions{
@@ -32,7 +34,7 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 		opt.applyExecOptions(&opts)
 	}
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Method: ClientMethodExecute}, opts.params, opts.headers)
+	req, err := c.newRequest(ctx, opts.dsn, DiscoveryCtx{Method: ClientMethodExecute}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}

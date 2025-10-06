@@ -107,10 +107,10 @@ var _ ClientOption = WithHeader("key", "value")
 var _ ClientOption = WithDatabase("default")
 var _ ClientOption = WithHTTPClient(nil)
 var _ ClientOption = WithDiscovery(nil)
+var _ ClientOption = WithDSN("http://localhost:8123")
 
 // Client represents a ClickHouse client.
 type client struct {
-	dsn  string
 	opts clientOptions
 }
 
@@ -146,7 +146,7 @@ func WithDiscovery(discovery func(ctx context.Context, dsn string, kind Discover
 }
 
 // NewClient creates a new ClickHouse client.
-func NewClient(ctx context.Context, dsn string, options ...ClientOption) Client {
+func NewClient(ctx context.Context, options ...ClientOption) Client {
 	opts := clientOptions{}
 	// Apply default options
 	WithUseBinaryHeader(true).applyClientOptions(&opts)
@@ -158,7 +158,7 @@ func NewClient(ctx context.Context, dsn string, options ...ClientOption) Client 
 		}
 	}
 
-	c := &client{dsn: dsn, opts: opts}
+	c := &client{opts: opts}
 
 	if c.opts.httpClient == nil {
 		c.opts.httpClient = &http.Client{
@@ -171,9 +171,8 @@ func NewClient(ctx context.Context, dsn string, options ...ClientOption) Client 
 	return c
 }
 
-func (c *client) newRequest(ctx context.Context, discoCtx DiscoveryCtx, pp map[string]string, hh map[string]string) (*http.Request, error) {
+func (c *client) newRequest(ctx context.Context, dsn string, discoCtx DiscoveryCtx, pp map[string]string, hh map[string]string) (*http.Request, error) {
 	var err error
-	dsn := c.dsn
 	if c.opts.discovery != nil {
 		dsn, err = c.opts.discovery(ctx, dsn, discoCtx)
 		if err != nil {

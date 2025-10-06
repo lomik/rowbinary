@@ -83,7 +83,7 @@ type TestClient struct {
 // closed using its Close method to drop the database.
 func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) *TestClient {
 	db := fmt.Sprintf("db_%d_%d", testClientCounter.Add(1), time.Now().UnixNano())
-	c := NewClient(ctx, dsn, append(options, WithDatabase(db))...)
+	c := NewClient(ctx, append(options, WithDSN(dsn), WithDatabase(db))...)
 
 	err := c.Exec(context.Background(), "CREATE DATABASE "+db, WithDatabase("default"))
 	if err != nil {
@@ -91,7 +91,7 @@ func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) *Te
 	}
 
 	return &TestClient{
-		Client: NewClient(ctx, dsn, append(options, WithDatabase(db))...),
+		Client: c,
 		db:     db,
 	}
 }

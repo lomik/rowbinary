@@ -9,6 +9,7 @@ import (
 )
 
 type insertOptions struct {
+	dsn           string
 	formatOptions []FormatOption
 	format        Format
 	params        map[string]string
@@ -26,6 +27,7 @@ var _ InsertOption = WithUseBinaryHeader(false)
 var _ InsertOption = RowBinary
 var _ InsertOption = WithParam("key", "value")
 var _ InsertOption = WithHeader("key", "value")
+var _ InsertOption = WithDSN("http://localhost:8123")
 
 func (c *client) Insert(ctx context.Context, table string, options ...InsertOption) error {
 	opts := insertOptions{
@@ -42,7 +44,7 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 
 	opts.params["query"] = fmt.Sprintf("INSERT INTO %s FORMAT %s", table, opts.format.String())
 
-	req, err := c.newRequest(ctx, DiscoveryCtx{Method: ClientMethodInsert}, opts.params, opts.headers)
+	req, err := c.newRequest(ctx, opts.dsn, DiscoveryCtx{Method: ClientMethodInsert}, opts.params, opts.headers)
 	if err != nil {
 		return err
 	}
