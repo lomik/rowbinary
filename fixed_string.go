@@ -21,7 +21,7 @@ func (t typeFixedString) String() string {
 }
 
 func (t typeFixedString) Binary() []byte {
-	return append(BinaryTypeFixedString[:], UVarintEncode(uint64(t.length))...)
+	return append(BinaryTypeFixedString[:], VarintEncode(uint64(t.length))...)
 }
 
 func (t typeFixedString) Write(w Writer, value []byte) error {

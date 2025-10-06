@@ -25,7 +25,7 @@ func (t typeArrayAny) Binary() []byte {
 }
 
 func (t typeArrayAny) Write(w Writer, value []any) error {
-	err := UVarint.Write(w, uint64(len(value)))
+	err := VarintWrite(w, uint64(len(value)))
 	if err != nil {
 		return err
 	}

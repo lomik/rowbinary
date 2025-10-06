@@ -1,77 +1,18 @@
 package rowbinary
 
 import (
-	"fmt"
-
 	"github.com/shopspring/decimal"
 )
 
 func Decimal(precision uint8, scale uint8) Type[decimal.Decimal] {
-	return MakeTypeWrapAny(typeDecimal{
-		precision: precision,
-		scale:     scale,
-	})
-}
-
-type typeDecimal struct {
-	precision uint8
-	scale     uint8
-}
-
-func (t typeDecimal) String() string {
-	return fmt.Sprintf("Decimal(%d, %d)", t.precision, t.scale)
-}
-
-func (t typeDecimal) Binary() []byte {
-	if t.precision <= 9 {
-		// decimal32
-		return []byte{BinaryTypeDecimal32[0], t.precision, t.scale}
-	} else {
-		return []byte{BinaryTypeDecimal64[0], t.precision, t.scale}
+	if precision <= 9 {
+		return Decimal32(precision, scale)
+	} else if precision <= 18 {
+		return Decimal64(precision, scale)
+	} else if precision <= 38 {
+		return Decimal128(precision, scale)
+	} else if precision <= 76 {
+		return Decimal256(precision, scale)
 	}
-}
-
-func (t typeDecimal) Write(w Writer, value decimal.Decimal) error {
-	// decimal32
-	if t.precision <= 9 {
-		part := uint32(decimal.NewFromBigInt(value.Coefficient(), value.Exponent()+int32(t.scale)).IntPart())
-		return UInt32.Write(w, part)
-	}
-
-	// decimal64
-	if t.precision <= 18 {
-		part := uint64(decimal.NewFromBigInt(value.Coefficient(), value.Exponent()+int32(t.scale)).IntPart())
-		return UInt64.Write(w, part)
-	}
-
-	// todo: decimal128, decimal256
-	return ErrNotImplemented
-}
-
-func (t typeDecimal) Scan(r Reader, v *decimal.Decimal) error {
-	// decimal32
-	if t.precision <= 9 {
-		var n int32
-		err := Int32.Scan(r, &n)
-		if err != nil {
-			return err
-		}
-		*v = decimal.New(int64(n), -int32(t.scale))
-		return nil
-	}
-
-	// decimal64
-	if t.precision <= 18 {
-		var n int64
-		err := Int64.Scan(r, &n)
-		if err != nil {
-			return err
-		}
-		*v = decimal.New(int64(n), -int32(t.scale))
-		return nil
-	}
-
-	// todo: decimal128, decimal256
-
-	return ErrNotImplemented
+	return Invalid[decimal.Decimal]("Decimal precision must be in range 1..76")
 }

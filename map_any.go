@@ -44,7 +44,7 @@ func (t typeMapAny) Binary() []byte {
 }
 
 func (t typeMapAny) Write(w Writer, value map[any]any) error {
-	err := UVarint.Write(w, uint64(len(value)))
+	err := VarintWrite(w, uint64(len(value)))
 	if err != nil {
 		return err
 	}

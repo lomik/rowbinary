@@ -136,8 +136,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeString:
 		return String, nil
 	case BinaryTypeFixedString: // <var_uint_size>
-		var size uint64
-		err := UVarint.Scan(r, &size)
+		size, err := binary.ReadUvarint(r)
 		if err != nil {
 			return nil, err
 		}
@@ -272,8 +271,13 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		return nil, errors.New("not implemented")
 	case BinaryTypeDynamic:
 		return nil, errors.New("not implemented")
-	case BinaryTypeCustom:
-		return nil, errors.New("not implemented")
+	case BinaryTypeCustom: // <var_uint_type_name_size><type_name_data>
+		var name string
+		err := String.Scan(r, &name)
+		if err != nil {
+			return nil, err
+		}
+		return Custom(name, Invalid[any]("Unexpected Custom type")), nil
 	case BinaryTypeBool:
 		return Bool, nil
 	case BinaryTypeSimpleAggregateFunction:

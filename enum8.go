@@ -46,7 +46,7 @@ func (t typeEnum8) Binary() []byte {
 	var b bytes.Buffer
 	w := NewWriter(&b)
 	w.Write(BinaryTypeEnum8[:])
-	UVarint.Write(w, uint64(len(t.keys)))
+	VarintWrite(w, uint64(len(t.keys)))
 	for _, k := range t.keys {
 		String.Write(w, t.mp1[k])
 		Int8.Write(w, k)

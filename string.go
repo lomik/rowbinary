@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"bytes"
 	"encoding/binary"
 	"unsafe"
 )
@@ -29,7 +28,7 @@ func (t typeString) Binary() []byte {
 }
 
 func (t typeString) Write(w Writer, value string) error {
-	err := UVarint.Write(w, uint64(len(value)))
+	err := VarintWrite(w, uint64(len(value)))
 	if err != nil {
 		return err
 	}
@@ -51,11 +50,4 @@ func (t typeString) Scan(r Reader, v *string) (err error) {
 	*v = string(buf[:n])
 	_, err = r.Discard(int(n))
 	return err
-}
-
-func StringEncode(s string) []byte {
-	var b bytes.Buffer
-	w := NewWriter(&b)
-	String.Write(w, s)
-	return b.Bytes()
 }

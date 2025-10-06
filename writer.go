@@ -16,6 +16,7 @@ type Writer interface {
 	io.Writer
 	io.ByteWriter
 	buffer() []byte // 16 bytes buffer for encoding
+	Buffer() []byte // 16 bytes buffer for encoding
 }
 
 type implByteWriter struct {
@@ -30,6 +31,10 @@ func NewWriter(w io.Writer) Writer {
 }
 
 func (w *writer) buffer() []byte {
+	return w.buf[:]
+}
+
+func (w *writer) Buffer() []byte {
 	return w.buf[:]
 }
 

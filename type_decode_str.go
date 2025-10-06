@@ -293,5 +293,9 @@ func DecodeStringType(t string) (Any, error) {
 		return Enum16(mp), nil
 	}
 
+	if !strings.Contains(t, "(") {
+		return Custom(t, Nothing), nil
+	}
+
 	return nil, fmt.Errorf("can' parse type: %#v", t)
 }

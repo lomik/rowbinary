@@ -39,7 +39,7 @@ func (t typeTupleAny) String() string {
 }
 
 func (t typeTupleAny) Binary() []byte {
-	tbin := append(BinaryTypeTuple[:], UVarintEncode(uint64(len(t.valueTypes)))...)
+	tbin := append(BinaryTypeTuple[:], VarintEncode(uint64(len(t.valueTypes)))...)
 	for _, vt := range t.valueTypes {
 		tbin = append(tbin, vt.Binary()...)
 	}

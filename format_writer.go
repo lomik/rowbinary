@@ -96,7 +96,7 @@ func (w *FormatWriter) writeHeader() error {
 		return nil
 	}
 	if w.options.format == RowBinaryWithNames || w.options.format == RowBinaryWithNamesAndTypes {
-		if err := UVarint.Write(w.wrap, uint64(len(w.options.columns))); err != nil {
+		if err := VarintWrite(w.wrap, uint64(len(w.options.columns))); err != nil {
 			return w.setErr(err)
 		}
 		for i := 0; i < len(w.options.columns); i++ {

@@ -27,7 +27,7 @@ func (t typeMapKV[K, V]) Binary() []byte {
 }
 
 func (t typeMapKV[K, V]) Write(w Writer, value *KV[K, V]) error {
-	err := UVarint.Write(w, uint64(value.Len()))
+	err := VarintWrite(w, uint64(value.Len()))
 	if err != nil {
 		return err
 	}

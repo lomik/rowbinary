@@ -40,7 +40,7 @@ func (t typeTupleNamedAny) String() string {
 }
 
 func (t typeTupleNamedAny) Binary() []byte {
-	tbin := append(BinaryTypeTupleNamed[:], UVarintEncode(uint64(len(t.columns)))...)
+	tbin := append(BinaryTypeTupleNamed[:], VarintEncode(uint64(len(t.columns)))...)
 	for _, col := range t.columns {
 		tbin = slices.Concat(tbin, StringEncode(col.Name()), col.Type().Binary())
 	}

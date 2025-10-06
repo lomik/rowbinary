@@ -245,7 +245,15 @@ func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
 	}
 
 	if tp.id() != r.columns[r.index].tp.id() {
-		return r.setErr(fmt.Errorf("type mismatch. expected %s, got %s", r.columns[r.index].tp.String(), tp.String()))
+		return r.setErr(fmt.Errorf(
+			"type mismatch. expected %#v (id=%d, binary=%#v), got %#v (id=%d, binary=%#v)",
+			r.columns[r.index].tp.String(),
+			r.columns[r.index].tp.id(),
+			r.columns[r.index].tp.Binary(),
+			tp.String(),
+			tp.id(),
+			tp.Binary(),
+		))
 	}
 
 	err := tp.Scan(r.wrap, v)

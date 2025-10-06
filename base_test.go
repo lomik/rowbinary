@@ -116,6 +116,14 @@ func TestBase(t *testing.T) {
 	TestType(t, DateTime64TZ(3, "Asia/Shanghai"),
 		time.Date(2023, 11, 22, 20, 49, 31, 123000000, must(time.LoadLocation("Asia/Shanghai"))),
 		"SELECT makeDateTime64(2023,11,22,20,49,31,123, 3, 'Asia/Shanghai')")
+
+	TestType(t, Point, []any{float64(123.45), float64(543.21)}, `
+		CREATE TEMPORARY TABLE tmp (
+			value Point
+		) ENGINE = Memory;
+		INSERT INTO tmp VALUES ((123.45, 543.21));
+		SELECT value FROM tmp
+		`)
 }
 
 func BenchmarkBase(b *testing.B) {

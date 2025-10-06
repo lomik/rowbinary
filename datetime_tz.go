@@ -24,7 +24,7 @@ func (t typeDateTimeTZ) String() string {
 }
 
 func (t typeDateTimeTZ) Binary() []byte {
-	return slices.Concat(BinaryTypeDateTimeWithTimeZone[:], UVarintEncode(uint64(len(t.tz))), []byte(t.tz))
+	return slices.Concat(BinaryTypeDateTimeWithTimeZone[:], VarintEncode(uint64(len(t.tz))), []byte(t.tz))
 }
 
 func (t typeDateTimeTZ) Write(w Writer, value time.Time) error {
