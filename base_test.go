@@ -138,6 +138,22 @@ func TestBase(t *testing.T) {
 		INSERT INTO tmp VALUES ([42,43]);
 		SELECT value FROM tmp
 		`)
+
+	TestType(t, DynamicAny(0, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
+		CREATE TEMPORARY TABLE tmp (
+			value Dynamic()
+		) ENGINE = Memory;
+		INSERT INTO tmp VALUES ([42,43]);
+		SELECT value FROM tmp
+		`)
+
+	TestType(t, DynamicAny(42, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
+		CREATE TEMPORARY TABLE tmp (
+			value Dynamic(max_types=42)
+		) ENGINE = Memory;
+		INSERT INTO tmp VALUES ([42,43]);
+		SELECT value FROM tmp
+		`)
 }
 
 func BenchmarkBase(b *testing.B) {

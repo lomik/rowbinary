@@ -127,6 +127,8 @@ func DecodeStringType(t string) (Any, error) {
 		return IPv4, nil
 	case "IPv6":
 		return IPv6, nil
+	case "Dynamic":
+		return DynamicAny(32), nil
 	}
 
 	funcName, funcArgs, err := decodeStringTypeParseFunc(t)
@@ -306,6 +308,25 @@ func DecodeStringType(t string) (Any, error) {
 			elemTypes = append(elemTypes, elemType)
 		}
 		return VariantAny(elemTypes...), nil
+
+	case "Dynamic":
+		if len(funcArgs) != 1 {
+			return nil, fmt.Errorf("Dynamic must have exactly one argument: %#v", t)
+		}
+
+		argArr := decodeStringTypeSplitRoot(funcArgs[0], '=')
+		if len(argArr) != 2 {
+			return nil, fmt.Errorf("can't parse type: %#v", t)
+		}
+		if argArr[0] != "max_types" {
+			return nil, fmt.Errorf("can't parse type: %#v", t)
+		}
+
+		maxTypes, err := strconv.Atoi(argArr[1])
+		if err != nil {
+			return nil, fmt.Errorf("can't parse max_types: %w", err)
+		}
+		return DynamicAny(uint8(maxTypes)), nil
 	}
 
 	if !strings.Contains(t, "(") {
