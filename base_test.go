@@ -139,7 +139,7 @@ func TestBase(t *testing.T) {
 		SELECT value FROM tmp
 		`)
 
-	TestType(t, DynamicAny(0, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
+	TestType(t, Dynamic(0, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Dynamic()
 		) ENGINE = Memory;
@@ -147,7 +147,7 @@ func TestBase(t *testing.T) {
 		SELECT value FROM tmp
 		`)
 
-	TestType(t, DynamicAny(42, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
+	TestType(t, Dynamic(42, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Dynamic(max_types=42)
 		) ENGINE = Memory;

@@ -4,33 +4,33 @@ import (
 	"fmt"
 )
 
-func DynamicAny(maxTypes uint8, knownTypes ...Any) Type[TypeValue] {
+func Dynamic(maxTypes uint8, knownTypes ...Any) Type[TypeValue] {
 	if maxTypes == 0 {
 		maxTypes = 32
 	}
-	return MakeTypeWrapAny(typeDynamicAny{
+	return MakeTypeWrapAny(typeDynamic{
 		maxTypes:   maxTypes,
 		knownTypes: knownTypes,
 	})
 }
 
-type typeDynamicAny struct {
+type typeDynamic struct {
 	maxTypes   uint8
 	knownTypes []Any
 }
 
-func (t typeDynamicAny) String() string {
+func (t typeDynamic) String() string {
 	if t.maxTypes == 32 {
 		return "Dynamic"
 	}
 	return fmt.Sprintf("Dynamic(max_types=%d)", t.maxTypes)
 }
 
-func (t typeDynamicAny) Binary() []byte {
+func (t typeDynamic) Binary() []byte {
 	return append(BinaryTypeDynamic[:], t.maxTypes)
 }
 
-func (t typeDynamicAny) Write(w Writer, value TypeValue) error {
+func (t typeDynamic) Write(w Writer, value TypeValue) error {
 	_, err := w.Write(value.Type.Binary())
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (t typeDynamicAny) Write(w Writer, value TypeValue) error {
 	return value.Type.WriteAny(w, value.Value)
 }
 
-func (t typeDynamicAny) Scan(r Reader, v *TypeValue) error {
+func (t typeDynamic) Scan(r Reader, v *TypeValue) error {
 	tp, err := DecodeBinaryType(r)
 	if err != nil {
 		return err
