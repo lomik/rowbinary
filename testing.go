@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var testClickHouseDSN = "http://127.0.0.1:8123"
+
 type testingUnknownType struct{}
 
 // ExecLocal executes a ClickHouse query locally using the 'clickhouse local' command and caches the result to disk.
@@ -285,6 +287,37 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 		assert.NoError(Write(w, tp, value))
 
 		assert.Equal(body, buf.Bytes())
+	})
+
+	// insert into clickhouse
+	t.Run(fmt.Sprintf("%s/insert_RowBinary%s", tp.String(), caller), func(t *testing.T) {
+		if tp.String() == "Nullable(Nothing)" {
+			return
+		}
+
+		assert := assert.New(t)
+		c := NewTestClient(t.Context(), testClickHouseDSN)
+		defer c.Close()
+
+		err := c.Exec(t.Context(), fmt.Sprintf("CREATE TABLE tmp (value %s) ENGINE = Memory", tp.String()))
+		assert.NoError(err)
+
+		// insert data
+		err = c.Insert(t.Context(), "tmp",
+			WithColumn("value", tp),
+			WithFormatWriter(func(w *FormatWriter) error {
+				return Write(w, tp, value)
+			}))
+		assert.NoError(err)
+
+		// check inserted
+		err = c.Select(t.Context(), "SELECT count() FROM tmp", WithFormatReader(func(r *FormatReader) error {
+			var v uint64
+			assert.NoError(Scan(r, UInt64, &v))
+			assert.Equal(uint64(1), v)
+			return nil
+		}))
+		assert.NoError(err)
 	})
 }
 
