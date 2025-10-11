@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -73,7 +72,7 @@ func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
 func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
 	value, ok := v.(T)
 	if !ok {
-		return errors.New("unexpected type")
+		return TypeMismatchError{}
 	}
 	return t.Write(w, value)
 }

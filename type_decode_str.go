@@ -291,6 +291,21 @@ func DecodeStringType(t string) (Any, error) {
 			mp[name] = int16(value)
 		}
 		return Enum16(mp), nil
+
+	case "Variant":
+		if len(funcArgs) == 0 {
+			return nil, fmt.Errorf("Variant must have at least one argument: %#v", t)
+		}
+
+		var elemTypes []Any
+		for _, arg := range funcArgs {
+			elemType, err := DecodeStringType(arg)
+			if err != nil {
+				return nil, err
+			}
+			elemTypes = append(elemTypes, elemType)
+		}
+		return VariantAny(elemTypes...), nil
 	}
 
 	if !strings.Contains(t, "(") {

@@ -267,8 +267,20 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		return IPv4, nil
 	case BinaryTypeIPv6:
 		return IPv6, nil
-	case BinaryTypeVariant:
-		return nil, errors.New("not implemented")
+	case BinaryTypeVariant: // <var_uint_number_of_variants><variant_type_encoding_1>...<variant_type_encoding_N>
+		n, err := binary.ReadUvarint(r)
+		types := make([]Any, 0, n)
+		if err != nil {
+			return nil, err
+		}
+		for range n {
+			tp, err := DecodeBinaryType(r)
+			if err != nil {
+				return nil, err
+			}
+			types = append(types, tp)
+		}
+		return VariantAny(types...), nil
 	case BinaryTypeDynamic:
 		return nil, errors.New("not implemented")
 	case BinaryTypeCustom: // <var_uint_type_name_size><type_name_data>
