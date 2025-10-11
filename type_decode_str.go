@@ -307,7 +307,7 @@ func DecodeStringType(t string) (Any, error) {
 			}
 			elemTypes = append(elemTypes, elemType)
 		}
-		return VariantAny(elemTypes...), nil
+		return Variant(elemTypes...), nil
 
 	case "Dynamic":
 		if len(funcArgs) != 1 {

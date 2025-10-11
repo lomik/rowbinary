@@ -280,7 +280,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			}
 			types = append(types, tp)
 		}
-		return VariantAny(types...), nil
+		return Variant(types...), nil
 	case BinaryTypeDynamic: // <uint8_max_types>
 		var maxTypes uint8
 		err := UInt8.Scan(r, &maxTypes)

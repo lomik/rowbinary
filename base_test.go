@@ -124,14 +124,14 @@ func TestBase(t *testing.T) {
 		INSERT INTO tmp VALUES ((123.45, 543.21));
 		SELECT value FROM tmp
 		`)
-	TestType(t, VariantAny(UInt32, String, Array(UInt32)), "ios", `
+	TestType(t, Variant(Array(UInt32), String, UInt32), TypeValue{String, "ios"}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Variant(UInt32, String, Array(UInt32))
 		) ENGINE = Memory;
 		INSERT INTO tmp VALUES ('ios');
 		SELECT value FROM tmp
 		`)
-	TestType(t, VariantAny(UInt32, String, Array(UInt32)), any([]uint32{42, 43}), `
+	TestType(t, Variant(Array(UInt32), String, UInt32), TypeValue{Array(UInt32), []uint32{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Variant(UInt32, String, Array(UInt32))
 		) ENGINE = Memory;
