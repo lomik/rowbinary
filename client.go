@@ -178,6 +178,14 @@ func (c *client) newRequest(ctx context.Context, dsn string, discoCtx DiscoveryC
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		cb := getGlobalDiscovery()
+		if cb != nil {
+			dsn, err = cb(ctx, dsn, discoCtx)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	u, err := url.Parse(dsn)
