@@ -29,8 +29,8 @@ func (t typeDecimal64) Binary() []byte {
 
 func (t typeDecimal64) Write(w Writer, value decimal.Decimal) error {
 	part := uint64(decimal.NewFromBigInt(value.Coefficient(), value.Exponent()+int32(t.scale)).IntPart())
-	binary.LittleEndian.PutUint64(w.buffer(), part)
-	_, err := w.Write(w.buffer()[:8])
+	binary.LittleEndian.PutUint64(w.Buffer(), part)
+	_, err := w.Write(w.Buffer()[:8])
 	return err
 }
 

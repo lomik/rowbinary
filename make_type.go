@@ -30,7 +30,7 @@ type typeWrapper[T any] struct {
 	tstr string
 }
 
-func (t *typeWrapper[T]) id() uint64 {
+func (t *typeWrapper[T]) ID() uint64 {
 	return t.tid
 }
 

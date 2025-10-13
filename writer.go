@@ -15,7 +15,6 @@ type writer struct {
 type Writer interface {
 	io.Writer
 	io.ByteWriter
-	buffer() []byte // 16 bytes buffer for encoding
 	Buffer() []byte // 16 bytes buffer for encoding
 }
 

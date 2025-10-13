@@ -129,6 +129,28 @@ func DecodeStringType(t string) (Any, error) {
 		return IPv6, nil
 	case "Dynamic":
 		return Dynamic(32), nil
+	case "IntervalNanosecond":
+		return IntervalNanosecond, nil
+	case "IntervalMicrosecond":
+		return IntervalMicrosecond, nil
+	case "IntervalMillisecond":
+		return IntervalMillisecond, nil
+	case "IntervalSecond":
+		return IntervalSecond, nil
+	case "IntervalMinute":
+		return IntervalMinute, nil
+	case "IntervalHour":
+		return IntervalHour, nil
+	case "IntervalDay":
+		return IntervalDay, nil
+	case "IntervalWeek":
+		return IntervalWeek, nil
+	case "IntervalMonth":
+		return IntervalMonth, nil
+	case "IntervalQuarter":
+		return IntervalQuarter, nil
+	case "IntervalYear":
+		return IntervalYear, nil
 	}
 
 	funcName, funcArgs, err := decodeStringTypeParseFunc(t)

@@ -17,8 +17,8 @@ func (t typeUInt16) Binary() []byte {
 }
 
 func (t typeUInt16) Write(w Writer, v uint16) error {
-	binary.LittleEndian.PutUint16(w.buffer(), v)
-	_, err := w.Write(w.buffer()[:2])
+	binary.LittleEndian.PutUint16(w.Buffer(), v)
+	_, err := w.Write(w.Buffer()[:2])
 	return err
 }
 

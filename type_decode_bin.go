@@ -235,7 +235,35 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		return TupleNamedAny(columns...), nil
 	case BinaryTypeSet:
 		return nil, errors.New("not implemented")
-	case BinaryTypeInterval:
+	case BinaryTypeInterval: // <interval_kind> (see interval kind binary encoding)
+		b, err := r.ReadByte()
+		if err != nil {
+			return nil, err
+		}
+		switch intervalKind(b) {
+		case intervalKindNanosecond:
+			return IntervalNanosecond, nil
+		case intervalKindMicrosecond:
+			return IntervalMicrosecond, nil
+		case intervalKindMillisecond:
+			return IntervalMillisecond, nil
+		case intervalKindSecond:
+			return IntervalSecond, nil
+		case intervalKindMinute:
+			return IntervalMinute, nil
+		case intervalKindHour:
+			return IntervalHour, nil
+		case intervalKindDay:
+			return IntervalDay, nil
+		case intervalKindWeek:
+			return IntervalWeek, nil
+		case intervalKindMonth:
+			return IntervalMonth, nil
+		case intervalKindQuarter:
+			return IntervalQuarter, nil
+		case intervalKindYear:
+			return IntervalYear, nil
+		}
 		return nil, errors.New("not implemented")
 	case BinaryTypeNullable: // <nested_type_encoding>
 		nested, err := DecodeBinaryType(r)

@@ -58,8 +58,8 @@ func TestBase(t *testing.T) {
 	TestType(t, NullableAny(Int32), pointer(any(int32(-42))), "SELECT toNullable(toInt32(-42))")
 	TestType(t, NullableAny(Int32), nil, "SELECT nullIf(toInt32(-42), toInt32(-42))")
 	TestType(t, DateTime, time.Date(2023, 11, 22, 20, 49, 31, 0, time.UTC), "SELECT toDateTime('2023-11-22 20:49:31')")
-	TestType(t, Date, time.Date(2023, 11, 22, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-11-22')")
-	TestType(t, Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate('2023-03-05')")
+	TestType(t, Date, ValueDate{Year: 2023, Month: 11, Day: 22}, "SELECT toDate('2023-11-22')")
+	TestType(t, Date, ValueDate{Year: 2023, Month: 3, Day: 5}, "SELECT toDate('2023-03-05')")
 	TestType(t, TupleAny(UInt32, String), []any{uint32(42), "hello world"}, "SELECT tuple(toUInt32(42), 'hello world')")
 	TestType(t, LowCardinality(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp")
 	TestType(t, LowCardinalityAny(String), "hello world", "CREATE TEMPORARY TABLE tmp (value LowCardinality(String)) ENGINE=Memory; INSERT INTO tmp (value) VALUES ('hello world'); SELECT value FROM tmp")
@@ -68,10 +68,10 @@ func TestBase(t *testing.T) {
 	TestType(t, FixedString(10), []byte("hello\x00\x00\x00\x00\x00"), "SELECT toFixedString('hello', 10)")
 	TestType(t, TupleNamedAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"}, "CREATE TEMPORARY TABLE tmp (`value` Tuple(i UInt32, s String)) ENGINE = Memory; INSERT INTO tmp VALUES ((42, 'hello world')); SELECT value FROM tmp")
 	// TestType(t, Date32, time.Date(1899, 12, 10, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1899-12-10')")
-	TestType(t, Date32, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1900-01-01')")
-	TestType(t, Date32, time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1970-01-01')")
-	TestType(t, Date32, time.Date(2025, 7, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2025-07-05')")
-	TestType(t, Date32, time.Date(2250, 3, 5, 0, 0, 0, 0, time.UTC), "SELECT toDate32('2250-03-05')")
+	TestType(t, Date32, ValueDate{1900, 1, 1}, "SELECT toDate32('1900-01-01')")
+	TestType(t, Date32, ValueDate{1970, 1, 1}, "SELECT toDate32('1970-01-01')")
+	TestType(t, Date32, ValueDate{2025, 7, 5}, "SELECT toDate32('2025-07-05')")
+	TestType(t, Date32, ValueDate{2250, 3, 5}, "SELECT toDate32('2250-03-05')")
 	TestType(t, DateTimeTZ("Asia/Shanghai"), time.Date(2025, 3, 11, 23, 43, 2, 0, must(time.LoadLocation("Asia/Shanghai"))), "SELECT toDateTime('2025-03-11 23:43:02', 'Asia/Shanghai')")
 	TestType(t, Array(TupleNamedAny(C("i", UInt32), C("s", String))),
 		[][]any{
@@ -124,14 +124,14 @@ func TestBase(t *testing.T) {
 		INSERT INTO tmp VALUES ((123.45, 543.21));
 		SELECT value FROM tmp
 		`)
-	TestType(t, Variant(Array(UInt32), String, UInt32), TypeValue{String, "ios"}, `
+	TestType(t, Variant(Array(UInt32), String, UInt32), Value{String, "ios"}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Variant(UInt32, String, Array(UInt32))
 		) ENGINE = Memory;
 		INSERT INTO tmp VALUES ('ios');
 		SELECT value FROM tmp
 		`)
-	TestType(t, Variant(Array(UInt32), String, UInt32), TypeValue{Array(UInt32), []uint32{42, 43}}, `
+	TestType(t, Variant(Array(UInt32), String, UInt32), Value{Array(UInt32), []uint32{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Variant(UInt32, String, Array(UInt32))
 		) ENGINE = Memory;
@@ -139,7 +139,7 @@ func TestBase(t *testing.T) {
 		SELECT value FROM tmp
 		`)
 
-	TestType(t, Dynamic(0, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
+	TestType(t, Dynamic(0, Array(Int64)), Value{Array(Int64), []int64{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Dynamic()
 		) ENGINE = Memory;
@@ -147,13 +147,16 @@ func TestBase(t *testing.T) {
 		SELECT value FROM tmp
 		`)
 
-	TestType(t, Dynamic(42, Array(Int64)), TypeValue{Array(Int64), []int64{42, 43}}, `
+	TestType(t, Dynamic(42, Array(Int64)), Value{Array(Int64), []int64{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Dynamic(max_types=42)
 		) ENGINE = Memory;
 		INSERT INTO tmp VALUES ([42,43]);
 		SELECT value FROM tmp
 		`)
+
+	TestType(t, IntervalDay, 42, "SELECT INTERVAL 42 DAY")
+	TestType(t, IntervalWeek, -42, "SELECT INTERVAL -42 WEEK")
 }
 
 func BenchmarkBase(b *testing.B) {
@@ -194,9 +197,7 @@ func BenchmarkBase(b *testing.B) {
 	BenchmarkType(b, NullableAny(Int32), pointer(any(int32(-42))))
 	BenchmarkType(b, NullableAny(Int32), nil)
 	BenchmarkType(b, DateTime, time.Date(2023, 11, 22, 20, 49, 31, 0, time.UTC))
-	BenchmarkType(b, Date, time.Date(2023, 11, 22, 0, 0, 0, 0, time.UTC))
-	BenchmarkType(b, Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC))
-	BenchmarkType(b, Date, time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC))
+	BenchmarkType(b, Date, ValueDate{Year: 2023, Month: 11, Day: 22})
 	BenchmarkType(b, TupleAny(UInt32, String), []any{uint32(42), "hello world"})
 	BenchmarkType(b, LowCardinality(String), "hello world")
 	BenchmarkType(b, LowCardinalityAny(String), "hello world")
@@ -204,4 +205,5 @@ func BenchmarkBase(b *testing.B) {
 	BenchmarkType(b, Bool, true)
 	BenchmarkType(b, FixedString(10), []byte("hello\x00\x00\x00\x00\x00"))
 	BenchmarkType(b, TupleNamedAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"})
+	BenchmarkType(b, Date32, ValueDate{2250, 3, 5})
 }

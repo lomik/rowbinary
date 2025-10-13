@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func Dynamic(maxTypes uint8, knownTypes ...Any) Type[TypeValue] {
+func Dynamic(maxTypes uint8, knownTypes ...Any) Type[Value] {
 	if maxTypes == 0 {
 		maxTypes = 32
 	}
@@ -30,7 +30,7 @@ func (t typeDynamic) Binary() []byte {
 	return append(BinaryTypeDynamic[:], t.maxTypes)
 }
 
-func (t typeDynamic) Write(w Writer, value TypeValue) error {
+func (t typeDynamic) Write(w Writer, value Value) error {
 	_, err := w.Write(value.Type.Binary())
 	if err != nil {
 		return err
@@ -38,14 +38,14 @@ func (t typeDynamic) Write(w Writer, value TypeValue) error {
 	return value.Type.WriteAny(w, value.Value)
 }
 
-func (t typeDynamic) Scan(r Reader, v *TypeValue) error {
+func (t typeDynamic) Scan(r Reader, v *Value) error {
 	tp, err := DecodeBinaryType(r)
 	if err != nil {
 		return err
 	}
 	v.Type = tp
 	for _, k := range t.knownTypes {
-		if k.id() == tp.id() {
+		if k.ID() == tp.ID() {
 			v.Type = k
 			break
 		}

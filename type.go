@@ -2,7 +2,7 @@ package rowbinary
 
 type Type[T any] interface {
 	PreType[T]
-	id() uint64
+	ID() uint64
 }
 
 type PreType[T any] interface {
@@ -23,9 +23,9 @@ type Any interface {
 	Binary() []byte
 	ScanAny(r Reader, v any) error
 	WriteAny(w Writer, v any) error
-	id() uint64
+	ID() uint64
 }
 
 func Eq(a, b Any) bool {
-	return a.id() == b.id()
+	return a.ID() == b.ID()
 }

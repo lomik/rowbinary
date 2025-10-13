@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func Variant(valueTypes ...Any) Type[TypeValue] {
+func Variant(valueTypes ...Any) Type[Value] {
 	return MakeTypeWrapAny(typeVariant{
 		valueTypes: valueTypes,
 	})
@@ -32,9 +32,9 @@ func (t typeVariant) Binary() []byte {
 	return tbin
 }
 
-func (t typeVariant) Write(w Writer, value TypeValue) error {
+func (t typeVariant) Write(w Writer, value Value) error {
 	for i, tp := range t.valueTypes {
-		if tp.id() == value.Type.id() {
+		if tp.ID() == value.Type.ID() {
 			if err := VarintWrite(w, uint64(i)); err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func (t typeVariant) Write(w Writer, value TypeValue) error {
 	return TypeMismatchError{}
 }
 
-func (t typeVariant) Scan(r Reader, v *TypeValue) error {
+func (t typeVariant) Scan(r Reader, v *Value) error {
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return err

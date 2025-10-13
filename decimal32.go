@@ -30,8 +30,8 @@ func (t typeDecimal32) Binary() []byte {
 
 func (t typeDecimal32) Write(w Writer, value decimal.Decimal) error {
 	part := uint32(decimal.NewFromBigInt(value.Coefficient(), value.Exponent()+int32(t.scale)).IntPart())
-	binary.LittleEndian.PutUint32(w.buffer(), part)
-	_, err := w.Write(w.buffer()[:4])
+	binary.LittleEndian.PutUint32(w.Buffer(), part)
+	_, err := w.Write(w.Buffer()[:4])
 	return err
 }
 
