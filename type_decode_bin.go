@@ -346,7 +346,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			columns = append(columns, Column{name: name, tp: tp})
 		}
 		return ArrayAny(TupleNamedAny(columns...)), nil
-	case BinaryTypeJSON:
+	case BinaryTypeJSON: // 0x30<uint8_serialization_version><var_int_max_dynamic_paths><uint8_max_dynamic_types><var_uint_number_of_typed_paths><var_uint_path_name_size_1><path_name_data_1><encoded_type_1>...<var_uint_number_of_skip_paths><var_uint_skip_path_size_1><skip_path_data_1>...<var_uint_number_of_skip_path_regexps><var_uint_skip_path_regexp_size_1><skip_path_data_regexp_1>...
 		return nil, errors.New("not implemented")
 	case BinaryTypeBFloat16:
 		return nil, errors.New("not implemented")
