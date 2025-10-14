@@ -116,15 +116,15 @@ func TestClient_Select_ExternalData(t *testing.T) {
 			return r.Err()
 		}),
 		WithExternalData("data1",
-			func(w *FormatWriter) error {
+			C("value", UInt64),
+			WithFormatWriter(func(w *FormatWriter) error {
 				for i := range uint64(5) {
 					if err := Write(w, UInt64, i); err != nil {
 						return err
 					}
 				}
 				return nil
-			},
-			C("value", UInt64),
+			}),
 		),
 	))
 }

@@ -1,5 +1,7 @@
 package rowbinary
 
+import "sort"
+
 type kvPair[K comparable, V any] struct {
 	key   K
 	value V
@@ -42,6 +44,13 @@ func (kv *KV[K, V]) Len() int {
 
 func (kv *KV[K, V]) Append(key K, value V) *KV[K, V] {
 	kv.pairs = append(kv.pairs, kvPair[K, V]{key: key, value: value})
+	return kv
+}
+
+func (kv *KV[K, V]) Sort(less func(a, b K) bool) *KV[K, V] {
+	sort.Slice(kv.pairs, func(i, j int) bool {
+		return less(kv.pairs[i].key, kv.pairs[j].key)
+	})
 	return kv
 }
 

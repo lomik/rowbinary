@@ -103,12 +103,16 @@ type formatWriterOption struct {
 	formatWriter func(w *FormatWriter) error
 }
 
-func WithFormatWriter(fw func(w *FormatWriter) error) InsertOption {
+func WithFormatWriter(fw func(w *FormatWriter) error) formatWriterOption {
 	return formatWriterOption{formatWriter: fw}
 }
 
 func (o formatWriterOption) applyInsertOptions(opts *insertOptions) {
 	opts.formatWriter = o.formatWriter
+}
+
+func (o formatWriterOption) applyExternalDataOption(opts *externalData) {
+	opts.cb = o.formatWriter
 }
 
 type bodyWriterOption struct {
