@@ -161,6 +161,10 @@ func NewClient(ctx context.Context, options ...ClientOption) Client {
 	c := &client{opts: opts}
 
 	if c.opts.httpClient == nil {
+		c.opts.httpClient = getGlobalHTTPClient()
+	}
+
+	if c.opts.httpClient == nil {
 		c.opts.httpClient = &http.Client{
 			Transport: &http.Transport{
 				ReadBufferSize:  1024 * 1024,
