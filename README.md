@@ -6,6 +6,9 @@
 * You can implement your own Go type for a ClickHouse type. Example [type](./example/struct_tuple.go) and [tests](./example/struct_tuple_test.go)
 * [External data](https://clickhouse.com/docs/engines/table-engines/special/external-data) is supported
 
+## TODO
+* Support `JSON` type
+
 ## Usage
 
 ### Select

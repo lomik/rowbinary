@@ -6,14 +6,14 @@ import (
 	"slices"
 )
 
-func MapKV[K comparable, V any](keyType Type[K], valueType Type[V]) Type[*KV[K, V]] {
+func MapKV[K any, V any](keyType Type[K], valueType Type[V]) Type[*KV[K, V]] {
 	return MakeTypeWrapAny(typeMapKV[K, V]{
 		keyType:   keyType,
 		valueType: valueType,
 	})
 }
 
-type typeMapKV[K comparable, V any] struct {
+type typeMapKV[K any, V any] struct {
 	keyType   Type[K]
 	valueType Type[V]
 }
