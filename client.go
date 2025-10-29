@@ -149,7 +149,7 @@ func WithDiscovery(discovery func(ctx context.Context, dsn string, kind Discover
 func NewClient(ctx context.Context, options ...ClientOption) Client {
 	opts := clientOptions{}
 	// Apply default options
-	WithUseBinaryHeader(true).applyClientOptions(&opts)
+	WithUseBinaryHeader(false).applyClientOptions(&opts)
 	RowBinaryWithNamesAndTypes.applyClientOptions(&opts)
 
 	for _, opt := range options {
