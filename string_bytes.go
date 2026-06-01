@@ -1,7 +1,10 @@
 package rowbinary
 
 import (
+	"bufio"
 	"encoding/binary"
+	"errors"
+	"io"
 )
 
 var StringBytes Type[[]byte] = MakeTypeWrapAny[[]byte](typeStringBytes{})
@@ -31,14 +34,24 @@ func (t typeStringBytes) Scan(r Reader, v *[]byte) (err error) {
 		return err
 	}
 
-	*v = (*v)[:0]
-
+	// Fast path: the value fits in the reader's buffer.
 	p, err := r.Peek(int(n))
-	if err != nil {
+	if err == nil {
+		*v = append((*v)[:0], p...)
+		_, err = r.Discard(int(n))
+		return err
+	}
+	if !errors.Is(err, bufio.ErrBufferFull) {
 		return err
 	}
 
-	*v = append(*v, p...)
-	_, err = r.Discard(int(n))
+	// Slow path: the value is larger than the reader's buffer; read it directly,
+	// reusing the destination's capacity when possible.
+	if cap(*v) >= int(n) {
+		*v = (*v)[:n]
+	} else {
+		*v = make([]byte, n)
+	}
+	_, err = io.ReadFull(r, *v)
 	return err
 }

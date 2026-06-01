@@ -1,7 +1,10 @@
 package rowbinary
 
 import (
+	"bufio"
 	"encoding/binary"
+	"errors"
+	"io"
 	"unsafe"
 )
 
@@ -42,12 +45,23 @@ func (t typeString) Scan(r Reader, v *string) (err error) {
 		return err
 	}
 
+	// Fast path: the value fits in the reader's buffer, decode without allocating.
 	buf, err := r.Peek(int(n))
-	if err != nil {
+	if err == nil {
+		*v = string(buf[:n])
+		_, err = r.Discard(int(n))
+		return err
+	}
+	if !errors.Is(err, bufio.ErrBufferFull) {
 		return err
 	}
 
-	*v = string(buf[:n])
-	_, err = r.Discard(int(n))
-	return err
+	// Slow path: the value is larger than the reader's buffer; Peek can never
+	// return it, so read it into a fresh allocation via ReadFull.
+	b := make([]byte, n)
+	if _, err = io.ReadFull(r, b); err != nil {
+		return err
+	}
+	*v = string(b)
+	return nil
 }

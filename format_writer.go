@@ -142,7 +142,10 @@ func Write[V any](w *FormatWriter, tp Type[V], value V) error {
 	}
 
 	if tp.ID() != w.options.columns[w.index].tp.ID() {
-		return w.setErr(fmt.Errorf("type mismatch. expected %s, got %s", w.options.columns[w.index].tp.String(), tp.String()))
+		return w.setErr(TypeMismatchError{
+			ExpectedType: w.options.columns[w.index].tp.String(),
+			ActualType:   tp.String(),
+		})
 	}
 
 	err := tp.Write(w.wrap, value)

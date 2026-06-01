@@ -146,7 +146,7 @@ func WithDiscovery(discovery func(ctx context.Context, dsn string, kind Discover
 }
 
 // NewClient creates a new ClickHouse client.
-func NewClient(ctx context.Context, options ...ClientOption) Client {
+func NewClient(options ...ClientOption) Client {
 	opts := clientOptions{}
 	// Apply default options
 	WithUseBinaryHeader(false).applyClientOptions(&opts)
