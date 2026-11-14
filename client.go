@@ -198,8 +198,11 @@ func (c *client) newRequest(ctx context.Context, dsn string, discoCtx DiscoveryC
 	}
 
 	url := &url.URL{
-		Scheme: u.Scheme,
-		Host:   u.Host,
+		Scheme:   u.Scheme,
+		Host:     u.Host,
+		Path:     u.Path,
+		RawPath:  u.RawPath,
+		RawQuery: u.RawQuery,
 	}
 	values := url.Query()
 	headers := http.Header{}
