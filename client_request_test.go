@@ -9,6 +9,37 @@ import (
 	"testing"
 )
 
+func TestHeaderCaseInsensitiveOverride(t *testing.T) {
+	for _, method := range []string{"Exec", "Select", "Insert"} {
+		t.Run(method, func(t *testing.T) {
+			headers := map[string]string{}
+			for _, opt := range []headerOption{WithHeader("x-audit", "default"), WithHeader("X-Audit", "request"), WithHeader("X-AUDIT", "last")} {
+				switch method {
+				case "Exec":
+					opt.applyExecOptions(&execOptions{headers: headers})
+				case "Select":
+					opt.applySelectOptions(&selectOptions{headers: headers})
+				case "Insert":
+					opt.applyInsertOptions(&insertOptions{headers: headers})
+				}
+			}
+			if len(headers) != 1 || headers["X-Audit"] != "last" {
+				t.Fatalf("case-insensitive overrides not merged: %v", headers)
+			}
+		})
+	}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("X-Audit"); got != "request" {
+			t.Errorf("wire header = %q, want request", got)
+		}
+	}))
+	defer s.Close()
+	c := NewClient(WithDSN(s.URL), WithHeader("x-audit", "default"))
+	if err := c.Exec(t.Context(), "SELECT 1", WithHeader("X-AUDIT", "request")); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDSNPathAndQuery(t *testing.T) {
 	for _, discovery := range []bool{false, true} {
 		t.Run(fmt.Sprint(discovery), func(t *testing.T) {

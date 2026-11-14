@@ -1,5 +1,7 @@
 package rowbinary
 
+import "net/http"
+
 type paramOption struct {
 	name  string
 	value string
@@ -46,15 +48,15 @@ func (f paramOption) applyClientOptions(opts *clientOptions) {
 }
 
 func (o headerOption) applySelectOptions(opts *selectOptions) {
-	opts.headers[o.name] = o.value
+	opts.headers[http.CanonicalHeaderKey(o.name)] = o.value
 }
 
 func (o headerOption) applyInsertOptions(opts *insertOptions) {
-	opts.headers[o.name] = o.value
+	opts.headers[http.CanonicalHeaderKey(o.name)] = o.value
 }
 
 func (o headerOption) applyExecOptions(opts *execOptions) {
-	opts.headers[o.name] = o.value
+	opts.headers[http.CanonicalHeaderKey(o.name)] = o.value
 }
 
 func (f headerOption) applyClientOptions(opts *clientOptions) {
