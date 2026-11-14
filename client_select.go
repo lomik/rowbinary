@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -87,7 +88,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 			}
 
 			for _, ed := range opts.externalData {
-				fw := NewFormatWriter(io.Discard, append(ed.formatOptions, RowBinary)...)
+				fw := NewFormatWriter(io.Discard, append(slices.Clone(ed.formatOptions), RowBinary)...)
 
 				if err := mw.WriteField(ed.name+"_structure", fw.Structure()); err != nil {
 					w.CloseWithError(err)
@@ -107,7 +108,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 					return
 				}
 
-				fw := NewFormatWriter(ff, append(ed.formatOptions, RowBinary)...)
+				fw := NewFormatWriter(ff, append(slices.Clone(ed.formatOptions), RowBinary)...)
 
 				if err := ed.cb(fw); err != nil {
 					w.CloseWithError(err)
