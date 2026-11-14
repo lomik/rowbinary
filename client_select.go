@@ -60,6 +60,11 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 	for _, opt := range options {
 		opt.applySelectOptions(&opts)
 	}
+	for _, ed := range opts.externalData {
+		if ed.cb == nil {
+			return fmt.Errorf("external data %q requires a format writer", ed.name)
+		}
+	}
 
 	req, err := c.newRequest(ctx, opts.dsn, DiscoveryCtx{Method: ClientMethodSelect}, opts.params, opts.headers)
 	if err != nil {
