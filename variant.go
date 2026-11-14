@@ -3,10 +3,15 @@ package rowbinary
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strings"
 )
 
 func Variant(valueTypes ...Any) Type[Value] {
+	valueTypes = slices.Clone(valueTypes)
+	slices.SortFunc(valueTypes, func(a, b Any) int {
+		return strings.Compare(a.String(), b.String())
+	})
 	return MakeTypeWrapAny(typeVariant{
 		valueTypes: valueTypes,
 	})
