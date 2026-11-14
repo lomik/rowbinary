@@ -352,7 +352,7 @@ func DecodeStringType(t string) (Any, error) {
 	}
 
 	if !strings.Contains(t, "(") {
-		return Custom(t, Nothing), nil
+		return Custom(t, Invalid[any]("Unexpected Custom type")), nil
 	}
 
 	return nil, fmt.Errorf("can' parse type: %#v", t)
