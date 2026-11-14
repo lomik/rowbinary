@@ -29,7 +29,11 @@ func (t typeDecimal32) Binary() []byte {
 }
 
 func (t typeDecimal32) Write(w Writer, value decimal.Decimal) error {
-	part := uint32(decimal.NewFromBigInt(value.Coefficient(), value.Exponent()+int32(t.scale)).IntPart())
+	scaled := value.Shift(int32(t.scale)).Truncate(0)
+	if scaled.Abs().GreaterThanOrEqual(decimal.New(1, int32(t.precision))) || scaled.LessThan(decimal.New(-2147483648, 0)) || scaled.GreaterThan(decimal.New(2147483647, 0)) {
+		return fmt.Errorf("value out of range for %s", t.String())
+	}
+	part := uint32(scaled.IntPart())
 	binary.LittleEndian.PutUint32(w.Buffer(), part)
 	_, err := w.Write(w.Buffer()[:4])
 	return err
