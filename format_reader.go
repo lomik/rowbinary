@@ -110,10 +110,10 @@ func (r *FormatReader) readHeaderRowBinaryWithNames() error {
 		return r.setErr(err)
 	}
 
-	remote := make([]Column, 0, n)
+	var remote []Column
 
 	// read names and match types from options
-	for i := 0; i < int(n); i++ {
+	for range n {
 		var name string
 		err = String.Scan(r.wrap, &name)
 		if err != nil {
@@ -144,10 +144,10 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 		return r.setErr(err)
 	}
 
-	remote := make([]Column, 0, n)
+	var remote []Column
 
 	// read names
-	for i := 0; i < int(n); i++ {
+	for range n {
 		var name string
 		err = String.Scan(r.wrap, &name)
 		if err != nil {
@@ -156,7 +156,7 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 		remote = append(remote, Column{name: name})
 	}
 
-	for i := 0; i < int(n); i++ {
+	for i := range remote {
 		if r.options.useBinaryHeader {
 			tp, err := DecodeBinaryType(r.wrap)
 			if err != nil {
