@@ -71,6 +71,11 @@ func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
 
 func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
 	value, ok := v.(T)
+	if !ok && v == nil {
+		// A nil interface has no dynamic type, so v.(any) fails too.
+		// Permit it only when T itself is any, not for concrete value types.
+		_, ok = any(&value).(*any)
+	}
 	if !ok {
 		return TypeMismatchError{ExpectedType: t.String(), ActualType: fmt.Sprintf("%T", v)}
 	}
