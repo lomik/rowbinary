@@ -65,8 +65,8 @@ func decodeStringTypeParseFunc(t string) (string, []string, error) {
 	var funcName string
 	var args []string
 
-	funcName = s[:strings.Index(t, "(")]
-	argsStr := s[strings.Index(t, "(")+1 : len(s)-1]
+	funcName = s[:strings.Index(s, "(")]
+	argsStr := s[strings.Index(s, "(")+1 : len(s)-1]
 
 	args = decodeStringTypeSplitRoot(argsStr, ',')
 

@@ -2,8 +2,28 @@ package rowbinary
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
+
+func TestDecodeStringTypeLeadingWhitespace(t *testing.T) {
+	for _, spaces := range []int{1, 32} {
+		t.Run(strings.Repeat("_", spaces), func(t *testing.T) {
+			defer func() {
+				if p := recover(); p != nil {
+					t.Fatalf("leading whitespace caused panic: %v", p)
+				}
+			}()
+			tp, err := DecodeStringType(strings.Repeat(" ", spaces) + "Array(UInt8) \t")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !Eq(tp, Array(UInt8)) {
+				t.Fatalf("got %s, want Array(UInt8)", tp.String())
+			}
+		})
+	}
+}
 
 func TestUnknownTextTypeDoesNotDecodeRows(t *testing.T) {
 	var buf bytes.Buffer
