@@ -50,33 +50,34 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 	}
 
 	r, w := io.Pipe()
+	defer r.Close()
 	req.Body = r
 
+	producerDone := make(chan error, 1)
 	go func() {
-		defer w.Close()
 		bw := bufio.NewWriterSize(w, 1024*1024)
-		defer bw.Flush()
+		var producerErr error
+		defer func() {
+			if producerErr == nil {
+				producerErr = bw.Flush()
+			}
+			_ = w.CloseWithError(producerErr)
+			producerDone <- producerErr
+		}()
 
 		if opts.formatWriter != nil {
 			writer := NewFormatWriter(bw, opts.formatOptions...)
-			if err := writer.WriteHeader(); err != nil {
-				w.CloseWithError(err)
+			if producerErr = writer.WriteHeader(); producerErr != nil {
 				return
 			}
 
-			if err := opts.formatWriter(writer); err != nil {
-				_ = w.CloseWithError(err)
-				return
-			}
+			producerErr = opts.formatWriter(writer)
 
 			return
 		}
 
 		if opts.bodyWriter != nil {
-			if err := opts.bodyWriter(bw); err != nil {
-				_ = w.CloseWithError(err)
-				return
-			}
+			producerErr = opts.bodyWriter(bw)
 			return
 		}
 	}()
@@ -96,7 +97,15 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
 	}
 
-	return nil
+	// An early response may stop the transport from consuming the request body.
+	// Unblock any pending pipe write before waiting for its final result.
+	_ = r.Close()
+	select {
+	case err := <-producerDone:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 type formatWriterOption struct {
