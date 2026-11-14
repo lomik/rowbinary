@@ -202,10 +202,10 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		return ArrayAny(nested), nil
 	case BinaryTypeTuple:
 		n, err := binary.ReadUvarint(r)
-		types := make([]Any, 0, n)
 		if err != nil {
 			return nil, err
 		}
+		var types []Any
 		for range n {
 			tp, err := DecodeBinaryType(r)
 			if err != nil {
@@ -219,8 +219,8 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
-		columns := make([]Column, 0, n)
-		for i := 0; i < int(n); i++ {
+		var columns []Column
+		for range n {
 			var name string
 			err := String.Scan(r, &name)
 			if err != nil {
@@ -297,10 +297,10 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		return IPv6, nil
 	case BinaryTypeVariant: // <var_uint_number_of_variants><variant_type_encoding_1>...<variant_type_encoding_N>
 		n, err := binary.ReadUvarint(r)
-		types := make([]Any, 0, n)
 		if err != nil {
 			return nil, err
 		}
+		var types []Any
 		for range n {
 			tp, err := DecodeBinaryType(r)
 			if err != nil {
@@ -332,8 +332,8 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
-		columns := make([]Column, 0, n)
-		for i := 0; i < int(n); i++ {
+		var columns []Column
+		for range n {
 			var name string
 			err := String.Scan(r, &name)
 			if err != nil {
