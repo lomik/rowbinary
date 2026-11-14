@@ -46,6 +46,9 @@ func (t typeArray[V]) Scan(r Reader, v *[]V) error {
 	if err != nil {
 		return err
 	}
+	if n > uint64(^uint(0)>>1) {
+		return fmt.Errorf("array length overflows int: %d", n)
+	}
 	if *v == nil {
 		*v = make([]V, int(n))
 	} else if len(*v) >= int(n) {
