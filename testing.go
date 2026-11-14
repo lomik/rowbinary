@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,8 +17,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-var testClickHouseDSN = "http://127.0.0.1:8123"
 
 type testingUnknownType struct{}
 
@@ -46,7 +43,9 @@ func ExecLocal(query string) ([]byte, error) {
 	filename := fmt.Sprintf("fixtures/ch_%s.bin", key)
 
 	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-		body, err := exec.Command("clickhouse", "local", "--query", query).Output()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		body, err := exec.CommandContext(ctx, "clickhouse", "local", "--query", query).Output()
 		if err != nil {
 			return nil, err
 		}
@@ -81,25 +80,54 @@ type TestClient struct {
 //   - Client: A test client instance that wraps the standard Client with database isolation.
 //     The client automatically manages the database lifecycle.
 //
-// Note: The function will log.Fatal if database creation fails. The returned client should be
+// Note: The function panics if database creation fails. Prefer NewTestClientE or NewTestClientTB.
+// The returned client should be
 // closed using its Close method to drop the database.
 func NewTestClient(ctx context.Context, dsn string, options ...ClientOption) *TestClient {
+	c, err := NewTestClientE(ctx, dsn, options...)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+// NewTestClientE creates an isolated database, honoring the caller's context.
+func NewTestClientE(ctx context.Context, dsn string, options ...ClientOption) (*TestClient, error) {
 	db := fmt.Sprintf("db_%d_%d", testClientCounter.Add(1), time.Now().UnixNano())
 	c := NewClient(append(options, WithDSN(dsn), WithDatabase(db))...)
 
-	err := c.Exec(context.Background(), "CREATE DATABASE "+db, WithDatabase("default"))
+	err := c.Exec(ctx, "CREATE DATABASE "+db, WithDatabase("default"))
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("create test database: %w", err)
 	}
 
 	return &TestClient{
 		Client: c,
 		db:     db,
-	}
+	}, nil
 }
 
 func (tc *TestClient) Close() error {
-	return tc.Exec(context.Background(), "DROP DATABASE "+tc.db)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	return tc.Exec(ctx, "DROP DATABASE "+tc.db)
+}
+
+// NewTestClientTB bounds setup and registers cleanup that reports failures to the test.
+func NewTestClientTB(t testing.TB, dsn string, options ...ClientOption) *TestClient {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	c, err := NewTestClientE(ctx, dsn, options...)
+	if err != nil {
+		t.Fatalf("ClickHouse setup: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := c.Close(); err != nil {
+			t.Errorf("ClickHouse database cleanup: %v", err)
+		}
+	})
+	return c
 }
 
 func (tc *TestClient) Database() string {
@@ -107,6 +135,13 @@ func (tc *TestClient) Database() string {
 }
 
 func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
+	t.Helper()
+	TestTypeWithDSN(t, tp, value, query, "")
+}
+
+// TestTypeWithDSN runs fixture checks and, if dsn is nonempty, a live insert check.
+// TestType is the Docker-free fixture-only convenience entry point.
+func TestTypeWithDSN[T any](t *testing.T, tp Type[T], value T, query, dsn string) {
 	_, file, no, ok := runtime.Caller(1)
 	if !ok {
 		file = "unknown"
@@ -291,13 +326,15 @@ func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 
 	// insert into clickhouse
 	t.Run(fmt.Sprintf("%s/insert_RowBinary%s", tp.String(), caller), func(t *testing.T) {
+		if dsn == "" {
+			t.Skip("offline mode: live insertion requires an explicit DSN")
+		}
 		if tp.String() == "Nullable(Nothing)" {
-			return
+			t.Skip("ClickHouse cannot create a Nullable(Nothing) table column")
 		}
 
 		assert := assert.New(t)
-		c := NewTestClient(t.Context(), testClickHouseDSN)
-		defer c.Close()
+		c := NewTestClientTB(t, dsn)
 
 		err := c.Exec(t.Context(), fmt.Sprintf("CREATE TABLE tmp (value %s) ENGINE = Memory", tp.String()))
 		assert.NoError(err)

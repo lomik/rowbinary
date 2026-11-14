@@ -14,8 +14,7 @@ var arrayUInt32 = rowbinary.Array(rowbinary.UInt32)
 func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 	assert := assert.New(b)
 	ctx := context.Background()
-	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := newTestClient(b)
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
@@ -47,8 +46,7 @@ func BenchmarkRowbinary_Insert_ArrayUInt32(b *testing.B) {
 func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 	assert := assert.New(b)
 	ctx := context.Background()
-	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := newTestClient(b)
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
@@ -80,8 +78,7 @@ func BenchmarkRowbinary_Insert_ArrayUInt32_Any(b *testing.B) {
 func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 	assert := assert.New(b)
 	ctx := context.Background()
-	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := newTestClient(b)
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x Array(UInt32)) ENGINE = Null"))
 
@@ -91,9 +88,11 @@ func BenchmarkNative_Insert_ArrayUInt32(b *testing.B) {
 	}
 
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{testClickHouseNativeAddr},
+		Addr: []string{nativeAddr(b)},
 		Auth: clickhouse.Auth{
 			Database: c.Database(),
+			Username: testUsername,
+			Password: testPassword,
 		},
 	})
 

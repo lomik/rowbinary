@@ -12,8 +12,7 @@ import (
 func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 	assert := assert.New(b)
 	ctx := context.Background()
-	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := newTestClient(b)
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
@@ -40,8 +39,7 @@ func BenchmarkRowbinary_Insert_UInt32(b *testing.B) {
 func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 	assert := assert.New(b)
 	ctx := context.Background()
-	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := newTestClient(b)
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
@@ -68,15 +66,16 @@ func BenchmarkRowbinary_Insert_UInt32_Any(b *testing.B) {
 func BenchmarkNative_Insert_UInt32(b *testing.B) {
 	assert := assert.New(b)
 	ctx := context.Background()
-	c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := newTestClient(b)
 
 	assert.NoError(c.Exec(ctx, "CREATE TABLE t (x UInt32) ENGINE = Null"))
 
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{testClickHouseNativeAddr},
+		Addr: []string{nativeAddr(b)},
 		Auth: clickhouse.Auth{
 			Database: c.Database(),
+			Username: testUsername,
+			Password: testPassword,
 		},
 	})
 

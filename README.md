@@ -9,6 +9,96 @@
 ## TODO
 * Support `JSON` type
 
+## Tests
+
+Use Go 1.24.4 or newer (the module's toolchain directive supplies 1.24.4).
+Tests default to **offline** mode: no Docker discovery, containers, or live database
+requests, except the deliberately invalid-DSN error test and local HTTP test servers.
+Live HTTP tests and insert subtests are reported as skipped in this mode, not as
+validated integration coverage. `-short` does not select a different mode.
+
+```sh
+ROWBINARY_TEST_MODE=offline go test ./... -count=1 -timeout=90s
+ROWBINARY_TEST_MODE=offline go test -race ./... -count=1 -timeout=90s
+go vet ./...
+```
+
+Fixture tests use the committed `fixtures/` and `example/fixtures/` binary files.
+Only a missing fixture requires `clickhouse local` on PATH; that subprocess has a
+30-second limit and writes the missing fixture into the package's `fixtures/`
+directory. Fixture keys hash query text, **not the CLI version**; review regenerated
+bytes explicitly and record your CLI version. The current fixtures pass with local
+CLI 25.9.1.2293. Timezone tests also require system timezone data. Docker integration
+does not replace the local CLI fixture-generation path.
+
+### Live integration (local or CI)
+
+Start your Docker-compatible daemon yourself and confirm `docker info` succeeds.
+The test process must be able to pull images, start containers/Ryuk, and reach
+random ports on the Docker host's loopback interface. Use a local daemon (including
+Docker Desktop/OrbStack); a remote daemon's loopback bindings are not accessible
+without an explicit tunnel. No Compose stack, fixed host ports, or existing server
+is needed. No test starts Docker Desktop or modifies shared containers.
+
+```sh
+ROWBINARY_TEST_MODE=integration go test ./... -count=1 -timeout=180s
+ROWBINARY_TEST_MODE=integration go test -race ./... -count=1 -timeout=180s
+ROWBINARY_TEST_MODE=integration go test ./... -count=1 -timeout=180s -coverprofile=coverage.out
+```
+
+Integration mode **fails**, rather than skips, if Docker, image pull, startup, or
+authenticated readiness fails. Even `-run` selections in this mode start the server;
+use offline mode for compile-only checks. Each package test binary owns a separate
+container, with random loopback-bound HTTP/native ports, an authenticated `SELECT 1`
+readiness check, a two-minute startup budget, and 30-second teardown budget. Test
+databases are isolated, setup honors test contexts with a 15-second cap, and cleanup
+errors fail the run. Do not set a whole-job timeout below the startup/teardown budget;
+an external process kill can interrupt normal cleanup (Ryuk remains the fallback).
+
+The shared helper pins `testcontainers-go v0.38.0` (Go 1.23-compatible, without
+raising this project's Go minimum) and the amd64/arm64 ClickHouse image
+`clickhouse/clickhouse-server:25.9.7.56` by its manifest digest in
+`internal/chtest/chtest.go`. This 25.9 patch release supports the existing Dynamic,
+Variant and binary-type-header tests; the old Compose 24.8 image is not the test
+baseline. Docker/OpenTelemetry transitive dependency pins avoid accidental Go 1.26
+requirements during `go mod tidy`.
+
+An optional externally managed server bypasses Docker, but is still checked and
+must permit CREATE/DROP DATABASE and test queries. Only uniquely named test
+databases are dropped; the server itself is never stopped. Do not use production.
+The URL accepts HTTP(S) and optional URL-escaped credentials, but no path/query.
+Native benchmarks additionally need a native address with the same credentials.
+
+```sh
+ROWBINARY_TEST_MODE=integration ROWBINARY_TEST_DSN='http://user:password@127.0.0.1:18123' go test ./... -count=1 -timeout=180s
+```
+
+`TestType` is now the explicit fixture-only convenience helper;
+`TestTypeWithDSN(..., dsn)` adds live insertion without any dependency on TestMain
+or environment variables in the production library. Existing `NewTestClient`
+keeps its signature, but now panics on setup error instead of exiting the process;
+prefer error-returning `NewTestClientE` or test-aware `NewTestClientTB`, which registers
+cleanup and reports failures through testing.TB.
+
+### Nested benchmark module
+
+Root `./...` does not include `bench/`, which has its own go.mod. Compile/vet it
+separately; benchmarks require explicit integration mode and fail if run offline.
+The smoke selection below runs one HTTP and one native query benchmark once;
+the full benchmark set includes very large workloads and is not a CI smoke test.
+
+```sh
+cd bench
+ROWBINARY_TEST_MODE=offline go test ./... -run '^$' -timeout=60s
+go vet ./...
+ROWBINARY_TEST_MODE=integration go test ./... -run '^$' -bench '^(BenchmarkRowbinary_Select_SystemNumbers|BenchmarkNative_Select_SystemNumbers)$' -benchtime=1x -count=1 -timeout=180s
+```
+
+CI should run the offline/race/vet commands in the root and compile/vet commands
+in `bench/`, then run the explicit integration/race and benchmark smoke commands
+on a Docker-enabled runner. `-count=1` prevents cached results from concealing
+missing integration prerequisites. Keep Ryuk enabled and retain failure logs.
+
 ## Usage
 
 ### Select

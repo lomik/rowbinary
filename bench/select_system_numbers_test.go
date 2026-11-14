@@ -10,10 +10,11 @@ import (
 )
 
 func BenchmarkRowbinary_Select_SystemNumbers(b *testing.B) {
+	requireIntegration(b)
 	assert := assert.New(b)
 
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, nil)
+	c := rowbinary.NewClient(rowbinary.WithDSN(testClickHouseDSN))
 
 	b.ResetTimer()
 
@@ -39,10 +40,11 @@ func BenchmarkRowbinary_Select_SystemNumbers(b *testing.B) {
 }
 
 func BenchmarkRowbinary_Select_SystemNumbers_Any(b *testing.B) {
+	requireIntegration(b)
 	assert := assert.New(b)
 
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, nil)
+	c := rowbinary.NewClient(rowbinary.WithDSN(testClickHouseDSN))
 
 	b.ResetTimer()
 
@@ -68,12 +70,14 @@ func BenchmarkRowbinary_Select_SystemNumbers_Any(b *testing.B) {
 }
 
 func BenchmarkNative_Select_SystemNumbers(b *testing.B) {
+	requireIntegration(b)
 	assert := assert.New(b)
 
 	ctx := context.Background()
 
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{testClickHouseNativeAddr},
+		Addr: []string{nativeAddr(b)},
+		Auth: clickhouse.Auth{Username: testUsername, Password: testPassword},
 	})
 
 	assert.NoError(err)

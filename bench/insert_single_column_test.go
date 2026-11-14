@@ -37,8 +37,7 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 	b.Run(fmt.Sprintf("rowbinary_%s", tp.String()), func(b *testing.B) {
 		assert := assert.New(b)
 		ctx := context.Background()
-		c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-		defer c.Close()
+		c := newTestClient(b)
 
 		assert.NoError(c.Exec(ctx, fmt.Sprintf("CREATE TABLE t (x %s) ENGINE = Null", tp.String())))
 
@@ -66,8 +65,7 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 	b.Run(fmt.Sprintf("rowbinary_any_%s", tp.String()), func(b *testing.B) {
 		assert := assert.New(b)
 		ctx := context.Background()
-		c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-		defer c.Close()
+		c := newTestClient(b)
 
 		assert.NoError(c.Exec(ctx, fmt.Sprintf("CREATE TABLE t (x %s) ENGINE = Null", tp.String())))
 
@@ -94,15 +92,16 @@ func benchmarkSingleColumn[T any](b *testing.B, tp rowbinary.Type[T], value T, c
 	b.Run(fmt.Sprintf("native_%s", tp.String()), func(b *testing.B) {
 		assert := assert.New(b)
 		ctx := context.Background()
-		c := rowbinary.NewTestClient(ctx, testClickHouseDSN)
-		defer c.Close()
+		c := newTestClient(b)
 
 		assert.NoError(c.Exec(ctx, fmt.Sprintf("CREATE TABLE t (x %s) ENGINE = Null", tp.String())))
 
 		conn, err := clickhouse.Open(&clickhouse.Options{
-			Addr: []string{testClickHouseNativeAddr},
+			Addr: []string{nativeAddr(b)},
 			Auth: clickhouse.Auth{
 				Database: c.Database(),
+				Username: testUsername,
+				Password: testPassword,
 			},
 		})
 

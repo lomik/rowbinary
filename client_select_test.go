@@ -20,8 +20,7 @@ func must[T any](v T, err error) T {
 func TestClient_Select(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
-	c := NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := integrationClient(t)
 
 	assert.NoError(c.Select(ctx,
 		"SELECT * FROM system.numbers LIMIT 5",
@@ -99,8 +98,7 @@ func TestClient_Select_ExternalData(t *testing.T) {
 	assert := assert.New(t)
 
 	ctx := context.Background()
-	c := NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := integrationClient(t)
 
 	assert.NoError(c.Select(ctx,
 		"SELECT max(value) FROM data1",
@@ -132,8 +130,7 @@ func TestClient_Select_ExternalData(t *testing.T) {
 func TestClient_Select_WithBodyReader(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
-	c := NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := integrationClient(t)
 
 	var body []byte
 	assert.NoError(c.Select(ctx,
@@ -152,8 +149,7 @@ func TestClient_Select_WithBodyReader(t *testing.T) {
 func TestClient_Select_WithHeader(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
-	c := NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := integrationClient(t)
 
 	// Test with a custom header - ClickHouse may ignore unknown headers
 	assert.NoError(c.Select(ctx,
@@ -176,8 +172,7 @@ func TestClient_Select_WithHeader(t *testing.T) {
 func TestClient_Select_CancelledContext(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
-	c := NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := integrationClient(t)
 
 	cancelCtx, cancel := context.WithCancel(ctx)
 	cancel() // Cancel immediately

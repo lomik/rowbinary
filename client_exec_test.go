@@ -10,8 +10,7 @@ import (
 func TestClient_Exec(t *testing.T) {
 	assert := assert.New(t)
 	ctx := context.Background()
-	c := NewTestClient(ctx, testClickHouseDSN)
-	defer c.Close()
+	c := integrationClient(t)
 
 	err := c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory AS SELECT 1")
 	assert.NoError(err)

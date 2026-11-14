@@ -13,10 +13,11 @@ import (
 // https://github.com/ClickHouse/ch-bench
 
 func BenchmarkChBench_Rowbinary(b *testing.B) {
+	requireIntegration(b)
 	assert := assert.New(b)
 
 	ctx := context.Background()
-	c := rowbinary.NewClient(ctx, testClickHouseDSN, nil)
+	c := rowbinary.NewClient(rowbinary.WithDSN(testClickHouseDSN))
 
 	b.ResetTimer()
 
@@ -46,11 +47,13 @@ func BenchmarkChBench_Rowbinary(b *testing.B) {
 }
 
 func BenchmarkChBench_ClickhouseGo(b *testing.B) {
+	requireIntegration(b)
 	assert := assert.New(b)
 
 	ctx := context.Background()
 	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{testClickHouseNativeAddr},
+		Addr: []string{nativeAddr(b)},
+		Auth: clickhouse.Auth{Username: testUsername, Password: testPassword},
 	})
 
 	assert.NoError(err)
