@@ -1,7 +1,6 @@
 package rowbinary
 
 import (
-	"encoding/binary"
 	"fmt"
 	"slices"
 	"strings"
@@ -38,9 +37,15 @@ func (t typeVariant) Binary() []byte {
 }
 
 func (t typeVariant) Write(w Writer, value Value) error {
+	if value.Type != nil && Eq(value.Type, Nothing) && value.Value == nil {
+		return w.WriteByte(255)
+	}
 	for i, tp := range t.valueTypes {
 		if tp.ID() == value.Type.ID() {
-			if err := VarintWrite(w, uint64(i)); err != nil {
+			if i >= 255 {
+				return fmt.Errorf("invalid variant index: %d", i)
+			}
+			if err := w.WriteByte(byte(i)); err != nil {
 				return err
 			}
 
@@ -51,11 +56,15 @@ func (t typeVariant) Write(w Writer, value Value) error {
 }
 
 func (t typeVariant) Scan(r Reader, v *Value) error {
-	n, err := binary.ReadUvarint(r)
+	n, err := r.ReadByte()
 	if err != nil {
 		return err
 	}
-	if n >= uint64(len(t.valueTypes)) {
+	if n == 255 {
+		*v = Value{Nothing, nil}
+		return nil
+	}
+	if int(n) >= len(t.valueTypes) {
 		return fmt.Errorf("invalid variant index: %d", n)
 	}
 	v.Type = t.valueTypes[n]

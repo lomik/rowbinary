@@ -5,6 +5,28 @@ import (
 	"testing"
 )
 
+func TestVariantNull(t *testing.T) {
+	tp := Variant(String, UInt32)
+	t.Run("scan", func(t *testing.T) {
+		got := Value{String, "previous"}
+		if err := tp.Scan(NewReader(bytes.NewReader([]byte{255})), &got); err != nil {
+			t.Fatal(err)
+		}
+		if !Eq(got.Type, Nothing) || got.Value != nil {
+			t.Fatalf("got %#v, want Nothing(nil)", got)
+		}
+	})
+	t.Run("write", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := tp.Write(NewWriter(&buf), Value{Nothing, nil}); err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(buf.Bytes(), []byte{255}) {
+			t.Fatalf("wire = %x, want ff", buf.Bytes())
+		}
+	})
+}
+
 func TestVariantCanonicalOrder(t *testing.T) {
 	members := []Any{UInt32, String}
 	tp := Variant(members...)
