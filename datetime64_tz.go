@@ -32,7 +32,8 @@ func (t typeDateTime64TZ) Write(w Writer, value time.Time) error {
 	if t.locErr != nil {
 		return t.locErr
 	}
-	return Int64.Write(w, value.UnixNano()/intPow(10, 9-t.precision))
+	scale := intPow(10, t.precision)
+	return Int64.Write(w, value.Unix()*scale+int64(value.Nanosecond())/intPow(10, 9-t.precision))
 }
 
 func (t typeDateTime64TZ) Scan(r Reader, v *time.Time) error {
@@ -44,6 +45,7 @@ func (t typeDateTime64TZ) Scan(r Reader, v *time.Time) error {
 	if err != nil {
 		return err
 	}
-	*v = time.Unix(0, n*intPow(10, 9-t.precision)).In(t.loc)
+	scale := intPow(10, t.precision)
+	*v = time.Unix(n/scale, (n%scale)*intPow(10, 9-t.precision)).In(t.loc)
 	return nil
 }

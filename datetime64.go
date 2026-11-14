@@ -24,7 +24,8 @@ func (t typeDateTime64) Binary() []byte {
 }
 
 func (t typeDateTime64) Write(w Writer, value time.Time) error {
-	return Int64.Write(w, value.UnixNano()/intPow(10, 9-t.precision))
+	scale := intPow(10, t.precision)
+	return Int64.Write(w, value.Unix()*scale+int64(value.Nanosecond())/intPow(10, 9-t.precision))
 }
 
 func intPow(base, exponent int64) int64 {
@@ -41,6 +42,7 @@ func (t typeDateTime64) Scan(r Reader, v *time.Time) error {
 	if err != nil {
 		return err
 	}
-	*v = time.Unix(0, n*intPow(10, 9-t.precision)).UTC()
+	scale := intPow(10, t.precision)
+	*v = time.Unix(n/scale, (n%scale)*intPow(10, 9-t.precision)).UTC()
 	return nil
 }
