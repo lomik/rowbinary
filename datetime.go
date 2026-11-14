@@ -17,7 +17,7 @@ func (t typeDateTime) Binary() []byte {
 }
 
 func (t typeDateTime) Write(w Writer, value time.Time) error {
-	if value.Year() < 1970 {
+	if value.Unix() < 0 {
 		return UInt32.Write(w, 0)
 	}
 	return UInt32.Write(w, uint32(value.Unix()))

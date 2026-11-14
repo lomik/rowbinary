@@ -31,7 +31,7 @@ func (t typeDateTimeTZ) Write(w Writer, value time.Time) error {
 	if t.locErr != nil {
 		return t.locErr
 	}
-	if value.Year() < 1970 {
+	if value.Unix() < 0 {
 		return UInt32.Write(w, 0)
 	}
 	return UInt32.Write(w, uint32(value.Unix()))
