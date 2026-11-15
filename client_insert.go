@@ -104,7 +104,13 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 	case err := <-producerDone:
 		return err
 	case <-ctx.Done():
-		return ctx.Err()
+		// Both cases may be ready; a finished producer means the upload succeeded.
+		select {
+		case err := <-producerDone:
+			return err
+		default:
+			return ctx.Err()
+		}
 	}
 }
 

@@ -45,3 +45,38 @@ func TestInsertEarlySuccessWaitsForWriter(t *testing.T) {
 		}
 	}
 }
+
+type cancelAfterBodyTransport struct {
+	cancel context.CancelFunc
+}
+
+func (tr cancelAfterBodyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if _, err := io.Copy(io.Discard, req.Body); err != nil {
+		return nil, err
+	}
+	// The upload is complete; cancel only after the producer reported success.
+	tr.cancel()
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(http.NoBody),
+		Request:    req,
+	}, nil
+}
+
+func TestInsertSuccessNotMaskedByLateCancel(t *testing.T) {
+	for i := range 100 {
+		ctx, cancel := context.WithCancel(t.Context())
+		c := NewClient(
+			WithDSN("http://127.0.0.1:1"),
+			WithHTTPClient(&http.Client{Transport: cancelAfterBodyTransport{cancel: cancel}}),
+		)
+		err := c.Insert(ctx, "data", WithBodyWriter(func(w io.Writer) error {
+			_, err := w.Write([]byte("payload"))
+			return err
+		}))
+		cancel()
+		if err != nil {
+			t.Fatalf("iteration %d: successful upload reported %v", i, err)
+		}
+	}
+}
