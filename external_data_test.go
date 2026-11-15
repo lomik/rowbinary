@@ -33,7 +33,7 @@ func TestExternalDataMissingWriter(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, executable, "-test.run=^TestExternalDataMissingWriter$", "-test.timeout=4s")
-	cmd.Env = append(os.Environ(), "ROWBINARY_MISSING_WRITER_CHILD=1", "ROWBINARY_TEST_MODE=offline")
+	cmd.Env = append(os.Environ(), "ROWBINARY_MISSING_WRITER_CHILD=1")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("missing writer did not return a normal error: %v\n%s", err, out)
 	}

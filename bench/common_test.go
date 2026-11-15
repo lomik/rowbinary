@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/lomik/rowbinary"
-	"github.com/lomik/rowbinary/internal/chtest"
+	"github.com/lomik/rowbinary/integration/chtest"
 )
 
 var testClickHouseDSN, testClickHouseNativeAddr, testUsername, testPassword string

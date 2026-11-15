@@ -1,0 +1,230 @@
+package integration
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	. "github.com/lomik/rowbinary"
+)
+
+func TestClient_Exec(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	err := c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory AS SELECT 1")
+	assert.NoError(err)
+
+	err = c.Exec(ctx, "CREATE TABLE")
+	assert.ErrorContains(err, "Syntax error")
+}
+
+func TestClient_Select(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	assert.NoError(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint64
+
+			for r.Next() {
+				var num uint64
+				Scan(r, UInt64, &num)
+				numbers = append(numbers, num)
+			}
+			assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
+			return r.Err()
+		}),
+	))
+
+	assert.ErrorContains(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		WithFormatReader(func(r *FormatReader) error {
+			i := 0
+			for r.Next() {
+				i++
+				if i > 1000 {
+					return errors.New("infinite loop")
+				}
+				var num uint32
+				Scan(r, UInt32, &num)
+			}
+			return r.Err()
+		}),
+	), "type mismatch")
+
+	assert.ErrorContains(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		RowBinary,
+		WithFormatReader(func(r *FormatReader) error {
+			for r.Next() {
+				var num uint64
+				Scan(r, UInt64, &num)
+			}
+			return r.Err()
+		}),
+	), "columns must be set")
+
+	assert.NoError(c.Select(ctx,
+		"SELECT * FROM system.numbers LIMIT 5",
+		RowBinary,
+		C("", UInt64),
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint64
+
+			for r.Next() {
+				var num uint64
+				Scan(r, UInt64, &num)
+				numbers = append(numbers, num)
+			}
+			assert.Equal([]uint64{0, 1, 2, 3, 4}, numbers)
+			return r.Err()
+		})))
+
+	assert.ErrorContains(c.Select(ctx, "SELECT * FROM system.numbers LIMIT 5",
+		RowBinary,
+		C("", UInt32),
+		WithFormatReader(func(r *FormatReader) error {
+			for r.Next() {
+				var num uint64
+				Scan(r, UInt64, &num)
+			}
+
+			return r.Err()
+		})), "type mismatch")
+}
+
+func TestClient_Select_ExternalData(t *testing.T) {
+	assert := assert.New(t)
+
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	assert.NoError(c.Select(ctx,
+		"SELECT max(value) FROM data1",
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint64
+
+			for r.Next() {
+				var num uint64
+				assert.NoError(Scan(r, UInt64, &num))
+				numbers = append(numbers, num)
+			}
+			assert.Equal([]uint64{4}, numbers)
+			return r.Err()
+		}),
+		WithExternalData("data1",
+			C("value", UInt64),
+			WithFormatWriter(func(w *FormatWriter) error {
+				for i := range uint64(5) {
+					if err := Write(w, UInt64, i); err != nil {
+						return err
+					}
+				}
+				return nil
+			}),
+		),
+	))
+}
+
+func TestClient_Select_WithBodyReader(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	var body []byte
+	assert.NoError(c.Select(ctx,
+		"SELECT 42 AS value",
+		WithBodyReader(func(r io.Reader) error {
+			var err error
+			body, err = io.ReadAll(r)
+			return err
+		}),
+	))
+
+	// Verify the body is not empty
+	assert.NotEmpty(body)
+}
+
+func TestClient_Select_WithHeader(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	// Test with a custom header - ClickHouse may ignore unknown headers
+	assert.NoError(c.Select(ctx,
+		"SELECT 1 AS value",
+		WithHeader("X-Test-Header", "test-value"),
+		WithFormatReader(func(r *FormatReader) error {
+			var numbers []uint8
+
+			for r.Next() {
+				var num uint8
+				Scan(r, UInt8, &num)
+				numbers = append(numbers, num)
+			}
+			assert.Equal([]uint8{1}, numbers)
+			return r.Err()
+		}),
+	))
+}
+
+func TestClient_Select_CancelledContext(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cancel() // Cancel immediately
+
+	err := c.Select(cancelCtx,
+		"SELECT 1 AS value",
+		WithFormatReader(func(r *FormatReader) error {
+			return nil
+		}),
+	)
+	assert.Error(err)
+	assert.Contains(err.Error(), "context canceled")
+}
+
+func TestClient_Insert(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context.Background()
+	c := integrationClient(t)
+
+	assert.NoError(c.Exec(ctx, "CREATE TABLE t1 (x String) ENGINE = Memory"))
+
+	assert.NoError(c.Insert(ctx,
+		"t1",
+		C("x", String),
+		WithFormatWriter(func(r *FormatWriter) error {
+			for i := range 5 {
+				if err := Write(r, String, fmt.Sprintf("%d", i)); err != nil {
+					return err
+				}
+			}
+			return nil
+		}),
+	))
+
+	assert.ErrorContains(c.Insert(ctx,
+		"t1",
+		C("x", String),
+		WithFormatWriter(func(r *FormatWriter) error {
+			for i := range 5 {
+				if err := Write(r, String, fmt.Sprintf("%d", i)); err != nil {
+					return err
+				}
+			}
+			return fmt.Errorf("insertion failed")
+		}),
+	), "insertion failed")
+
+}

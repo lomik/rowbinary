@@ -1,4 +1,5 @@
 // Package chtest manages ClickHouse instances for repository tests, not library clients.
+// It lives in the integration module so the library module stays free of Docker dependencies.
 package chtest
 
 import (
