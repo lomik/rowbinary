@@ -136,13 +136,21 @@ func (tc *TestClient) Database() string {
 
 func TestType[T any](t *testing.T, tp Type[T], value T, query string) {
 	t.Helper()
-	TestTypeWithDSN(t, tp, value, query, "")
+	testTypeAt(t, 2, tp, value, query, "")
 }
 
 // TestTypeWithDSN runs fixture checks and, if dsn is nonempty, a live insert check.
 // TestType is the Docker-free fixture-only convenience entry point.
 func TestTypeWithDSN[T any](t *testing.T, tp Type[T], value T, query, dsn string) {
-	_, file, no, ok := runtime.Caller(1)
+	t.Helper()
+	testTypeAt(t, 2, tp, value, query, dsn)
+}
+
+// testTypeAt labels subtests with the source location callerSkip frames above it,
+// so wrappers can point the label at the test line instead of themselves.
+func testTypeAt[T any](t *testing.T, callerSkip int, tp Type[T], value T, query, dsn string) {
+	t.Helper()
+	_, file, no, ok := runtime.Caller(callerSkip)
 	if !ok {
 		file = "unknown"
 		no = 0

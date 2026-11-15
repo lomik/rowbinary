@@ -18,7 +18,8 @@ func null[V any](_ V) *V {
 }
 
 func testType[T any](t *testing.T, tp Type[T], value T, query string) {
-	TestTypeWithDSN(t, tp, value, query, testClickHouseDSN)
+	t.Helper()
+	testTypeAt(t, 2, tp, value, query, testClickHouseDSN)
 }
 
 func TestBase(t *testing.T) {
