@@ -69,8 +69,11 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 			if producerErr == nil {
 				producerErr = bw.Flush()
 			}
-			_ = w.CloseWithError(producerErr)
+			// Publish the result before closing the pipe: the transport sees EOF
+			// only after the close, so once the upload is complete the result is
+			// already available and a late context cancellation cannot mask it.
 			producerDone <- producerErr
+			_ = w.CloseWithError(producerErr)
 		}()
 
 		if opts.formatWriter != nil {
