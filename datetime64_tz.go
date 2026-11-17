@@ -9,7 +9,7 @@ import (
 var _ Type[time.Time] = DateTime64TZ(6, "Asia/Istanbul")
 
 func DateTime64TZ(p uint8, tz string) Type[time.Time] {
-	loc, locErr := time.LoadLocation(tz)
+	loc, locErr := loadLocation(tz)
 	return MakeTypeWrapAny[time.Time](typeDateTime64TZ{precision: int64(p), tz: tz, loc: loc, locErr: locErr})
 }
 
