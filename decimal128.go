@@ -7,6 +7,9 @@ import (
 )
 
 func Decimal128(precision uint8, scale uint8) Type[decimal.Decimal] {
+	if msg := decimalConstructorError("Decimal128", precision, scale, BinaryTypeDecimal128[0]); msg != "" {
+		return Invalid[decimal.Decimal](msg)
+	}
 	return MakeTypeWrapAny(typeDecimal128{
 		precision: precision,
 		scale:     scale,

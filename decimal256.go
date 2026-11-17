@@ -7,6 +7,9 @@ import (
 )
 
 func Decimal256(precision uint8, scale uint8) Type[decimal.Decimal] {
+	if msg := decimalConstructorError("Decimal256", precision, scale, BinaryTypeDecimal256[0]); msg != "" {
+		return Invalid[decimal.Decimal](msg)
+	}
 	return MakeTypeWrapAny(typeDecimal256{
 		precision: precision,
 		scale:     scale,

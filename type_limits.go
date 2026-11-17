@@ -57,3 +57,16 @@ func decimalTag(precision uint8) byte {
 		return BinaryTypeDecimal256[0]
 	}
 }
+
+// decimalConstructorError returns why a sized Decimal constructor cannot build
+// the type, or "" if it can: precision and scale must be valid, and the
+// precision must be one ClickHouse stores with this width (tag).
+func decimalConstructorError(name string, precision, scale uint8, tag byte) string {
+	if err := checkDecimalParams(uint64(precision), uint64(scale)); err != nil {
+		return err.Error()
+	}
+	if decimalTag(precision) != tag {
+		return fmt.Sprintf("%s cannot hold Decimal(%d, %d); use Decimal(%d, %d), which picks the storage", name, precision, scale, precision, scale)
+	}
+	return ""
+}

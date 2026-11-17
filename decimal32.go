@@ -8,6 +8,9 @@ import (
 )
 
 func Decimal32(precision uint8, scale uint8) Type[decimal.Decimal] {
+	if msg := decimalConstructorError("Decimal32", precision, scale, BinaryTypeDecimal32[0]); msg != "" {
+		return Invalid[decimal.Decimal](msg)
+	}
 	return MakeTypeWrapAny(typeDecimal32{
 		precision: precision,
 		scale:     scale,

@@ -35,11 +35,11 @@ func (t typeUUID) Scan(r Reader, v *uuid.UUID) error {
 		return err
 	}
 
-	swap64(b)
-	err = v.UnmarshalBinary(b)
-	if err != nil {
-		return err
-	}
+	// Swap a copy: Peek may return the reader's (or the caller's) own bytes.
+	var buf [16]byte
+	copy(buf[:], b)
+	swap64(buf[:])
+	*v = uuid.UUID(buf)
 
 	_, err = r.Discard(16)
 	return err
