@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -232,13 +233,13 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 2 {
 			return nil, fmt.Errorf("Decimal must have exactly two arguments: %#v", t)
 		}
-		precision, err := strconv.Atoi(funcArgs[0])
+		precision, err := parseIntInRange("Decimal precision", funcArgs[0], 1, maxDecimalPrec)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse Decimal precision: %w", err)
+			return nil, err
 		}
-		scale, err := strconv.Atoi(funcArgs[1])
+		scale, err := parseIntInRange("Decimal scale", funcArgs[1], 0, precision)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse Decimal scale: %w", err)
+			return nil, err
 		}
 		return Decimal(uint8(precision), uint8(scale)), nil
 
@@ -246,11 +247,11 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("FixedString must have exactly one argument: %#v", t)
 		}
-		size, err := strconv.Atoi(funcArgs[0])
+		size, err := parseIntInRange("FixedString size", funcArgs[0], 1, maxFixedStringSize)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse FixedString size: %w", err)
+			return nil, err
 		}
-		return FixedString(size), nil
+		return FixedString(int(size)), nil
 
 	case "Tuple":
 		if len(funcArgs) == 0 {
@@ -295,9 +296,9 @@ func DecodeStringType(t string) (Any, error) {
 				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
 			}
 			name := unquote(argArr[0])
-			value, err := strconv.Atoi(argArr[2])
+			value, err := parseIntInRange("Enum8 value", argArr[2], math.MinInt8, math.MaxInt8)
 			if err != nil {
-				return nil, fmt.Errorf("can't parse enum value: %w", err)
+				return nil, err
 			}
 			mp[name] = int8(value)
 		}
@@ -311,9 +312,9 @@ func DecodeStringType(t string) (Any, error) {
 				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
 			}
 			name := unquote(argArr[0])
-			value, err := strconv.Atoi(argArr[2])
+			value, err := parseIntInRange("Enum16 value", argArr[2], math.MinInt16, math.MaxInt16)
 			if err != nil {
-				return nil, fmt.Errorf("can't parse enum value: %w", err)
+				return nil, err
 			}
 			mp[name] = int16(value)
 		}
@@ -347,9 +348,9 @@ func DecodeStringType(t string) (Any, error) {
 			return nil, fmt.Errorf("can't parse type: %#v", t)
 		}
 
-		maxTypes, err := strconv.Atoi(argArr[1])
+		maxTypes, err := parseIntInRange("Dynamic max_types", argArr[1], 0, maxDynamicTypes)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse max_types: %w", err)
+			return nil, err
 		}
 		return Dynamic(uint8(maxTypes)), nil
 	}

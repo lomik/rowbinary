@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -146,14 +147,20 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := checkFixedStringSize(size); err != nil {
+			return nil, err
+		}
 		return FixedString(int(size)), nil
 	case BinaryTypeEnum8: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><int8_value_1>...<var_uint_name_size_N><name_data_N><int8_value_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
 			return nil, err
 		}
+		if n > maxEnum8Elements {
+			return nil, fmt.Errorf("Enum8 element count must be at most %d, got %d", maxEnum8Elements, n)
+		}
 		mp := make(map[string]int8, n)
-		for i := 0; i < int(n); i++ {
+		for range n {
 			var name string
 			err := String.Scan(r, &name)
 			if err != nil {
@@ -172,8 +179,11 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if n > maxEnum16Elements {
+			return nil, fmt.Errorf("Enum16 element count must be at most %d, got %d", maxEnum16Elements, n)
+		}
 		mp := make(map[string]int16)
-		for i := 0; i < int(n); i++ {
+		for range n {
 			var name string
 			err := String.Scan(r, &name)
 			if err != nil {
@@ -196,6 +206,12 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		err = UInt8.Scan(r, &scale)
 		if err != nil {
 			return nil, err
+		}
+		if err := checkDecimalParams(uint64(precision), uint64(scale)); err != nil {
+			return nil, err
+		}
+		if tag := decimalTag(precision); tag != firstByte[0] {
+			return nil, fmt.Errorf("Decimal(%d, %d) must use binary tag %#02x, got %#02x", precision, scale, tag, firstByte[0])
 		}
 		return Decimal(precision, scale), nil
 	case BinaryTypeUUID:
@@ -320,6 +336,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		err := UInt8.Scan(r, &maxTypes)
 		if err != nil {
 			return nil, err
+		}
+		if maxTypes > maxDynamicTypes {
+			return nil, fmt.Errorf("Dynamic max_types must be in range 0..%d, got %d", maxDynamicTypes, maxTypes)
 		}
 		return Dynamic(maxTypes), nil
 	case BinaryTypeCustom: // <var_uint_type_name_size><type_name_data>
