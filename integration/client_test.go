@@ -307,3 +307,36 @@ func TestClient_Select_DynamicMaxTypesZero(t *testing.T) {
 		}
 	}
 }
+
+// Enum labels with separators, brackets and escapes must survive the text
+// header ClickHouse sends (RowBinaryWithNamesAndTypes without binary types).
+func TestClient_Select_EnumTrickyLabels(t *testing.T) {
+	c := integrationClient(t)
+	labels := map[string]int8{"a, b": 1, "c (d)": 2, "e f": 3, "it's": 4, `x\y`: 5, "nl\n": 6, "q=1": 7}
+	tp := Enum8(labels)
+	for want := range labels {
+		query := fmt.Sprintf("SELECT CAST(%s, '%s') AS v", quoteSQL(want), strings.ReplaceAll(strings.ReplaceAll(tp.String(), `\`, `\\`), `'`, `\'`))
+		err := c.Select(t.Context(), query, WithUseBinaryHeader(false), C("v", tp),
+			WithFormatReader(func(r *FormatReader) error {
+				if !r.Next() {
+					return fmt.Errorf("no rows: %w", r.Err())
+				}
+				var got string
+				if err := Scan(r, tp, &got); err != nil {
+					return err
+				}
+				if got != want {
+					return fmt.Errorf("got %q", got)
+				}
+				return nil
+			}))
+		if err != nil {
+			t.Errorf("label %q: %v", want, err)
+		}
+	}
+}
+
+func quoteSQL(s string) string {
+	r := strings.NewReplacer(`\`, `\\`, `'`, `\'`, "\n", `\n`)
+	return "'" + r.Replace(s) + "'"
+}

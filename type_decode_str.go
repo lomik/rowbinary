@@ -8,23 +8,6 @@ import (
 	"strings"
 )
 
-func quote(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, `'`, `\'`)
-	return "'" + s + "'"
-}
-
-func unquote(s string) string {
-	s = strings.TrimSpace(s)
-	if len(s) < 2 || s[0] != '\'' || s[len(s)-1] != '\'' {
-		return s
-	}
-	s = s[1 : len(s)-1]
-	s = strings.ReplaceAll(s, `\'`, `'`)
-	s = strings.ReplaceAll(s, `\\`, `\`)
-	return s
-}
-
 func decodeStringTypeSplitRoot(t string, sep byte) []string {
 	s := t
 	var ret []string
@@ -36,6 +19,10 @@ func decodeStringTypeSplitRoot(t string, sep byte) []string {
 			ret = append(ret, strings.TrimSpace(s[:i]))
 			s = s[i+1:]
 			i = 0
+			continue
+		}
+		if s[i] == '\'' {
+			i = skipQuoted(s, i)
 			continue
 		}
 		if s[i] == '(' {
@@ -331,12 +318,11 @@ func DecodeStringType(t string) (Any, error) {
 		// Enum8('windows' = -10, 'android' = 1, 'ios' = 2)
 		mp := make(map[string]int8)
 		for _, arg := range funcArgs {
-			argArr := decodeStringTypeSplitRoot(arg, ' ')
-			if len(argArr) != 3 || argArr[1] != "=" {
-				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
+			name, valueStr, err := parseEnumElement(arg)
+			if err != nil {
+				return nil, err
 			}
-			name := unquote(argArr[0])
-			value, err := parseIntInRange("Enum8 value", argArr[2], math.MinInt8, math.MaxInt8)
+			value, err := parseIntInRange("Enum8 value", valueStr, math.MinInt8, math.MaxInt8)
 			if err != nil {
 				return nil, err
 			}
@@ -347,12 +333,11 @@ func DecodeStringType(t string) (Any, error) {
 		// Enum16('windows' = -10, 'android' = 1, 'ios' = 2)
 		mp := make(map[string]int16)
 		for _, arg := range funcArgs {
-			argArr := decodeStringTypeSplitRoot(arg, ' ')
-			if len(argArr) != 3 || argArr[1] != "=" {
-				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
+			name, valueStr, err := parseEnumElement(arg)
+			if err != nil {
+				return nil, err
 			}
-			name := unquote(argArr[0])
-			value, err := parseIntInRange("Enum16 value", argArr[2], math.MinInt16, math.MaxInt16)
+			value, err := parseIntInRange("Enum16 value", valueStr, math.MinInt16, math.MaxInt16)
 			if err != nil {
 				return nil, err
 			}
