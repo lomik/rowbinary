@@ -102,8 +102,13 @@ type Client interface {
 	// non-200 response.
 	Insert(ctx context.Context, table string, options ...InsertOption) error
 
-	// Close releases resources owned by the client. Clients without their own
-	// HTTP client share a package-wide connection pool, which Close leaves open.
+	// Close releases resources owned by the client. A client owns none: its
+	// connections belong either to the package-wide default pool (shared by
+	// all clients without their own HTTP client, which closes idle connections
+	// after 90 seconds) or to the http.Client given with WithHTTPClient or
+	// SetGlobalHTTPClient, which stays the caller's to manage, e.g. with
+	// http.Client.CloseIdleConnections. So Close does not touch connections,
+	// always returns nil, and the client remains usable afterwards.
 	Close() error
 }
 
@@ -240,6 +245,7 @@ func (c *client) do(req *http.Request) (*http.Response, error) {
 	return c.opts.httpClient.Do(req)
 }
 
+// Close is a no-op by design; see Client.Close.
 func (c *client) Close() error {
 	return nil
 }
