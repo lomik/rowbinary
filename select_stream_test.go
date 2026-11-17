@@ -153,3 +153,39 @@ func TestExternalDataSingleClosingBoundary(t *testing.T) {
 		t.Fatalf("body does not end with the closing boundary: %q", body[max(0, len(body)-80):])
 	}
 }
+
+func TestSelectMidStreamFailureIncludesServerException(t *testing.T) {
+	s := clickhouseMidStreamFailure(t, twoColumnRows(t, 2))
+	defer s.Close()
+	c := NewClient(WithDSN(s.URL))
+
+	for name, opts := range map[string][]SelectOption{
+		"without reader": nil,
+		"with reader": {WithFormatReader(func(r *FormatReader) error {
+			readRows(r)
+			return nil
+		})},
+	} {
+		err := c.Select(t.Context(), "SELECT", opts...)
+		if !errors.Is(err, io.ErrUnexpectedEOF) || !strings.Contains(err.Error(), "Code: 395") {
+			t.Errorf("%s: err = %v, want ErrUnexpectedEOF carrying the server exception", name, err)
+		}
+	}
+}
+
+func TestTailReaderKeepsOnlyTheEnd(t *testing.T) {
+	data := append(bytes.Repeat([]byte{'x'}, 3*tailSize), []byte("__exception__\r\nCode: 1. boom\n")...)
+	tr := &tailReader{r: bytes.NewReader(data)}
+	buf := make([]byte, 1000) // small reads exercise the trimming path
+	for {
+		if _, err := tr.Read(buf); err != nil {
+			break
+		}
+	}
+	if len(tr.tail) > tailSize {
+		t.Fatalf("tail grew to %d bytes", len(tr.tail))
+	}
+	if got := tr.exception(); got != "Code: 1. boom" {
+		t.Fatalf("exception() = %q", got)
+	}
+}

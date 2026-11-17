@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -248,8 +249,12 @@ func TestClient_Select_MidStreamFailure(t *testing.T) {
 		t.Fatal("Select with reader: mid-stream failure reported as success")
 	}
 
-	if err := c.Select(t.Context(), query); err == nil {
+	err = c.Select(t.Context(), query)
+	if err == nil {
 		t.Fatal("Select without reader: mid-stream failure reported as success")
+	}
+	if !strings.Contains(err.Error(), "FUNCTION_THROW_IF_VALUE_IS_NON_ZERO") {
+		t.Fatalf("error does not carry the ClickHouse exception: %v", err)
 	}
 
 	// A successful query is unaffected.
