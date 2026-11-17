@@ -97,6 +97,8 @@ type Client interface {
 	// configuration are applied first. The format header is automatically written before invoking writeFunc.
 	Insert(ctx context.Context, table string, options ...InsertOption) error
 
+	// Close releases resources owned by the client. Clients without their own
+	// HTTP client share a package-wide connection pool, which Close leaves open.
 	Close() error
 }
 
@@ -165,12 +167,7 @@ func NewClient(options ...ClientOption) Client {
 	}
 
 	if c.opts.httpClient == nil {
-		c.opts.httpClient = &http.Client{
-			Transport: &http.Transport{
-				ReadBufferSize:  1024 * 1024,
-				WriteBufferSize: 1024 * 1024,
-			},
-		}
+		c.opts.httpClient = defaultHTTPClient()
 	}
 	return c
 }
