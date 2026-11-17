@@ -6,6 +6,9 @@ import (
 )
 
 func FixedString(length int) Type[[]byte] {
+	if length < 1 || length > maxFixedStringSize {
+		return Invalid[[]byte](fmt.Sprintf("FixedString size must be in range 1..%d, got %d", maxFixedStringSize, length))
+	}
 	return MakeTypeWrapAny(typeFixedString{
 		length: length,
 	})

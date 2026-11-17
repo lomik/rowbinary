@@ -158,7 +158,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if n > maxEnum8Elements {
 			return nil, fmt.Errorf("Enum8 element count must be at most %d, got %d", maxEnum8Elements, n)
 		}
-		mp := make(map[string]int8, n)
+		mp := newEnumBuilder[int8]("Enum8")
 		for range n {
 			var name string
 			err := String.Scan(r, &name)
@@ -170,9 +170,11 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			mp[name] = value
+			if err := mp.add(name, value); err != nil {
+				return nil, err
+			}
 		}
-		return Enum8(mp), nil
+		return Enum8(mp.labels), nil
 	case BinaryTypeEnum16: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><int16_little_endian_value_1>...><var_uint_name_size_N><name_data_N><int16_little_endian_value_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
@@ -181,7 +183,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if n > maxEnum16Elements {
 			return nil, fmt.Errorf("Enum16 element count must be at most %d, got %d", maxEnum16Elements, n)
 		}
-		mp := make(map[string]int16)
+		mp := newEnumBuilder[int16]("Enum16")
 		for range n {
 			var name string
 			err := String.Scan(r, &name)
@@ -193,9 +195,11 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			mp[name] = value
+			if err := mp.add(name, value); err != nil {
+				return nil, err
+			}
 		}
-		return Enum16(mp), nil
+		return Enum16(mp.labels), nil
 	case BinaryTypeDecimal32, BinaryTypeDecimal64, BinaryTypeDecimal128, BinaryTypeDecimal256: // <uint8_precision><uint8_scale>
 		var precision, scale uint8
 		err := UInt8.Scan(r, &precision)
@@ -319,6 +323,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeVariant: // <var_uint_number_of_variants><variant_type_encoding_1>...<variant_type_encoding_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
+			return nil, err
+		}
+		if err := checkVariantCount(n); err != nil {
 			return nil, err
 		}
 		var types []Any

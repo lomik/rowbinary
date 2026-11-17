@@ -7,7 +7,10 @@ import (
 )
 
 func Variant(valueTypes ...Any) Type[Value] {
-	valueTypes = slices.Clone(valueTypes)
+	valueTypes = dedupTypes(slices.Clone(valueTypes))
+	if len(valueTypes) > maxVariantTypes {
+		return Invalid[Value](fmt.Sprintf("Variant can have at most %d types, got %d", maxVariantTypes, len(valueTypes)))
+	}
 	slices.SortFunc(valueTypes, func(a, b Any) int {
 		return strings.Compare(a.String(), b.String())
 	})

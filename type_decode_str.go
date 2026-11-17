@@ -316,7 +316,7 @@ func DecodeStringType(t string) (Any, error) {
 
 	case "Enum8":
 		// Enum8('windows' = -10, 'android' = 1, 'ios' = 2)
-		mp := make(map[string]int8)
+		mp := newEnumBuilder[int8]("Enum8")
 		for _, arg := range funcArgs {
 			name, valueStr, err := parseEnumElement(arg)
 			if err != nil {
@@ -326,12 +326,14 @@ func DecodeStringType(t string) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			mp[name] = int8(value)
+			if err := mp.add(name, int8(value)); err != nil {
+				return nil, err
+			}
 		}
-		return Enum8(mp), nil
+		return Enum8(mp.labels), nil
 	case "Enum16":
 		// Enum16('windows' = -10, 'android' = 1, 'ios' = 2)
-		mp := make(map[string]int16)
+		mp := newEnumBuilder[int16]("Enum16")
 		for _, arg := range funcArgs {
 			name, valueStr, err := parseEnumElement(arg)
 			if err != nil {
@@ -341,13 +343,18 @@ func DecodeStringType(t string) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			mp[name] = int16(value)
+			if err := mp.add(name, int16(value)); err != nil {
+				return nil, err
+			}
 		}
-		return Enum16(mp), nil
+		return Enum16(mp.labels), nil
 
 	case "Variant":
 		if len(funcArgs) == 0 {
 			return nil, fmt.Errorf("Variant must have at least one argument: %#v", t)
+		}
+		if err := checkVariantCount(uint64(len(funcArgs))); err != nil {
+			return nil, err
 		}
 
 		var elemTypes []Any

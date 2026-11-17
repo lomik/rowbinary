@@ -469,3 +469,30 @@ func TestClient_Select_NullIntoAny(t *testing.T) {
 		}
 	}
 }
+
+// ClickHouse merges repeated Variant members; a column declared as
+// Variant(UInt8, UInt8, String) must match the server's header.
+func TestClient_Select_VariantDuplicateMembers(t *testing.T) {
+	c := integrationClient(t)
+	tp := Variant(UInt8, UInt8, String)
+	for _, binaryHeader := range []bool{false, true} {
+		err := c.Select(t.Context(), "SELECT CAST(7::UInt8, 'Variant(UInt8, UInt8, String)') AS v",
+			WithUseBinaryHeader(binaryHeader), C("v", tp),
+			WithFormatReader(func(r *FormatReader) error {
+				if !r.Next() {
+					return fmt.Errorf("no rows: %w", r.Err())
+				}
+				var v Value
+				if err := Scan(r, tp, &v); err != nil {
+					return err
+				}
+				if v.Value != uint8(7) {
+					return fmt.Errorf("value = %#v", v)
+				}
+				return nil
+			}))
+		if err != nil {
+			t.Errorf("binary header %v: %v", binaryHeader, err)
+		}
+	}
+}
