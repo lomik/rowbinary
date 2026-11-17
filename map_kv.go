@@ -27,6 +27,10 @@ func (t typeMapKV[K, V]) Binary() []byte {
 }
 
 func (t typeMapKV[K, V]) Write(w Writer, value *KV[K, V]) error {
+	if value == nil {
+		// A nil *KV has no entries.
+		return VarintWrite(w, 0)
+	}
 	err := VarintWrite(w, uint64(value.Len()))
 	if err != nil {
 		return err

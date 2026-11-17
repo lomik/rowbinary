@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"slices"
 )
 
@@ -79,6 +80,9 @@ func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
 		err = t.valueType.ScanAny(r, &v)
 		if err != nil {
 			return err
+		}
+		if k != nil && !reflect.ValueOf(k).Comparable() {
+			return fmt.Errorf("Map key of type %T can't be a Go map key; use MapKV for %s keys", k, t.keyType.String())
 		}
 		(*ret)[k] = v
 	}

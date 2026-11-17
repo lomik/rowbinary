@@ -37,7 +37,10 @@ func (t typeVariant) Binary() []byte {
 }
 
 func (t typeVariant) Write(w Writer, value Value) error {
-	if value.Type != nil && Eq(value.Type, Nothing) && value.Value == nil {
+	if value.Type == nil {
+		return errValueWithoutType
+	}
+	if Eq(value.Type, Nothing) && value.Value == nil {
 		return w.WriteByte(255)
 	}
 	for i, tp := range t.valueTypes {

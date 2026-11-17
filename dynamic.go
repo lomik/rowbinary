@@ -31,6 +31,9 @@ func (t typeDynamic) Binary() []byte {
 }
 
 func (t typeDynamic) Write(w Writer, value Value) error {
+	if value.Type == nil {
+		return errValueWithoutType
+	}
 	_, err := w.Write(value.Type.Binary())
 	if err != nil {
 		return err
