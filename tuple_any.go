@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ import (
 // enforced at compile time; ensure the data matches the provided Any types to avoid runtime errors.
 func TupleAny(valueTypes ...Any) Type[[]any] {
 	return MakeTypeWrapAny(typeTupleAny{
-		valueTypes: valueTypes,
+		valueTypes: slices.Clone(valueTypes),
 	})
 }
 

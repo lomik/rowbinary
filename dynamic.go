@@ -2,6 +2,7 @@ package rowbinary
 
 import (
 	"fmt"
+	"slices"
 )
 
 func Dynamic(maxTypes uint8, knownTypes ...Any) Type[Value] {
@@ -10,7 +11,7 @@ func Dynamic(maxTypes uint8, knownTypes ...Any) Type[Value] {
 	}
 	return MakeTypeWrapAny(typeDynamic{
 		maxTypes:   maxTypes,
-		knownTypes: knownTypes,
+		knownTypes: slices.Clone(knownTypes),
 	})
 }
 
@@ -34,7 +35,7 @@ func (t typeDynamic) Write(w Writer, value Value) error {
 	if value.Type == nil {
 		return errValueWithoutType
 	}
-	_, err := w.Write(value.Type.Binary())
+	_, err := w.Write(typeBinary(value.Type))
 	if err != nil {
 		return err
 	}

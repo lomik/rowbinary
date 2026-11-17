@@ -112,7 +112,7 @@ func (w *FormatWriter) writeHeader() error {
 		if w.options.format == RowBinaryWithNamesAndTypes {
 			for i := 0; i < len(w.options.columns); i++ {
 				if w.options.useBinaryHeader {
-					if _, err := w.wrap.Write(w.options.columns[i].tp.Binary()); err != nil {
+					if _, err := w.wrap.Write(typeBinary(w.options.columns[i].tp)); err != nil {
 						return w.setErr(err)
 					}
 				} else {

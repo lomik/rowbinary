@@ -27,7 +27,7 @@ type typeTupleNamedAny struct {
 // for metadata but do not affect the binary encoding. Type safety is not enforced at compile time.
 func TupleNamedAny(columns ...Column) Type[[]any] {
 	return MakeTypeWrapAny(typeTupleNamedAny{
-		columns: columns,
+		columns: slices.Clone(columns),
 	})
 }
 
