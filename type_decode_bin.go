@@ -2,7 +2,6 @@ package rowbinary
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 )
@@ -83,9 +82,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeUInt64:
 		return UInt64, nil
 	case BinaryTypeUInt128:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeUInt128")
 	case BinaryTypeUInt256:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeUInt256")
 	case BinaryTypeInt8:
 		return Int8, nil
 	case BinaryTypeInt16:
@@ -95,9 +94,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeInt64:
 		return Int64, nil
 	case BinaryTypeInt128:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeInt128")
 	case BinaryTypeInt256:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeInt256")
 	case BinaryTypeFloat32:
 		return Float32, nil
 	case BinaryTypeFloat64:
@@ -256,7 +255,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return TupleNamedAny(columns...), nil
 	case BinaryTypeSet:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeSet")
 	case BinaryTypeInterval: // <interval_kind> (see interval kind binary encoding)
 		b, err := r.ReadByte()
 		if err != nil {
@@ -286,7 +285,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		case intervalKindYear:
 			return IntervalYear, nil
 		}
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: interval kind %#02x", NotImplementedError, b)
 	case BinaryTypeNullable: // <nested_type_encoding>
 		nested, err := DecodeBinaryType(r)
 		if err != nil {
@@ -294,9 +293,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return NullableAny(nested), nil
 	case BinaryTypeFunction:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeFunction")
 	case BinaryTypeAggregateFunction:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeAggregateFunction")
 	case BinaryTypeLowCardinality: // <nested_type_encoding>
 		nested, err := DecodeBinaryType(r)
 		if err != nil {
@@ -351,7 +350,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeBool:
 		return Bool, nil
 	case BinaryTypeSimpleAggregateFunction:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeSimpleAggregateFunction")
 	case BinaryTypeNested: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><nested_type_encoding_1>...<var_uint_name_size_N><name_data_N><nested_type_encoding_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
@@ -372,15 +371,15 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return ArrayAny(TupleNamedAny(columns...)), nil
 	case BinaryTypeJSON: // 0x30<uint8_serialization_version><var_int_max_dynamic_paths><uint8_max_dynamic_types><var_uint_number_of_typed_paths><var_uint_path_name_size_1><path_name_data_1><encoded_type_1>...<var_uint_number_of_skip_paths><var_uint_skip_path_size_1><skip_path_data_1>...<var_uint_number_of_skip_path_regexps><var_uint_skip_path_regexp_size_1><skip_path_data_regexp_1>...
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeJSON")
 	case BinaryTypeBFloat16:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeBFloat16")
 	case BinaryTypeTime:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeTime")
 	case BinaryTypeTime64:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeTime64")
 	default:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type code %#02x", NotImplementedError, firstByte[0])
 	}
 
 }

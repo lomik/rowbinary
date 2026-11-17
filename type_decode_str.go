@@ -51,6 +51,40 @@ func decodeStringTypeSplitRoot(t string, sep byte) []string {
 	return ret
 }
 
+// checkTypeName rejects empty names and unbalanced brackets outside quoted
+// strings, so malformed names are not silently accepted as Custom types.
+func checkTypeName(t string) error {
+	s := strings.TrimSpace(t)
+	if s == "" {
+		return errors.New("empty type name")
+	}
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\'':
+			for i++; i < len(s) && s[i] != '\''; i++ {
+				if s[i] == '\\' {
+					i++
+				}
+			}
+			if i >= len(s) {
+				return fmt.Errorf("unterminated quote in type name %q", s)
+			}
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth < 0 {
+				return fmt.Errorf("unbalanced brackets in type name %q", s)
+			}
+		}
+	}
+	if depth != 0 {
+		return fmt.Errorf("unbalanced brackets in type name %q", s)
+	}
+	return nil
+}
+
 func decodeStringTypeParseFunc(t string) (string, []string, error) {
 	s := strings.TrimSpace(t)
 	if !strings.Contains(s, "(") {
@@ -69,13 +103,19 @@ func decodeStringTypeParseFunc(t string) (string, []string, error) {
 	funcName = s[:strings.Index(s, "(")]
 	argsStr := s[strings.Index(s, "(")+1 : len(s)-1]
 
-	args = decodeStringTypeSplitRoot(argsStr, ',')
+	if strings.TrimSpace(argsStr) != "" {
+		args = decodeStringTypeSplitRoot(argsStr, ',')
+	}
 
 	return funcName, args, nil
 }
 
 // DecodeStringType decodes a string type from the given reader.
 func DecodeStringType(t string) (Any, error) {
+	if err := checkTypeName(t); err != nil {
+		return nil, err
+	}
+
 	// simple types
 	switch strings.TrimSpace(t) {
 	case "Nothing":
@@ -91,9 +131,9 @@ func DecodeStringType(t string) (Any, error) {
 	case "UInt64":
 		return UInt64, nil
 	case "UInt128":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "UInt128")
 	case "UInt256":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "UInt256")
 	case "Int8":
 		return Int8, nil
 	case "Int16":
@@ -103,9 +143,9 @@ func DecodeStringType(t string) (Any, error) {
 	case "Int64":
 		return Int64, nil
 	case "Int128":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "Int128")
 	case "Int256":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "Int256")
 	case "Float32":
 		return Float32, nil
 	case "Float64":
@@ -117,11 +157,11 @@ func DecodeStringType(t string) (Any, error) {
 	case "DateTime":
 		return DateTime, nil
 	case "DateTime64":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "DateTime64")
 	case "String":
 		return String, nil
 	case "FixedString": // <var_uint_size>
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: FixedString without a size", NotImplementedError)
 	case "UUID":
 		return UUID, nil
 	case "IPv4":
@@ -255,7 +295,7 @@ func DecodeStringType(t string) (Any, error) {
 
 	case "Tuple":
 		if len(funcArgs) == 0 {
-			return nil, fmt.Errorf("Tuple must have at least one argument: %#v", t)
+			return TupleAny(), nil // ClickHouse: toTypeName(()) = Tuple(), binary 1f 00
 		}
 
 		firstArgArr := decodeStringTypeSplitRoot(funcArgs[0], ' ')

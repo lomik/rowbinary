@@ -11,10 +11,7 @@ func LowCardinalityAny(valueType Any) Type[any] {
 }
 
 type typeLowCardinalityAny struct {
-	id        uint64
 	valueType Any
-	tbin      []byte
-	tstr      string
 }
 
 func (t typeLowCardinalityAny) String() string {

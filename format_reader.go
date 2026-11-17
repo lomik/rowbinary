@@ -129,6 +129,10 @@ func (r *FormatReader) readHeaderRowBinaryWithNames() error {
 		remote = append(remote, Column{name: name, tp: tp})
 	}
 
+	if err := r.checkOptionColumns(remote); err != nil {
+		return r.setErr(err)
+	}
+
 	r.columns = remote
 	return nil
 }
@@ -191,7 +195,29 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 		}
 	}
 
+	if err := r.checkOptionColumns(remote); err != nil {
+		return r.setErr(err)
+	}
+
 	r.columns = remote
+	return nil
+}
+
+// checkOptionColumns reports columns named in the options that the response
+// does not contain, typically a typo that would otherwise skip the type check.
+func (r *FormatReader) checkOptionColumns(remote []Column) error {
+	if len(r.options.columns) == 0 {
+		return nil
+	}
+	present := make(map[string]bool, len(remote))
+	for _, col := range remote {
+		present[col.name] = true
+	}
+	for _, col := range r.options.columns {
+		if !present[col.name] {
+			return fmt.Errorf("column %s is not in the response", col.name)
+		}
+	}
 	return nil
 }
 

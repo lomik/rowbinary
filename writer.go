@@ -29,10 +29,6 @@ func NewWriter(w io.Writer) Writer {
 	}
 }
 
-func (w *writer) buffer() []byte {
-	return w.buf[:]
-}
-
 func (w *writer) Buffer() []byte {
 	return w.buf[:]
 }

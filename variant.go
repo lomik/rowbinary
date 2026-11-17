@@ -55,7 +55,7 @@ func (t typeVariant) Write(w Writer, value Value) error {
 			return value.Type.WriteAny(w, value.Value)
 		}
 	}
-	return TypeMismatchError{}
+	return TypeMismatchError{ExpectedType: t.String(), ActualType: value.Type.String()}
 }
 
 func (t typeVariant) Scan(r Reader, v *Value) error {

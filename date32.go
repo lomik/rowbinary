@@ -10,9 +10,6 @@ var Date32 Type[ValueDate] = MakeTypeWrapAny[ValueDate](typeDate32{})
 
 type typeDate32 struct{}
 
-var days1900 = int32(25567) // to 1970
-var seconds1900 = int64(days1900 * secInDay)
-
 func (t typeDate32) String() string {
 	return "Date32"
 }
