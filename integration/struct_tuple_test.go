@@ -3,8 +3,8 @@ package integration
 import (
 	"testing"
 
-	"github.com/lomik/rowbinary/rowbinarytest"
 	"github.com/lomik/rowbinary/example"
+	"github.com/lomik/rowbinary/rowbinarytest"
 )
 
 func TestStructTuple(t *testing.T) {

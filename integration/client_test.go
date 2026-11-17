@@ -340,3 +340,98 @@ func quoteSQL(s string) string {
 	r := strings.NewReplacer(`\`, `\\`, `'`, `\'`, "\n", `\n`)
 	return "'" + r.Replace(s) + "'"
 }
+
+// RowBinary has no header, so ClickHouse maps values to table columns by
+// position; a column list in the table argument selects and orders them.
+func TestClient_Insert_RowBinaryColumnOrder(t *testing.T) {
+	c := integrationClient(t)
+	ctx := t.Context()
+	if err := c.Exec(ctx, "CREATE TABLE ord (a UInt32, b UInt32, c String DEFAULT 'dflt') ENGINE = Memory"); err != nil {
+		t.Fatal(err)
+	}
+	// Rows are written as (b, a): b=2, a=1.
+	insert := func(table string) error {
+		return c.Insert(ctx, table, RowBinary, C("b", UInt32), C("a", UInt32),
+			WithFormatWriter(func(w *FormatWriter) error {
+				if err := Write(w, UInt32, 2); err != nil {
+					return err
+				}
+				return Write(w, UInt32, 1)
+			}))
+	}
+	read := func() (rows [][3]any) {
+		t.Helper()
+		err := c.Select(ctx, "SELECT a, b, c FROM ord", WithFormatReader(func(r *FormatReader) error {
+			for r.Next() {
+				var a, b uint32
+				var s string
+				if err := r.Scan(&a, &b, &s); err != nil {
+					return err
+				}
+				rows = append(rows, [3]any{a, b, s})
+			}
+			return r.Err()
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rows
+	}
+
+	// Documented route: the column list in the table argument.
+	if err := insert("ord (b, a)"); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(); len(got) != 1 || got[0] != [3]any{uint32(1), uint32(2), "dflt"} {
+		t.Fatalf("with column list: rows %v, want [1 2 dflt]", got)
+	}
+
+	// Without a list, RowBinary values go to (a, b, c) by position: the third
+	// column is missing from the data, so ClickHouse rejects the insert.
+	if err := insert("ord"); err == nil {
+		t.Fatal("RowBinary without a column list for a 3-column table succeeded")
+	}
+}
+
+func TestClient_Insert_QuoteIdentifier(t *testing.T) {
+	c := integrationClient(t)
+	ctx := t.Context()
+	name := "we`ird. na\\me; x"
+	table := QuoteIdentifier(name)
+	if err := c.Exec(ctx, "CREATE TABLE "+table+" (v UInt8) ENGINE = Memory"); err != nil {
+		t.Fatal(err)
+	}
+	err := c.Insert(ctx, table, C("v", UInt8), WithFormatWriter(func(w *FormatWriter) error {
+		return Write(w, UInt8, 7)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	err = c.Select(ctx, "SELECT name FROM system.tables WHERE database = currentDatabase()", WithFormatReader(func(r *FormatReader) error {
+		for r.Next() {
+			var s string
+			if err := Scan(r, String, &s); err != nil {
+				return err
+			}
+			got = append(got, s)
+		}
+		return r.Err()
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0] != name {
+		t.Fatalf("tables %q, want exactly %q", got, name)
+	}
+	var n uint64
+	err = c.Select(ctx, "SELECT count() FROM "+table+" WHERE v = 7", WithFormatReader(func(r *FormatReader) error {
+		if !r.Next() {
+			return r.Err()
+		}
+		return Scan(r, UInt64, &n)
+	}))
+	if err != nil || n != 1 {
+		t.Fatalf("count = %d, err %v", n, err)
+	}
+}

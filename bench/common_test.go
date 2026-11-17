@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lomik/rowbinary/rowbinarytest"
 	"github.com/lomik/rowbinary/integration/chtest"
+	"github.com/lomik/rowbinary/rowbinarytest"
 )
 
 var testClickHouseDSN, testClickHouseNativeAddr, testUsername, testPassword string

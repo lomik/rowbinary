@@ -31,18 +31,43 @@ var unquoteEscapes = map[byte]byte{
 
 // quote returns s as a single-quoted ClickHouse string literal.
 func quote(s string) string {
+	return quoteWith(s, '\'')
+}
+
+// QuoteIdentifier returns a ClickHouse identifier in backquotes, escaped so
+// that any name is safe to put into SQL, for example as the table argument of
+// Insert. Several parts are joined with dots: QuoteIdentifier("db", "t")
+// returns `db`.`t`, while QuoteIdentifier("a.b") quotes one name containing a
+// dot.
+func QuoteIdentifier(parts ...string) string {
+	quoted := make([]string, len(parts))
+	for i, p := range parts {
+		quoted[i] = quoteWith(p, '`')
+	}
+	return strings.Join(quoted, ".")
+}
+
+// quoteWith quotes s with q, escaping q, backslash and control characters the
+// way ClickHouse does for both string literals and backquoted identifiers.
+func quoteWith(s string, q byte) string {
 	var b strings.Builder
 	b.Grow(len(s) + 2)
-	b.WriteByte('\'')
+	b.WriteByte(q)
 	for i := 0; i < len(s); i++ {
-		if e, ok := quoteEscapes[s[i]]; ok {
+		c := s[i]
+		if c == q {
+			b.WriteByte('\\')
+			b.WriteByte(c)
+			continue
+		}
+		if e, ok := quoteEscapes[c]; ok && c != '\'' {
 			b.WriteByte('\\')
 			b.WriteByte(e)
 			continue
 		}
-		b.WriteByte(s[i])
+		b.WriteByte(c)
 	}
-	b.WriteByte('\'')
+	b.WriteByte(q)
 	return b.String()
 }
 

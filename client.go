@@ -79,22 +79,27 @@ type Client interface {
 	// For queries that return data, use Select instead. For inserting data, use Insert.
 	Exec(ctx context.Context, query string, options ...ExecOption) error
 
-	// Insert executes an INSERT query into the specified ClickHouse table by writing data using the provided write function.
+	// Insert sends `INSERT INTO <table> FORMAT <format>` and streams the rows
+	// written by the WithFormatWriter (or WithBodyWriter) callback as the body.
+	// One of the two writers is required. The format defaults to
+	// RowBinaryWithNamesAndTypes; client defaults are applied before options.
 	//
-	// It constructs an INSERT INTO query with the specified format, streams the data written by writeFunc to the server,
-	// and ensures the operation completes successfully. The data is written incrementally via the FormatWriter.
+	// table is inserted into the SQL as written, like the query of Select and
+	// Exec: it may be `db.table`, include a column list or settings, and must not
+	// come from untrusted input unquoted (see QuoteIdentifier).
 	//
-	// Parameters:
-	//   - ctx: Context for the request, used for cancellation and timeouts.
-	//   - table: The name of the ClickHouse table to insert data into.
-	//   - writeFunc: A callback function that receives a FormatWriter to write the data to be inserted.
-	//   - options: Optional InsertOption values to configure the insert (e.g., format, params, headers).
+	// Column mapping depends on the format:
+	//   - RowBinaryWithNames and RowBinaryWithNamesAndTypes (the default) send
+	//     the column names in a header, and ClickHouse matches them by name;
+	//     table columns that are not sent get their defaults.
+	//   - RowBinary has no header: ClickHouse assigns values to the table's
+	//     columns by position, in table order. The column options are used only
+	//     to type-check the written values, not to name columns. To write in a
+	//     different order or a subset of columns, put the list in table, for
+	//     example "events (ts, id)", or use a format with names.
 	//
-	// Returns:
-	//   - error: An error if the request fails, writing data encounters issues, or the response status is not OK.
-	//
-	// Note: The data is streamed to the server as it's written by writeFunc. Default insert options from the client
-	// configuration are applied first. The format header is automatically written before invoking writeFunc.
+	// Insert returns the first error of the request, the writer callback, or a
+	// non-200 response.
 	Insert(ctx context.Context, table string, options ...InsertOption) error
 
 	// Close releases resources owned by the client. Clients without their own
