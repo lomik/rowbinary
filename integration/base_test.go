@@ -148,7 +148,7 @@ func TestBase(t *testing.T) {
 		SELECT value FROM tmp
 		`, testDSN)
 
-	TestTypeWithDSN(t, Dynamic(0, Array(Int64)), Value{Type: Array(Int64), Value: []int64{42, 43}}, `
+	TestTypeWithDSN(t, Dynamic(DynamicDefaultMaxTypes, Array(Int64)), Value{Type: Array(Int64), Value: []int64{42, 43}}, `
 		CREATE TEMPORARY TABLE tmp (
 			value Dynamic()
 		) ENGINE = Memory;

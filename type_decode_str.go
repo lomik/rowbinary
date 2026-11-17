@@ -169,7 +169,7 @@ func DecodeStringType(t string) (Any, error) {
 	case "IPv6":
 		return IPv6, nil
 	case "Dynamic":
-		return Dynamic(32), nil
+		return DynamicDefault, nil
 	case "IntervalNanosecond":
 		return IntervalNanosecond, nil
 	case "IntervalMicrosecond":

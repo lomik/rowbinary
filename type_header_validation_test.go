@@ -98,9 +98,8 @@ func TestDecodeBinaryTypeAcceptsServerHeaders(t *testing.T) {
 			t.Errorf("% x rejected: %v", header, err)
 			continue
 		}
-		// Every accepted header must round-trip to the same bytes, except
-		// Dynamic(0), which is item 35 in TODO.md.
-		if header[0] != 0x2b && !slices.Equal(tp.Binary(), header) {
+		// Every accepted header must round-trip to the same bytes.
+		if !slices.Equal(tp.Binary(), header) {
 			t.Errorf("% x decoded as %s with binary % x", header, tp, tp.Binary())
 		}
 	}

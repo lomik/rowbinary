@@ -42,7 +42,7 @@ func TestDynamicWriteDoesNotAllocateForBinary(t *testing.T) {
 	v := Value{Type: UInt8, Value: uint8(1)}
 	var buf bytes.Buffer
 	wb := NewWriter(&buf)
-	tp := Dynamic(0)
+	tp := DynamicDefault
 	allocs := testing.AllocsPerRun(1000, func() {
 		buf.Reset()
 		_ = tp.Write(wb, v)

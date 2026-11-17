@@ -9,7 +9,7 @@ import (
 func TestZeroValueWriteReturnsError(t *testing.T) {
 	for name, tp := range map[string]Type[Value]{
 		"Variant": Variant(UInt8),
-		"Dynamic": Dynamic(0),
+		"Dynamic": DynamicDefault,
 	} {
 		if err := tp.Write(NewWriter(io.Discard), Value{}); err == nil {
 			t.Errorf("%s.Write(Value{}) returned nil", name)

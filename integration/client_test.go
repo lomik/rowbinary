@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -260,5 +261,49 @@ func TestClient_Select_MidStreamFailure(t *testing.T) {
 	// A successful query is unaffected.
 	if err := c.Select(t.Context(), "SELECT number FROM system.numbers LIMIT 400000 SETTINGS max_block_size = 1000"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Dynamic(max_types=0) must encode exactly as the server does: compare with the
+// raw type bytes in a RowBinaryWithNamesAndTypes header, then read a value.
+func TestClient_Select_DynamicMaxTypesZero(t *testing.T) {
+	c := integrationClient(t)
+	const query = "SELECT CAST([42, 43]::Array(Int64), 'Dynamic(max_types=0)') AS value"
+	tp := Dynamic(0, Array(Int64))
+
+	err := c.Select(t.Context(), query, WithUseBinaryHeader(true), WithBodyReader(func(r io.Reader) error {
+		body, err := io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		// Header: 1 column, name "value", then the binary type.
+		prefix := append([]byte{1, 5}, "value"...)
+		if !bytes.HasPrefix(body, prefix) || !bytes.HasPrefix(body[len(prefix):], tp.Binary()) {
+			return fmt.Errorf("server header % x does not contain Dynamic(0) as % x", body[:min(len(body), 16)], tp.Binary())
+		}
+		return nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, binaryHeader := range []bool{false, true} {
+		err := c.Select(t.Context(), query, WithUseBinaryHeader(binaryHeader), C("value", tp),
+			WithFormatReader(func(r *FormatReader) error {
+				if !r.Next() {
+					return fmt.Errorf("no rows: %w", r.Err())
+				}
+				var v Value
+				if err := Scan(r, tp, &v); err != nil {
+					return err
+				}
+				if got, ok := v.Value.([]int64); !ok || len(got) != 2 || got[0] != 42 || got[1] != 43 {
+					return fmt.Errorf("value = %#v", v)
+				}
+				return nil
+			}))
+		if err != nil {
+			t.Errorf("binary header %v: %v", binaryHeader, err)
+		}
 	}
 }
