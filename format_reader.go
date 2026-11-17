@@ -7,6 +7,8 @@ import (
 	"io"
 )
 
+var errNoColumns = errors.New("cannot scan: stream has no columns")
+
 type FormatReader struct {
 	wrap     Reader
 	options  formatOptions
@@ -230,6 +232,9 @@ func (r *FormatReader) Scan(dest ...any) error {
 	if err != nil {
 		return err
 	}
+	if len(dest) > 0 && len(r.columns) == 0 {
+		return r.setErr(errNoColumns)
+	}
 	for i := 0; i < len(dest); i++ {
 		err = r.columns[r.index].tp.ScanAny(r.wrap, dest[i])
 		if err != nil {
@@ -243,6 +248,9 @@ func (r *FormatReader) Scan(dest ...any) error {
 func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
 	if err := r.check(); err != nil {
 		return err
+	}
+	if len(r.columns) == 0 {
+		return r.setErr(errNoColumns)
 	}
 
 	if tp.ID() != r.columns[r.index].tp.ID() {

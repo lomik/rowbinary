@@ -220,6 +220,9 @@ func DecodeStringType(t string) (Any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("can't parse DateTime64 precision: %w", err)
 		}
+		if err := checkDateTime64Precision(int64(precision)); err != nil {
+			return nil, err
+		}
 		if len(funcArgs) == 1 {
 			return DateTime64(uint8(precision)), nil
 		}

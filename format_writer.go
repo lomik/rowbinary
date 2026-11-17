@@ -58,6 +58,10 @@ func (w *FormatWriter) check() error {
 		return nil
 	}
 
+	if !w.options.format.In(RowBinary, RowBinaryWithNames, RowBinaryWithNamesAndTypes) {
+		return w.setErr(fmt.Errorf("unknown format: %v", w.options.format))
+	}
+
 	if len(w.options.columns) == 0 {
 		return w.setErr(fmt.Errorf("no columns defined in options"))
 	}

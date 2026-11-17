@@ -29,6 +29,9 @@ func (t typeDateTime64TZ) Binary() []byte {
 }
 
 func (t typeDateTime64TZ) Write(w Writer, value time.Time) error {
+	if err := checkDateTime64Precision(t.precision); err != nil {
+		return err
+	}
 	if t.locErr != nil {
 		return t.locErr
 	}
@@ -37,6 +40,9 @@ func (t typeDateTime64TZ) Write(w Writer, value time.Time) error {
 }
 
 func (t typeDateTime64TZ) Scan(r Reader, v *time.Time) error {
+	if err := checkDateTime64Precision(t.precision); err != nil {
+		return err
+	}
 	if t.locErr != nil {
 		return t.locErr
 	}

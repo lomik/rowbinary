@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,6 +44,10 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 			continue
 		}
 		opt.applyInsertOptions(&opts)
+	}
+
+	if opts.formatWriter == nil && opts.bodyWriter == nil {
+		return errors.New("insert requires WithFormatWriter or WithBodyWriter")
 	}
 
 	opts.params["query"] = fmt.Sprintf("INSERT INTO %s FORMAT %s", table, opts.format.String())
