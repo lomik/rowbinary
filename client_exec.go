@@ -31,6 +31,9 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 		opt.applyExecOptions(&opts)
 	}
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		opt.applyExecOptions(&opts)
 	}
 

@@ -1,6 +1,9 @@
 package rowbinary
 
-import "slices"
+import (
+	"net/http"
+	"slices"
+)
 
 type Format int
 
@@ -39,7 +42,7 @@ func (f Format) applyFormatOption(o *formatOptions) {
 
 func (f Format) applySelectOptions(o *selectOptions) {
 	o.formatOptions = append(o.formatOptions, f)
-	o.headers["X-ClickHouse-Format"] = f.String()
+	o.headers[http.CanonicalHeaderKey("X-ClickHouse-Format")] = f.String()
 }
 
 func (f Format) applyInsertOptions(o *insertOptions) {

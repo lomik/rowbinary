@@ -58,6 +58,9 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		opt.applySelectOptions(&opts)
 	}
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		opt.applySelectOptions(&opts)
 	}
 	for _, ed := range opts.externalData {

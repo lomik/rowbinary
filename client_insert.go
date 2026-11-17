@@ -39,6 +39,9 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 		opt.applyInsertOptions(&opts)
 	}
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		opt.applyInsertOptions(&opts)
 	}
 

@@ -60,6 +60,7 @@ func (r *FormatReader) Next() bool {
 		return false
 	}
 	if err = r.wrap.UnreadByte(); err != nil {
+		r.setErr(err)
 		return false
 	}
 	return true
