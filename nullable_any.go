@@ -68,3 +68,5 @@ func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
 	*v = &x
 	return nil
 }
+
+func (t typeNullableAny) isNullValue(v *any) bool { return v == nil }

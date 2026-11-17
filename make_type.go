@@ -87,6 +87,11 @@ func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
 	}
 
 	if p, ok := v.(*any); ok {
+		// A NULL stored as a typed nil pointer would make `*p == nil` false.
+		if isNullValue(t.BaseType, value) {
+			*p = nil
+			return nil
+		}
 		*p = value
 		return nil
 	}
@@ -94,12 +99,25 @@ func (t typeWrapperAny[T]) ScanAny(r Reader, v any) error {
 	return TypeMismatchError{ExpectedType: t.String(), ActualType: fmt.Sprintf("%T", v)}
 }
 
+// nullValuer is implemented by the Nullable codecs: isNullValue reports
+// whether v is their NULL (a nil pointer).
+type nullValuer[T any] interface {
+	isNullValue(v T) bool
+}
+
+func isNullValue[T any](tp BaseType[T], v T) bool {
+	n, ok := tp.(nullValuer[T])
+	return ok && n.isNullValue(v)
+}
+
 func (t typeWrapperAny[T]) WriteAny(w Writer, v any) error {
 	value, ok := v.(T)
 	if !ok && v == nil {
 		// A nil interface has no dynamic type, so v.(any) fails too.
-		// Permit it only when T itself is any, not for concrete value types.
+		// Permit it when T itself is any, or when the zero T is this type's
+		// NULL (Nullable), so a NULL read by ScanAny can be written back.
 		_, ok = any(&value).(*any)
+		ok = ok || isNullValue(t.BaseType, value)
 	}
 	if !ok {
 		return TypeMismatchError{ExpectedType: t.String(), ActualType: fmt.Sprintf("%T", v)}

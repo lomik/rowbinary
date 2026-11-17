@@ -435,3 +435,37 @@ func TestClient_Insert_QuoteIdentifier(t *testing.T) {
 		t.Fatalf("count = %d, err %v", n, err)
 	}
 }
+
+// NULLs read into `any` (r.Scan with types from the header) must be plain nil,
+// at the top level and inside tuples and arrays.
+func TestClient_Select_NullIntoAny(t *testing.T) {
+	c := integrationClient(t)
+	const query = "SELECT NULL::Nullable(String) AS a, (NULL, 1)::Tuple(Nullable(String), UInt8) AS b, [NULL, 5]::Array(Nullable(UInt8)) AS c, 'x'::Nullable(String) AS d"
+	for _, binaryHeader := range []bool{false, true} {
+		err := c.Select(t.Context(), query, WithUseBinaryHeader(binaryHeader), WithFormatReader(func(r *FormatReader) error {
+			if !r.Next() {
+				return fmt.Errorf("no rows: %w", r.Err())
+			}
+			var a, b, cc, d any
+			if err := r.Scan(&a, &b, &cc, &d); err != nil {
+				return err
+			}
+			if a != nil {
+				return fmt.Errorf("a = %#v, want nil", a)
+			}
+			if tuple, ok := b.([]any); !ok || len(tuple) != 2 || tuple[0] != nil {
+				return fmt.Errorf("b = %#v, want [nil 1]", b)
+			}
+			if arr, ok := cc.([]any); !ok || len(arr) != 2 || arr[0] != nil || arr[1] == nil {
+				return fmt.Errorf("c = %#v, want [nil 5]", cc)
+			}
+			if p, ok := d.(*any); !ok || *p != "x" {
+				return fmt.Errorf("d = %#v, want pointer to \"x\"", d)
+			}
+			return nil
+		}))
+		if err != nil {
+			t.Errorf("binary header %v: %v", binaryHeader, err)
+		}
+	}
+}

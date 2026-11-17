@@ -67,3 +67,5 @@ func (t typeNullable[V]) Scan(r Reader, v **V) error {
 	*v = &x
 	return nil
 }
+
+func (t typeNullable[V]) isNullValue(v *V) bool { return v == nil }
