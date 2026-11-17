@@ -55,7 +55,8 @@ func (t typeNullableAny) Scan(r Reader, v **any) (err error) {
 		return err
 	}
 
-	if b == 0x01 {
+	// ClickHouse treats any non-zero marker as NULL; it writes only 0 and 1.
+	if b != 0 {
 		*v = nil
 		return nil
 	}

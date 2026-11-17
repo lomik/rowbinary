@@ -496,3 +496,50 @@ func TestClient_Select_VariantDuplicateMembers(t *testing.T) {
 		}
 	}
 }
+
+// ClickHouse stores a Bool written as 255 as is and returns it; it is true.
+// A Nullable marker of 2 is NULL to the server.
+func TestClient_NonZeroMarkers(t *testing.T) {
+	c := integrationClient(t)
+	ctx := t.Context()
+	if err := c.Exec(ctx, "CREATE TABLE markers (i UInt8, n Nullable(UInt8), b Bool) ENGINE = Memory"); err != nil {
+		t.Fatal(err)
+	}
+	// Row 1: n = NULL via marker 2, b = 255. Row 2: n = 7, b = 0.
+	body := []byte{1, 0x02, 0xff, 2, 0x00, 0x07, 0x00}
+	err := c.Insert(ctx, "markers", RowBinary, WithBodyWriter(func(w io.Writer) error {
+		_, err := w.Write(body)
+		return err
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	type row struct {
+		n    *uint8
+		b    bool
+		bRaw uint8
+	}
+	var rows []row
+	err = c.Select(ctx, "SELECT n, b, reinterpretAsUInt8(b) FROM markers ORDER BY i", WithFormatReader(func(r *FormatReader) error {
+		for r.Next() {
+			var x row
+			if err := Scan(r, Nullable(UInt8), &x.n); err != nil {
+				return err
+			}
+			if err := Scan(r, Bool, &x.b); err != nil {
+				return err
+			}
+			if err := Scan(r, UInt8, &x.bRaw); err != nil {
+				return err
+			}
+			rows = append(rows, x)
+		}
+		return r.Err()
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 2 || rows[0].n != nil || !rows[0].b || rows[0].bRaw != 255 || rows[1].n == nil || *rows[1].n != 7 || rows[1].b {
+		t.Fatalf("rows = %+v; want [{NULL true 255} {7 false 0}]", rows)
+	}
+}
