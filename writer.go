@@ -33,6 +33,17 @@ func (w *writer) Buffer() []byte {
 	return w.buf[:]
 }
 
+// Write enforces the io.Writer contract that a short write returns an error,
+// as io.Copy and bufio do, so a misbehaving destination cannot silently drop
+// data.
+func (w *writer) Write(p []byte) (int, error) {
+	n, err := w.byteWriter.Write(p)
+	if err == nil && n < len(p) {
+		err = io.ErrShortWrite
+	}
+	return n, err
+}
+
 func newByteWriter(w io.Writer) byteWriter {
 	if bw, ok := w.(byteWriter); ok {
 		return bw
@@ -45,6 +56,9 @@ func newByteWriter(w io.Writer) byteWriter {
 
 func (bw *implByteWriter) WriteByte(b byte) error {
 	bw.b[0] = b
-	_, err := bw.Write(bw.b)
+	n, err := bw.Write(bw.b)
+	if err == nil && n < 1 {
+		err = io.ErrShortWrite
+	}
 	return err
 }
