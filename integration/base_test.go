@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"math/big"
 	"net/netip"
 	"testing"
 	"time"
@@ -25,6 +26,16 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+// bigDecimal is coefficient * 10^exp, built the way Decimal128/256 scan
+// values that do not fit in int64.
+func bigDecimal(coefficient string, exp int32) decimal.Decimal {
+	n, ok := new(big.Int).SetString(coefficient, 10)
+	if !ok {
+		panic(coefficient)
+	}
+	return decimal.NewFromBigInt(n, exp)
 }
 
 func TestBase(t *testing.T) {
@@ -59,6 +70,12 @@ func TestBase(t *testing.T) {
 	rowbinarytest.TestTypeWithDSN(t, Decimal(9, 4), decimal.New(-42000, -4), "SELECT toDecimal32(-4.2, 4)", testDSN)
 	rowbinarytest.TestTypeWithDSN(t, Decimal(18, 4), decimal.New(42000, -4), "SELECT toDecimal64(4.2, 4)", testDSN)
 	rowbinarytest.TestTypeWithDSN(t, Decimal(18, 4), decimal.New(-42000, -4), "SELECT toDecimal64(-4.2, 4)", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, Decimal(38, 2), decimal.New(420, -2), "SELECT toDecimal128('4.2', 2)", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, Decimal(38, 2), decimal.New(-420, -2), "SELECT toDecimal128('-4.2', 2)", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, Decimal(38, 2), bigDecimal("-99999999999999999999999999999999999999", -2), "SELECT toDecimal128('-999999999999999999999999999999999999.99', 2)", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, Decimal(76, 10), decimal.New(-15000000000, -10), "SELECT toDecimal256('-1.5', 10)", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, Decimal(76, 10), bigDecimal("1234567890123456789012345678900123456789", -10), "SELECT toDecimal256('123456789012345678901234567890.0123456789', 10)", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, Decimal(76, 10), bigDecimal("9999999999999999999999999999999999999999999999999999999999999999999999999999", -10), "SELECT toDecimal256('999999999999999999999999999999999999999999999999999999999999999999.9999999999', 10)", testDSN)
 	rowbinarytest.TestTypeWithDSN(t, Map(String, String), map[string]string{"key": "value"}, "SELECT map('key', 'value')", testDSN)
 	rowbinarytest.TestTypeWithDSN(t, MapKV(String, String), NewKV[string, string]().Append("key", "value"), "SELECT map('key', 'value')", testDSN)
 	rowbinarytest.TestTypeWithDSN(t, Map(UInt32, Map(String, String)), map[uint32]map[string]string{42: {"key": "value"}}, "SELECT map(toUInt32(42), map('key', 'value'))", testDSN)

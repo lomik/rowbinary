@@ -27,9 +27,13 @@ func (t typeDecimal256) Binary() []byte {
 }
 
 func (t typeDecimal256) Write(w Writer, value decimal.Decimal) error {
-	return NotImplementedError
+	return t.big().write(w, value)
 }
 
 func (t typeDecimal256) Scan(r Reader, v *decimal.Decimal) error {
-	return NotImplementedError
+	return t.big().scan(r, v)
+}
+
+func (t typeDecimal256) big() decimalBig {
+	return decimalBig{precision: t.precision, scale: t.scale, size: 32}
 }

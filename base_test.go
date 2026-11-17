@@ -47,6 +47,8 @@ func BenchmarkBase(b *testing.B) {
 	rowbinarytest.BenchmarkType(b, Decimal(9, 4), decimal.New(42000, -4))
 	rowbinarytest.BenchmarkType(b, Decimal(9, 4), decimal.New(-42000, -4))
 	rowbinarytest.BenchmarkType(b, Decimal(18, 4), decimal.New(42000, -4))
+	rowbinarytest.BenchmarkType(b, Decimal(38, 2), decimal.New(420, -2))
+	rowbinarytest.BenchmarkType(b, Decimal(76, 10), decimal.New(-15000000000, -10))
 	rowbinarytest.BenchmarkType(b, Decimal(18, 4), decimal.New(-42000, -4))
 	rowbinarytest.BenchmarkType(b, Map(String, String), map[string]string{"key": "value"})
 	rowbinarytest.BenchmarkType(b, Map(Int64, Int64), map[int64]int64{42: 15})
