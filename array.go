@@ -49,19 +49,22 @@ func (t typeArray[V]) Scan(r Reader, v *[]V) error {
 	if n > uint64(^uint(0)>>1) {
 		return fmt.Errorf("array length overflows int: %d", n)
 	}
-	if *v == nil {
-		*v = make([]V, int(n))
-	} else if len(*v) >= int(n) {
-		*v = (*v)[:n]
-	} else {
-		*v = append(*v, make([]V, int(n)-len(*v))...)
-	}
-
-	for i := 0; i < int(n); i++ {
-		if err := t.valueType.Scan(r, &(*v)[i]); err != nil {
+	// Grow as elements are read, never by the declared count alone: a few
+	// bytes can declare billions of elements. Existing capacity (and elements)
+	// of the destination are reused.
+	s := (*v)[:0]
+	for i := uint64(0); i < n; i++ {
+		if len(s) < cap(s) {
+			s = s[:len(s)+1]
+		} else {
+			var zero V
+			s = append(s, zero)
+		}
+		if err := t.valueType.Scan(r, &s[len(s)-1]); err != nil {
+			*v = s
 			return err
 		}
 	}
-
+	*v = s
 	return nil
 }

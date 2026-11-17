@@ -69,7 +69,8 @@ func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
 	if err != nil {
 		return err
 	}
-	*ret = make(map[any]any, int(n))
+	// Size hint capped: the declared count is not trusted to allocate.
+	*ret = make(map[any]any, min(n, 1024))
 	for i := uint64(0); i < n; i++ {
 		var k, v any
 		err = t.keyType.ScanAny(r, &k)
