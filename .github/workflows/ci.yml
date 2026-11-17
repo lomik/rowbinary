@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_DEPS: |
+    go.sum
+    integration/go.sum
+    bench/go.sum
+
+jobs:
+  lint:
+    name: gofmt and vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: ${{ env.GO_DEPS }}
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "Not gofmt-formatted:"; echo "$unformatted"; exit 1
+          fi
+      - name: go vet (library)
+        run: go vet ./...
+      - name: go vet (integration)
+        working-directory: integration
+        run: go vet ./...
+      - name: go vet (bench)
+        working-directory: bench
+        run: go vet ./...
+
+  test:
+    name: offline tests (Go ${{ matrix.go }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 1.24 is the minimum declared in go.mod.
+        go: ["1.24.x", "stable"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache-dependency-path: ${{ env.GO_DEPS }}
+      - name: Library tests
+        run: go test -race -count=1 ./...
+      - name: Integration module, offline (fixtures only)
+        working-directory: integration
+        run: go test -count=1 ./...
+      - name: Bench module compiles
+        working-directory: bench
+        run: go test -count=1 -run '^$' ./...
+
+  integration:
+    name: integration tests (ClickHouse in Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: ${{ env.GO_DEPS }}
+      - name: Live tests against the pinned ClickHouse image
+        working-directory: integration
+        env:
+          ROWBINARY_TEST_MODE: integration
+        run: go test -race -count=1 -timeout 15m ./...
+
+  fuzz:
+    name: fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # FuzzFormatReader is left out until arrays of zero-width elements
+        # have a size limit (TODO.md item 68); it finds that case quickly.
+        target: [FuzzDecodeStringType, FuzzDecodeBinaryType]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: ${{ env.GO_DEPS }}
+      - name: Fuzz for 60 seconds
+        run: go test -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime 60s .
+      - name: Upload failing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: testdata/fuzz

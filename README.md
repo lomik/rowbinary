@@ -1,3 +1,5 @@
+[![CI](https://github.com/lomik/rowbinary/actions/workflows/ci.yml/badge.svg)](https://github.com/lomik/rowbinary/actions/workflows/ci.yml)
+
 ## Features
 * HTTP client with `Select`, `Insert`, `Exec` methods
 * `RowBinary`, `RowBinaryWithNames` and `RowBinaryWithNamesAndTypes` formats are supported
@@ -10,6 +12,16 @@
 * Support `JSON` type
 
 ## Tests
+
+CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs on every push
+and pull request: `gofmt` and `go vet` for all three modules, offline tests on
+Go 1.24 (the minimum in `go.mod`) and the latest stable Go, the integration
+suite against ClickHouse in Docker, and 60 seconds of fuzzing of the type-name
+and binary-header decoders. To fuzz locally:
+
+```sh
+go test -run '^$' -fuzz '^FuzzDecodeBinaryType$' -fuzztime 60s .
+```
 
 Use Go 1.24.4 or newer (the module's toolchain directive supplies 1.24.4).
 The repository has three Go modules:
