@@ -99,13 +99,11 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
+		return statusError(resp)
+	}
+	if err := drainBody(resp); err != nil {
+		return err
 	}
 
 	// An early response may stop the transport from consuming the request body.

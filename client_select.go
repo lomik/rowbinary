@@ -140,12 +140,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
+		return statusError(resp)
 	}
 
 	// px := &ReadSizeProxy{Reader: resp.Body}
