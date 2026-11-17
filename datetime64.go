@@ -27,8 +27,11 @@ func (t typeDateTime64) Write(w Writer, value time.Time) error {
 	if err := checkDateTime64Precision(t.precision); err != nil {
 		return err
 	}
-	scale := intPow(10, t.precision)
-	return Int64.Write(w, value.Unix()*scale+int64(value.Nanosecond())/intPow(10, 9-t.precision))
+	ticks, err := dateTime64Ticks(value, t.precision)
+	if err != nil {
+		return err
+	}
+	return Int64.Write(w, ticks)
 }
 
 // maxDateTime64Precision is the largest precision ClickHouse allows for DateTime64.

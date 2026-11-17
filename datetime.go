@@ -17,10 +17,11 @@ func (t typeDateTime) Binary() []byte {
 }
 
 func (t typeDateTime) Write(w Writer, value time.Time) error {
-	if value.Unix() < 0 {
-		return UInt32.Write(w, 0)
+	s, err := dateTimeSeconds(value)
+	if err != nil {
+		return err
 	}
-	return UInt32.Write(w, uint32(value.Unix()))
+	return UInt32.Write(w, s)
 }
 
 func (t typeDateTime) Scan(r Reader, v *time.Time) error {

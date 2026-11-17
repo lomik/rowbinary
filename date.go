@@ -26,7 +26,10 @@ func (t typeDate) Write(w Writer, value ValueDate) error {
 		return fmt.Errorf("invalid date: %#v", value)
 	}
 
-	v := time.Date(int(value.Year), time.Month(value.Month), int(value.Day), 0, 0, 0, 0, time.UTC)
+	v, err := validDateTime(value)
+	if err != nil {
+		return err
+	}
 	days := v.Unix() / secInDay
 	if days > math.MaxUint16 {
 		return fmt.Errorf("date out of range (max 2149-06-06): %#v", value)

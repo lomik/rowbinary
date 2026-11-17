@@ -31,10 +31,11 @@ func (t typeDateTimeTZ) Write(w Writer, value time.Time) error {
 	if t.locErr != nil {
 		return t.locErr
 	}
-	if value.Unix() < 0 {
-		return UInt32.Write(w, 0)
+	s, err := dateTimeSeconds(value)
+	if err != nil {
+		return err
 	}
-	return UInt32.Write(w, uint32(value.Unix()))
+	return UInt32.Write(w, s)
 }
 
 func (t typeDateTimeTZ) Scan(r Reader, v *time.Time) error {
