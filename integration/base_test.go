@@ -76,7 +76,6 @@ func TestBase(t *testing.T) {
 	TestTypeWithDSN(t, Bool, true, "SELECT true", testDSN)
 	TestTypeWithDSN(t, FixedString(10), []byte("hello\x00\x00\x00\x00\x00"), "SELECT toFixedString('hello', 10)", testDSN)
 	TestTypeWithDSN(t, TupleNamedAny(C("i", UInt32), C("s", String)), []any{uint32(42), "hello world"}, "CREATE TEMPORARY TABLE tmp (`value` Tuple(i UInt32, s String)) ENGINE = Memory; INSERT INTO tmp VALUES ((42, 'hello world')); SELECT value FROM tmp", testDSN)
-	// TestType(t, Date32, time.Date(1899, 12, 10, 0, 0, 0, 0, time.UTC), "SELECT toDate32('1899-12-10')")
 	TestTypeWithDSN(t, Date32, ValueDate{Year: 1900, Month: 1, Day: 1}, "SELECT toDate32('1900-01-01')", testDSN)
 	TestTypeWithDSN(t, Date32, ValueDate{Year: 1970, Month: 1, Day: 1}, "SELECT toDate32('1970-01-01')", testDSN)
 	TestTypeWithDSN(t, Date32, ValueDate{Year: 2025, Month: 7, Day: 5}, "SELECT toDate32('2025-07-05')", testDSN)

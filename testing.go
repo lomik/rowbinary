@@ -193,18 +193,19 @@ func testTypeAt[T any](t *testing.T, callerSkip int, tp Type[T], value T, query,
 		assert.Equal(bodyEncoded, buf.Bytes())
 	})
 
-	// write any wrong type
+	// write any wrong type: every candidate whose Go type is not T must fail
 	t.Run(fmt.Sprintf("%s/write_any_wrong_type%s", tp.String(), caller), func(t *testing.T) {
-		assert := assert.New(t)
-
-		// write
-		var buf bytes.Buffer
-		w := NewWriter(&buf)
-		assert.True(tp.WriteAny(w, "hello") != nil || tp.WriteAny(w, 42) != nil)
+		for _, v := range []any{"hello", 42} {
+			if _, ok := v.(T); ok {
+				continue
+			}
+			var buf bytes.Buffer
+			assert.Error(t, tp.WriteAny(NewWriter(&buf), v), "WriteAny(%T)", v)
+		}
 	})
 
-	// write any wrong type
-	t.Run(fmt.Sprintf("%s/write_any_wrong_type%s", tp.String(), caller), func(t *testing.T) {
+	// write any of a type no codec accepts
+	t.Run(fmt.Sprintf("%s/write_any_unknown_type%s", tp.String(), caller), func(t *testing.T) {
 		assert := assert.New(t)
 
 		// write
@@ -224,7 +225,7 @@ func testTypeAt[T any](t *testing.T, callerSkip int, tp Type[T], value T, query,
 
 		// scan
 		var v2 T
-		for i := 0; i < buf.Len()-1; i++ {
+		for i := 0; i < buf.Len(); i++ {
 			r := NewReader(bytes.NewReader(buf.Bytes()[:i]))
 			err := tp.Scan(r, &v2)
 			assert.Error(err)
@@ -241,7 +242,7 @@ func testTypeAt[T any](t *testing.T, callerSkip int, tp Type[T], value T, query,
 		assert.NoError(tp.Write(w, value))
 
 		// read
-		for i := 0; i < buf.Len()-1; i++ {
+		for i := 0; i < buf.Len(); i++ {
 			var wb bytes.Buffer
 			ww := NewWriter(newLimitedWriter(&wb, int64(i)))
 			err := tp.Write(ww, value)
@@ -355,14 +356,21 @@ func testTypeAt[T any](t *testing.T, callerSkip int, tp Type[T], value T, query,
 			}))
 		assert.NoError(err)
 
-		// check inserted
-		err = c.Select(t.Context(), "SELECT count() FROM tmp", WithFormatReader(func(r *FormatReader) error {
-			var v uint64
-			assert.NoError(Scan(r, UInt64, &v))
-			assert.Equal(uint64(1), v)
-			return nil
+		// read the inserted row back and compare the value, not only the count
+		rows := 0
+		err = c.Select(t.Context(), "SELECT value FROM tmp", C("value", tp), WithFormatReader(func(r *FormatReader) error {
+			for r.Next() {
+				var v T
+				if err := Scan(r, tp, &v); err != nil {
+					return err
+				}
+				assert.Equal(value, v)
+				rows++
+			}
+			return r.Err()
 		}))
 		assert.NoError(err)
+		assert.Equal(1, rows)
 	})
 }
 
