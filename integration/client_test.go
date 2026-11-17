@@ -543,3 +543,40 @@ func TestClient_NonZeroMarkers(t *testing.T) {
 		t.Fatalf("rows = %+v; want [{NULL true 255} {7 false 0}]", rows)
 	}
 }
+
+type liveCtxKey struct{}
+
+// The ...Context callback options receive the request's context with a real
+// server too.
+func TestClient_ContextCallbacks(t *testing.T) {
+	c := integrationClient(t)
+	ctx := context.WithValue(t.Context(), liveCtxKey{}, "request")
+	if err := c.Exec(ctx, "CREATE TABLE cb (x UInt8) ENGINE = Memory"); err != nil {
+		t.Fatal(err)
+	}
+	err := c.Insert(ctx, "cb", C("x", UInt8), WithFormatWriterContext(func(ctx context.Context, w *FormatWriter) error {
+		if ctx.Value(liveCtxKey{}) != "request" {
+			return errors.New("writer got a different context")
+		}
+		return Write(w, UInt8, 42)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = c.Select(ctx, "SELECT x FROM cb", WithFormatReaderContext(func(ctx context.Context, r *FormatReader) error {
+		if ctx.Value(liveCtxKey{}) != "request" {
+			return errors.New("reader got a different context")
+		}
+		var x uint8
+		if !r.Next() {
+			return fmt.Errorf("no rows: %w", r.Err())
+		}
+		if err := Scan(r, UInt8, &x); err != nil || x != 42 {
+			return fmt.Errorf("x = %d, %v", x, err)
+		}
+		return nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+}

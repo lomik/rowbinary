@@ -100,6 +100,13 @@ type Client interface {
 	//
 	// Insert returns the first error of the request, the writer callback, or a
 	// non-200 response.
+	//
+	// The writer callback runs on its own goroutine, feeding the upload. When
+	// ctx is done, Insert returns ctx's error without waiting for it, and the
+	// callback's next write fails because the upload is closed. A callback that
+	// waits on anything else (a channel, a slow source) should watch the
+	// context and return: use WithFormatWriterContext or WithBodyWriterContext
+	// to receive it, or close over the ctx passed to Insert.
 	Insert(ctx context.Context, table string, options ...InsertOption) error
 
 	// Close releases resources owned by the client. A client owns none: its

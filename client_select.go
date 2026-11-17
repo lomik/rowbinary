@@ -17,8 +17,8 @@ type selectOptions struct {
 	externalData  []externalData
 	params        map[string]string
 	headers       map[string]string
-	formatReader  func(r *FormatReader) error
-	bodyReader    func(r io.Reader) error
+	formatReader  func(ctx context.Context, r *FormatReader) error
+	bodyReader    func(ctx context.Context, r io.Reader) error
 }
 
 type SelectOption interface {
@@ -117,7 +117,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 
 				fw := NewFormatWriter(ff, append(slices.Clone(ed.formatOptions), RowBinary)...)
 
-				if err := ed.cb(fw); err != nil {
+				if err := ed.cb(ctx, fw); err != nil {
 					w.CloseWithError(err)
 					return
 				}
@@ -150,7 +150,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 
 	if opts.formatReader != nil {
 		fr := NewFormatReader(body, opts.formatOptions...)
-		if err := opts.formatReader(fr); err != nil {
+		if err := opts.formatReader(ctx, fr); err != nil {
 			return err
 		}
 		// The callback may stop at the first failed Next/Scan and return nil;
@@ -162,7 +162,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 	}
 
 	if opts.bodyReader != nil {
-		if err := opts.bodyReader(resp.Body); err != nil {
+		if err := opts.bodyReader(ctx, resp.Body); err != nil {
 			return err
 		}
 		return nil
@@ -176,24 +176,46 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 	return nil
 }
 
+// WithFormatReader sets the callback that reads the result of a Select. It
+// runs on the caller's goroutine; once the request's context is done, reads
+// fail with an error. WithFormatReaderContext also passes that context.
 func WithFormatReader(cb func(r *FormatReader) error) SelectOption {
+	if cb == nil {
+		return formatReaderOption{}
+	}
+	return formatReaderOption{cb: func(_ context.Context, r *FormatReader) error { return cb(r) }}
+}
+
+// WithFormatReaderContext is WithFormatReader with the request's context:
+// the ctx given to Select.
+func WithFormatReaderContext(cb func(ctx context.Context, r *FormatReader) error) SelectOption {
 	return formatReaderOption{cb: cb}
 }
 
 type formatReaderOption struct {
-	cb func(r *FormatReader) error
+	cb func(ctx context.Context, r *FormatReader) error
 }
 
 func (f formatReaderOption) applySelectOptions(opts *selectOptions) {
 	opts.formatReader = f.cb
 }
 
+// WithBodyReader sets a callback that reads the raw response body of a
+// Select. WithBodyReaderContext also passes the request's context.
 func WithBodyReader(cb func(r io.Reader) error) SelectOption {
+	if cb == nil {
+		return bodyReaderOption{}
+	}
+	return bodyReaderOption{cb: func(_ context.Context, r io.Reader) error { return cb(r) }}
+}
+
+// WithBodyReaderContext is WithBodyReader with the request's context.
+func WithBodyReaderContext(cb func(ctx context.Context, r io.Reader) error) SelectOption {
 	return bodyReaderOption{cb: cb}
 }
 
 type bodyReaderOption struct {
-	cb func(r io.Reader) error
+	cb func(ctx context.Context, r io.Reader) error
 }
 
 func (b bodyReaderOption) applySelectOptions(opts *selectOptions) {
