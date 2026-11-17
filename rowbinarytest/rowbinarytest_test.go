@@ -1,4 +1,4 @@
-package rowbinary
+package rowbinarytest
 
 import (
 	"context"

@@ -94,12 +94,14 @@ cd integration
 ROWBINARY_TEST_MODE=integration ROWBINARY_TEST_DSN='http://user:password@127.0.0.1:18123' go test ./... -count=1 -timeout=180s
 ```
 
-`TestType` is the fixture-only convenience helper; `TestTypeWithDSN(..., dsn)` adds
-live insertion without any dependency on TestMain or environment variables in the
-production library. Existing `NewTestClient` keeps its signature, but panics on
-setup error instead of exiting the process; prefer error-returning `NewTestClientE`
-or test-aware `NewTestClientTB`, which registers cleanup and reports failures
-through testing.TB.
+The test helpers live in `github.com/lomik/rowbinary/rowbinarytest`, so importing
+the library does not pull testing code into production builds.
+`rowbinarytest.TestType` is the fixture-only convenience helper for checking a type
+(including your own) against ClickHouse; `rowbinarytest.TestTypeWithDSN(..., dsn)`
+adds live insertion and read-back without any dependency on TestMain or environment
+variables. For a live server, `rowbinarytest.NewTestClientE` returns setup errors and
+`rowbinarytest.NewTestClientTB` also registers cleanup and reports failures through
+testing.TB; both create a uniquely named database that `Close` drops.
 
 ### Benchmark module
 

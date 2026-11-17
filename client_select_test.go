@@ -4,12 +4,9 @@ import (
 	"context"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_Select_InvalidDSN(t *testing.T) {
-	assert := assert.New(t)
 	ctx := context.Background()
 
 	// Create client with invalid DSN
@@ -23,7 +20,7 @@ func TestClient_Select_InvalidDSN(t *testing.T) {
 			return nil
 		}),
 	)
-	assert.Error(err)
-	// Should contain connection error
-	// assert.Contains(err.Error(), "context deadline exceeded") // or similar connection error
+	if err == nil {
+		t.Fatal("Select against an unreachable host returned nil")
+	}
 }

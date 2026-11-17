@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lomik/rowbinary"
+	"github.com/lomik/rowbinary/rowbinarytest"
 	"github.com/lomik/rowbinary/integration/chtest"
 )
 
@@ -16,10 +16,10 @@ func TestMain(m *testing.M) {
 	os.Exit(chtest.Main(m, func(s chtest.Server) { testDSN = s.DSN }))
 }
 
-func integrationClient(t testing.TB) *rowbinary.TestClient {
+func integrationClient(t testing.TB) *rowbinarytest.TestClient {
 	t.Helper()
 	if testDSN == "" {
 		t.Skip("offline mode: set ROWBINARY_TEST_MODE=integration for live ClickHouse tests")
 	}
-	return rowbinary.NewTestClientTB(t, testDSN)
+	return rowbinarytest.NewTestClientTB(t, testDSN)
 }
