@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -83,12 +84,11 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		req.Body = r
 
 		go func() {
-			defer w.Close()
+			// Every exit closes the pipe exactly once: with the error on failure, or
+			// cleanly after the closing boundary has been written and flushed.
 			bw := bufio.NewWriterSize(w, 1024*1024)
-			defer bw.Flush()
 			mw := multipart.NewWriter(bw)
 			mw.SetBoundary(tmpWriter.Boundary())
-			defer mw.Close()
 
 			if err := mw.WriteField("query", query); err != nil {
 				w.CloseWithError(err)
@@ -128,6 +128,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 				w.CloseWithError(err)
 				return
 			}
+			w.CloseWithError(bw.Flush()) // nil error closes the pipe normally
 		}()
 	} else {
 		req.Body = io.NopCloser(strings.NewReader(query))
@@ -156,6 +157,11 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		if err := opts.formatReader(fr); err != nil {
 			return err
 		}
+		// The callback may stop at the first failed Next/Scan and return nil;
+		// a cut-off or failed stream must still be reported.
+		if err := fr.Err(); err != nil && err != io.EOF {
+			return selectStreamError(err)
+		}
 		return nil
 	}
 
@@ -166,7 +172,22 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		return nil
 	}
 
+	// No reader: consume the response so that a truncated stream or a query
+	// that failed after the headers were sent is reported, not ignored.
+	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+		return selectStreamError(err)
+	}
 	return nil
+}
+
+// selectStreamError adds context to errors that end a 200 response early:
+// ClickHouse reports a query that fails mid-stream by appending the exception
+// to the body and closing the connection without finishing the response.
+func selectStreamError(err error) error {
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return fmt.Errorf("response ended unexpectedly (the query may have failed on the server after streaming started): %w", err)
+	}
+	return err
 }
 
 func WithFormatReader(cb func(r *FormatReader) error) SelectOption {

@@ -236,9 +236,12 @@ func (r *FormatReader) Scan(dest ...any) error {
 		return r.setErr(errNoColumns)
 	}
 	for i := 0; i < len(dest); i++ {
+		if err := r.beginValue(); err != nil {
+			return err
+		}
 		err = r.columns[r.index].tp.ScanAny(r.wrap, dest[i])
 		if err != nil {
-			return r.setErr(err)
+			return r.setErr(midRowEOF(err))
 		}
 		r.nextColumn()
 	}
@@ -260,7 +263,35 @@ func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
 		})
 	}
 
+	if err := r.beginValue(); err != nil {
+		return err
+	}
 	err := tp.Scan(r.wrap, v)
 	r.nextColumn()
-	return r.setErr(err)
+	if err != nil {
+		return r.setErr(midRowEOF(err))
+	}
+	return nil
+}
+
+// beginValue reports a clean end of stream (io.EOF) when no data is left at a
+// row boundary. Anywhere else, running out of data means the stream was cut
+// off, which the value scan reports as io.ErrUnexpectedEOF.
+func (r *FormatReader) beginValue() error {
+	if r.index != 0 {
+		return nil
+	}
+	if _, err := r.wrap.Peek(1); err != nil {
+		return r.setErr(err)
+	}
+	return nil
+}
+
+// midRowEOF converts io.EOF from a value scan into io.ErrUnexpectedEOF: the
+// value had started (see beginValue), so the stream ended inside a row.
+func midRowEOF(err error) error {
+	if err == io.EOF {
+		return io.ErrUnexpectedEOF
+	}
+	return err
 }

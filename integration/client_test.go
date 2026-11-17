@@ -228,3 +228,32 @@ func TestClient_Insert(t *testing.T) {
 	), "insertion failed")
 
 }
+
+// A query that fails after ClickHouse has started streaming rows still
+// returns HTTP 200; the failure must surface as an error from Select.
+func TestClient_Select_MidStreamFailure(t *testing.T) {
+	c := integrationClient(t)
+	const query = "SELECT number FROM system.numbers WHERE throwIf(number = 300000) = 0 LIMIT 400000 SETTINGS max_block_size = 1000"
+
+	err := c.Select(t.Context(), query, WithFormatReader(func(r *FormatReader) error {
+		for r.Next() {
+			var n uint64
+			if Scan(r, UInt64, &n) != nil {
+				break
+			}
+		}
+		return nil // deliberately ignores r.Err()
+	}))
+	if err == nil {
+		t.Fatal("Select with reader: mid-stream failure reported as success")
+	}
+
+	if err := c.Select(t.Context(), query); err == nil {
+		t.Fatal("Select without reader: mid-stream failure reported as success")
+	}
+
+	// A successful query is unaffected.
+	if err := c.Select(t.Context(), "SELECT number FROM system.numbers LIMIT 400000 SETTINGS max_block_size = 1000"); err != nil {
+		t.Fatal(err)
+	}
+}
