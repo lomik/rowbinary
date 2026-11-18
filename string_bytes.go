@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -34,6 +35,10 @@ func (t typeStringBytes) Scan(r Reader, v *[]byte) (err error) {
 		return err
 	}
 
+	if n > uint64(^uint(0)>>1) {
+		return fmt.Errorf("string length overflows int: %d", n)
+	}
+
 	// Fast path: the value fits in the reader's buffer.
 	p, err := r.Peek(int(n))
 	if err == nil {
@@ -45,13 +50,20 @@ func (t typeStringBytes) Scan(r Reader, v *[]byte) (err error) {
 		return err
 	}
 
-	// Slow path: the value is larger than the reader's buffer; read it directly,
-	// reusing the destination's capacity when possible.
-	if cap(*v) >= int(n) {
-		*v = (*v)[:n]
-	} else {
-		*v = make([]byte, n)
+	// Slow path: the value is larger than the reader's buffer. Reuse the
+	// destination's capacity, but grow only as data arrives, never from an
+	// untrusted declared size.
+	b := (*v)[:0]
+	var chunk [4096]byte
+	for remaining := n; remaining > 0; {
+		size := min(remaining, uint64(len(chunk)))
+		if _, err = io.ReadFull(r, chunk[:size]); err != nil {
+			*v = b
+			return err
+		}
+		b = append(b, chunk[:size]...)
+		remaining -= size
 	}
-	_, err = io.ReadFull(r, *v)
-	return err
+	*v = b
+	return nil
 }

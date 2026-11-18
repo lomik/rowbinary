@@ -7,7 +7,10 @@ import (
 )
 
 func Variant(valueTypes ...Any) Type[Value] {
-	valueTypes = slices.Clone(valueTypes)
+	valueTypes = dedupTypes(slices.Clone(valueTypes))
+	if len(valueTypes) > maxVariantTypes {
+		return Invalid[Value](fmt.Sprintf("Variant can have at most %d types, got %d", maxVariantTypes, len(valueTypes)))
+	}
 	slices.SortFunc(valueTypes, func(a, b Any) int {
 		return strings.Compare(a.String(), b.String())
 	})
@@ -37,7 +40,10 @@ func (t typeVariant) Binary() []byte {
 }
 
 func (t typeVariant) Write(w Writer, value Value) error {
-	if value.Type != nil && Eq(value.Type, Nothing) && value.Value == nil {
+	if value.Type == nil {
+		return errValueWithoutType
+	}
+	if Eq(value.Type, Nothing) && value.Value == nil {
 		return w.WriteByte(255)
 	}
 	for i, tp := range t.valueTypes {
@@ -52,7 +58,7 @@ func (t typeVariant) Write(w Writer, value Value) error {
 			return value.Type.WriteAny(w, value.Value)
 		}
 	}
-	return TypeMismatchError{}
+	return TypeMismatchError{ExpectedType: t.String(), ActualType: value.Type.String()}
 }
 
 func (t typeVariant) Scan(r Reader, v *Value) error {

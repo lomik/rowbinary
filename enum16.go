@@ -14,6 +14,9 @@ type typeEnum16 struct {
 }
 
 func Enum16(v map[string]int16) Type[string] {
+	if msg := enumDuplicateValue("Enum16", v); msg != "" {
+		return Invalid[string](msg)
+	}
 	t := typeEnum16{
 		mp1:  make(map[int16]string),
 		mp2:  make(map[string]int16),

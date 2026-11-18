@@ -9,14 +9,12 @@ import (
 var _ Type[[]uint32] = Array(UInt32)
 
 type typeArray[V any] struct {
-	id        uint64
 	valueType Type[V]
-	tbin      []byte
-	tstr      string
+	zeroWidth bool // elements take no bytes; see maxZeroWidthElements
 }
 
 func Array[V any](valueType Type[V]) Type[[]V] {
-	return MakeTypeWrapAny(typeArray[V]{valueType: valueType})
+	return MakeTypeWrapAny(typeArray[V]{valueType: valueType, zeroWidth: isZeroWidthType(valueType)})
 }
 
 func (t typeArray[V]) String() string {
@@ -49,19 +47,27 @@ func (t typeArray[V]) Scan(r Reader, v *[]V) error {
 	if n > uint64(^uint(0)>>1) {
 		return fmt.Errorf("array length overflows int: %d", n)
 	}
-	if *v == nil {
-		*v = make([]V, int(n))
-	} else if len(*v) >= int(n) {
-		*v = (*v)[:n]
-	} else {
-		*v = append(*v, make([]V, int(n)-len(*v))...)
-	}
-
-	for i := 0; i < int(n); i++ {
-		if err := t.valueType.Scan(r, &(*v)[i]); err != nil {
+	if t.zeroWidth && n > 0 {
+		if err := chargeZeroWidth(r, n, t.String()); err != nil {
 			return err
 		}
 	}
-
+	// Grow as elements are read, never by the declared count alone: a few
+	// bytes can declare billions of elements. Existing capacity (and elements)
+	// of the destination are reused.
+	s := (*v)[:0]
+	for i := uint64(0); i < n; i++ {
+		if len(s) < cap(s) {
+			s = s[:len(s)+1]
+		} else {
+			var zero V
+			s = append(s, zero)
+		}
+		if err := t.valueType.Scan(r, &s[len(s)-1]); err != nil {
+			*v = s
+			return err
+		}
+	}
+	*v = s
 	return nil
 }

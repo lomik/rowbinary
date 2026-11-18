@@ -2,10 +2,7 @@ package rowbinary
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net/http"
-	"strings"
 )
 
 type execOptions struct {
@@ -31,6 +28,9 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 		opt.applyExecOptions(&opts)
 	}
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		opt.applyExecOptions(&opts)
 	}
 
@@ -38,7 +38,7 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 	if err != nil {
 		return err
 	}
-	req.Body = io.NopCloser(strings.NewReader(query))
+	setReplayableBody(req, query)
 
 	resp, err := c.do(req)
 	if err != nil {
@@ -46,14 +46,8 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
+		return statusError(resp)
 	}
-
-	return nil
+	return drainBody(resp)
 }

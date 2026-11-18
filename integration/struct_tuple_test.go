@@ -3,10 +3,10 @@ package integration
 import (
 	"testing"
 
-	"github.com/lomik/rowbinary"
 	"github.com/lomik/rowbinary/example"
+	"github.com/lomik/rowbinary/rowbinarytest"
 )
 
 func TestStructTuple(t *testing.T) {
-	rowbinary.TestTypeWithDSN(t, example.StructTupleType, example.StructTuple{ID: 42, Name: []byte("test")}, "CREATE TEMPORARY TABLE tmp (value Tuple(id UInt32, name String)) ENGINE=Memory; INSERT INTO tmp VALUES ((42, 'test')); SELECT value FROM tmp", testDSN)
+	rowbinarytest.TestTypeWithDSN(t, example.StructTupleType, example.StructTuple{ID: 42, Name: []byte("test")}, "CREATE TEMPORARY TABLE tmp (value Tuple(id UInt32, name String)) ENGINE=Memory; INSERT INTO tmp VALUES ((42, 'test')); SELECT value FROM tmp", testDSN)
 }

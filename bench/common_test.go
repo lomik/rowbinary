@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/lomik/rowbinary"
 	"github.com/lomik/rowbinary/integration/chtest"
+	"github.com/lomik/rowbinary/rowbinarytest"
 )
 
 var testClickHouseDSN, testClickHouseNativeAddr, testUsername, testPassword string
@@ -33,8 +33,8 @@ func nativeAddr(b *testing.B) string {
 	return testClickHouseNativeAddr
 }
 
-func newTestClient(b *testing.B) *rowbinary.TestClient {
+func newTestClient(b *testing.B) *rowbinarytest.TestClient {
 	b.Helper()
 	requireIntegration(b)
-	return rowbinary.NewTestClientTB(b, testClickHouseDSN)
+	return rowbinarytest.NewTestClientTB(b, testClickHouseDSN)
 }

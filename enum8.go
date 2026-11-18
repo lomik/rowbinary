@@ -14,6 +14,9 @@ type typeEnum8 struct {
 }
 
 func Enum8(v map[string]int8) Type[string] {
+	if msg := enumDuplicateValue("Enum8", v); msg != "" {
+		return Invalid[string](msg)
+	}
 	t := typeEnum8{
 		mp1:  make(map[int8]string),
 		mp2:  make(map[string]int8),

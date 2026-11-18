@@ -2,8 +2,11 @@ package rowbinary
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const headerClickhouseQueryID = "X-ClickHouse-Query-Id"
@@ -79,24 +82,43 @@ type Client interface {
 	// For queries that return data, use Select instead. For inserting data, use Insert.
 	Exec(ctx context.Context, query string, options ...ExecOption) error
 
-	// Insert executes an INSERT query into the specified ClickHouse table by writing data using the provided write function.
+	// Insert sends `INSERT INTO <table> FORMAT <format>` and streams the rows
+	// written by the WithFormatWriter (or WithBodyWriter) callback as the body.
+	// One of the two writers is required. The format defaults to
+	// RowBinaryWithNamesAndTypes; client defaults are applied before options.
 	//
-	// It constructs an INSERT INTO query with the specified format, streams the data written by writeFunc to the server,
-	// and ensures the operation completes successfully. The data is written incrementally via the FormatWriter.
+	// table is inserted into the SQL as written, like the query of Select and
+	// Exec: it may be `db.table`, include a column list or settings, and must not
+	// come from untrusted input unquoted (see QuoteIdentifier).
 	//
-	// Parameters:
-	//   - ctx: Context for the request, used for cancellation and timeouts.
-	//   - table: The name of the ClickHouse table to insert data into.
-	//   - writeFunc: A callback function that receives a FormatWriter to write the data to be inserted.
-	//   - options: Optional InsertOption values to configure the insert (e.g., format, params, headers).
+	// Column mapping depends on the format:
+	//   - RowBinaryWithNames and RowBinaryWithNamesAndTypes (the default) send
+	//     the column names in a header, and ClickHouse matches them by name;
+	//     table columns that are not sent get their defaults.
+	//   - RowBinary has no header: ClickHouse assigns values to the table's
+	//     columns by position, in table order. The column options are used only
+	//     to type-check the written values, not to name columns. To write in a
+	//     different order or a subset of columns, put the list in table, for
+	//     example "events (ts, id)", or use a format with names.
 	//
-	// Returns:
-	//   - error: An error if the request fails, writing data encounters issues, or the response status is not OK.
+	// Insert returns the first error of the request, the writer callback, or a
+	// non-200 response.
 	//
-	// Note: The data is streamed to the server as it's written by writeFunc. Default insert options from the client
-	// configuration are applied first. The format header is automatically written before invoking writeFunc.
+	// The writer callback runs on its own goroutine, feeding the upload. When
+	// ctx is done, Insert returns ctx's error without waiting for it, and the
+	// callback's next write fails because the upload is closed. A callback that
+	// waits on anything else (a channel, a slow source) should watch the
+	// context and return: use WithFormatWriterContext or WithBodyWriterContext
+	// to receive it, or close over the ctx passed to Insert.
 	Insert(ctx context.Context, table string, options ...InsertOption) error
 
+	// Close releases resources owned by the client. A client owns none: its
+	// connections belong either to the package-wide default pool (shared by
+	// all clients without their own HTTP client, which closes idle connections
+	// after 90 seconds) or to the http.Client given with WithHTTPClient or
+	// SetGlobalHTTPClient, which stays the caller's to manage, e.g. with
+	// http.Client.CloseIdleConnections. So Close does not touch connections,
+	// always returns nil, and the client remains usable afterwards.
 	Close() error
 }
 
@@ -165,12 +187,7 @@ func NewClient(options ...ClientOption) Client {
 	}
 
 	if c.opts.httpClient == nil {
-		c.opts.httpClient = &http.Client{
-			Transport: &http.Transport{
-				ReadBufferSize:  1024 * 1024,
-				WriteBufferSize: 1024 * 1024,
-			},
-		}
+		c.opts.httpClient = defaultHTTPClient()
 	}
 	return c
 }
@@ -235,9 +252,40 @@ func (c *client) newRequest(ctx context.Context, dsn string, discoCtx DiscoveryC
 }
 
 func (c *client) do(req *http.Request) (*http.Response, error) {
-	return c.opts.httpClient.Do(req)
+	resp, err := c.opts.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	// On 301/302/303 the HTTP client follows the redirect with GET and no
+	// body: the query and data are dropped, and a 200 from the redirect target
+	// would look like success. Treat a changed method as an error.
+	if final := resp.Request; final != nil && final.Method != req.Method {
+		resp.Body.Close()
+		return nil, fmt.Errorf("server redirected the %s request to %s and the HTTP client re-sent it as %s without the query and data; put the final URL in the DSN", req.Method, redirectTarget(final.URL), final.Method)
+	}
+	return resp, nil
 }
 
+// redirectTarget is u without query parameters (which may hold settings).
+func redirectTarget(u *url.URL) string {
+	v := *u
+	v.RawQuery = ""
+	v.ForceQuery = false
+	v.User = nil
+	return v.String()
+}
+
+// setReplayableBody sets an in-memory request body that the HTTP client can
+// re-send when it follows a 307 or 308 redirect.
+func setReplayableBody(req *http.Request, body string) {
+	req.Body = io.NopCloser(strings.NewReader(body))
+	req.ContentLength = int64(len(body))
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader(body)), nil
+	}
+}
+
+// Close is a no-op by design; see Client.Close.
 func (c *client) Close() error {
 	return nil
 }

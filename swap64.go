@@ -10,7 +10,7 @@ func swap64(b []byte) {
 }
 
 func swap32(b []byte) {
-	for i := 0; i < len(b); i += 8 {
+	for i := 0; i < len(b); i += 4 {
 		u := binary.BigEndian.Uint32(b[i:])
 		binary.LittleEndian.PutUint32(b[i:], u)
 	}

@@ -1,8 +1,10 @@
 package rowbinary
 
+import "context"
+
 type externalData struct {
 	name          string
-	cb            func(w *FormatWriter) error
+	cb            func(ctx context.Context, w *FormatWriter) error
 	formatOptions []FormatOption
 }
 

@@ -3,12 +3,12 @@ package rowbinary
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"slices"
-	"strings"
 )
 
 type selectOptions struct {
@@ -17,8 +17,8 @@ type selectOptions struct {
 	externalData  []externalData
 	params        map[string]string
 	headers       map[string]string
-	formatReader  func(r *FormatReader) error
-	bodyReader    func(r io.Reader) error
+	formatReader  func(ctx context.Context, r *FormatReader) error
+	bodyReader    func(ctx context.Context, r io.Reader) error
 }
 
 type SelectOption interface {
@@ -58,9 +58,20 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		opt.applySelectOptions(&opts)
 	}
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		opt.applySelectOptions(&opts)
 	}
+	seen := make(map[string]bool, len(opts.externalData))
 	for _, ed := range opts.externalData {
+		if ed.name == "" {
+			return errors.New("external data requires a table name")
+		}
+		if seen[ed.name] {
+			return fmt.Errorf("external data table %q is given more than once", ed.name)
+		}
+		seen[ed.name] = true
 		if ed.cb == nil {
 			return fmt.Errorf("external data %q requires a format writer", ed.name)
 		}
@@ -80,12 +91,11 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		req.Body = r
 
 		go func() {
-			defer w.Close()
+			// Every exit closes the pipe exactly once: with the error on failure, or
+			// cleanly after the closing boundary has been written and flushed.
 			bw := bufio.NewWriterSize(w, 1024*1024)
-			defer bw.Flush()
 			mw := multipart.NewWriter(bw)
 			mw.SetBoundary(tmpWriter.Boundary())
-			defer mw.Close()
 
 			if err := mw.WriteField("query", query); err != nil {
 				w.CloseWithError(err)
@@ -115,7 +125,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 
 				fw := NewFormatWriter(ff, append(slices.Clone(ed.formatOptions), RowBinary)...)
 
-				if err := ed.cb(fw); err != nil {
+				if err := ed.cb(ctx, fw); err != nil {
 					w.CloseWithError(err)
 					return
 				}
@@ -125,9 +135,10 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 				w.CloseWithError(err)
 				return
 			}
+			w.CloseWithError(bw.Flush()) // nil error closes the pipe normally
 		}()
 	} else {
-		req.Body = io.NopCloser(strings.NewReader(query))
+		setReplayableBody(req, query)
 	}
 
 	resp, err := c.do(req)
@@ -137,53 +148,82 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
+		return statusError(resp)
 	}
 
 	// px := &ReadSizeProxy{Reader: resp.Body}
 	// defer px.Close()
 
+	body := &tailReader{r: resp.Body}
+
 	if opts.formatReader != nil {
-		fr := NewFormatReader(resp.Body, opts.formatOptions...)
-		if err := opts.formatReader(fr); err != nil {
+		fr := NewFormatReader(body, opts.formatOptions...)
+		if err := opts.formatReader(ctx, fr); err != nil {
 			return err
+		}
+		// The callback may stop at the first failed Next/Scan and return nil;
+		// a cut-off or failed stream must still be reported.
+		if err := fr.Err(); err != nil && err != io.EOF {
+			return selectStreamError(err, body)
 		}
 		return nil
 	}
 
 	if opts.bodyReader != nil {
-		if err := opts.bodyReader(resp.Body); err != nil {
+		if err := opts.bodyReader(ctx, resp.Body); err != nil {
 			return err
 		}
 		return nil
 	}
 
+	// No reader: consume the response so that a truncated stream or a query
+	// that failed after the headers were sent is reported, not ignored.
+	if _, err := io.Copy(io.Discard, body); err != nil {
+		return selectStreamError(err, body)
+	}
 	return nil
 }
 
+// WithFormatReader sets the callback that reads the result of a Select. It
+// runs on the caller's goroutine; once the request's context is done, reads
+// fail with an error. WithFormatReaderContext also passes that context.
 func WithFormatReader(cb func(r *FormatReader) error) SelectOption {
+	if cb == nil {
+		return formatReaderOption{}
+	}
+	return formatReaderOption{cb: func(_ context.Context, r *FormatReader) error { return cb(r) }}
+}
+
+// WithFormatReaderContext is WithFormatReader with the request's context:
+// the ctx given to Select.
+func WithFormatReaderContext(cb func(ctx context.Context, r *FormatReader) error) SelectOption {
 	return formatReaderOption{cb: cb}
 }
 
 type formatReaderOption struct {
-	cb func(r *FormatReader) error
+	cb func(ctx context.Context, r *FormatReader) error
 }
 
 func (f formatReaderOption) applySelectOptions(opts *selectOptions) {
 	opts.formatReader = f.cb
 }
 
+// WithBodyReader sets a callback that reads the raw response body of a
+// Select. WithBodyReaderContext also passes the request's context.
 func WithBodyReader(cb func(r io.Reader) error) SelectOption {
+	if cb == nil {
+		return bodyReaderOption{}
+	}
+	return bodyReaderOption{cb: func(_ context.Context, r io.Reader) error { return cb(r) }}
+}
+
+// WithBodyReaderContext is WithBodyReader with the request's context.
+func WithBodyReaderContext(cb func(ctx context.Context, r io.Reader) error) SelectOption {
 	return bodyReaderOption{cb: cb}
 }
 
 type bodyReaderOption struct {
-	cb func(r io.Reader) error
+	cb func(ctx context.Context, r io.Reader) error
 }
 
 func (b bodyReaderOption) applySelectOptions(opts *selectOptions) {

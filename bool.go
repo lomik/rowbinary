@@ -24,6 +24,8 @@ func (t typeBool) Scan(r Reader, v *bool) error {
 	if err != nil {
 		return err
 	}
-	*v = val == 1
+	// Any non-zero byte is true, as in ClickHouse (which stores and returns
+	// e.g. 255 as is).
+	*v = val != 0
 	return nil
 }

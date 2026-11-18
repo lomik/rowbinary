@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,8 +15,8 @@ type insertOptions struct {
 	format        Format
 	params        map[string]string
 	headers       map[string]string
-	formatWriter  func(w *FormatWriter) error
-	bodyWriter    func(w io.Writer) error
+	formatWriter  func(ctx context.Context, w *FormatWriter) error
+	bodyWriter    func(ctx context.Context, w io.Writer) error
 }
 
 type InsertOption interface {
@@ -39,7 +40,14 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 		opt.applyInsertOptions(&opts)
 	}
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		opt.applyInsertOptions(&opts)
+	}
+
+	if opts.formatWriter == nil && opts.bodyWriter == nil {
+		return errors.New("insert requires WithFormatWriter or WithBodyWriter")
 	}
 
 	opts.params["query"] = fmt.Sprintf("INSERT INTO %s FORMAT %s", table, opts.format.String())
@@ -61,8 +69,11 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 			if producerErr == nil {
 				producerErr = bw.Flush()
 			}
-			_ = w.CloseWithError(producerErr)
+			// Publish the result before closing the pipe: the transport sees EOF
+			// only after the close, so once the upload is complete the result is
+			// already available and a late context cancellation cannot mask it.
 			producerDone <- producerErr
+			_ = w.CloseWithError(producerErr)
 		}()
 
 		if opts.formatWriter != nil {
@@ -71,13 +82,13 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 				return
 			}
 
-			producerErr = opts.formatWriter(writer)
+			producerErr = opts.formatWriter(ctx, writer)
 
 			return
 		}
 
 		if opts.bodyWriter != nil {
-			producerErr = opts.bodyWriter(bw)
+			producerErr = opts.bodyWriter(ctx, bw)
 			return
 		}
 	}()
@@ -88,13 +99,11 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, string(body))
+		return statusError(resp)
+	}
+	if err := drainBody(resp); err != nil {
+		return err
 	}
 
 	// An early response may stop the transport from consuming the request body.
@@ -115,10 +124,24 @@ func (c *client) Insert(ctx context.Context, table string, options ...InsertOpti
 }
 
 type formatWriterOption struct {
-	formatWriter func(w *FormatWriter) error
+	formatWriter func(ctx context.Context, w *FormatWriter) error
 }
 
+// WithFormatWriter sets the callback that writes the rows of an Insert, or
+// the data of an external table (WithExternalData). See Client.Insert for
+// how cancellation reaches it; WithFormatWriterContext also passes the
+// request's context.
 func WithFormatWriter(fw func(w *FormatWriter) error) formatWriterOption {
+	if fw == nil {
+		return formatWriterOption{}
+	}
+	return formatWriterOption{formatWriter: func(_ context.Context, w *FormatWriter) error { return fw(w) }}
+}
+
+// WithFormatWriterContext is WithFormatWriter with the request's context:
+// the ctx given to Insert or Select. A callback that waits on anything other
+// than its writes should return when ctx is done.
+func WithFormatWriterContext(fw func(ctx context.Context, w *FormatWriter) error) formatWriterOption {
 	return formatWriterOption{formatWriter: fw}
 }
 
@@ -131,10 +154,21 @@ func (o formatWriterOption) applyExternalDataOption(opts *externalData) {
 }
 
 type bodyWriterOption struct {
-	bodyWriter func(w io.Writer) error
+	bodyWriter func(ctx context.Context, w io.Writer) error
 }
 
+// WithBodyWriter sets a callback that writes the raw body of an Insert
+// (already in the chosen format). WithBodyWriterContext also passes the
+// request's context.
 func WithBodyWriter(bw func(w io.Writer) error) InsertOption {
+	if bw == nil {
+		return bodyWriterOption{}
+	}
+	return bodyWriterOption{bodyWriter: func(_ context.Context, w io.Writer) error { return bw(w) }}
+}
+
+// WithBodyWriterContext is WithBodyWriter with the request's context.
+func WithBodyWriterContext(bw func(ctx context.Context, w io.Writer) error) InsertOption {
 	return bodyWriterOption{bodyWriter: bw}
 }
 

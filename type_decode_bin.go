@@ -2,7 +2,7 @@ package rowbinary
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"io"
 )
 
@@ -63,8 +63,16 @@ var (
 	BinaryTypeTime64                  = [1]byte{0x34} // <uint8_precision>
 )
 
-// DecodeBinaryType decodes a binary type from the given reader.
+// DecodeBinaryType decodes a binary type from the given reader. Types nested
+// deeper than maxTypeDepth are rejected.
 func DecodeBinaryType(r Reader) (Any, error) {
+	return decodeBinaryType(r, 0)
+}
+
+func decodeBinaryType(r Reader, depth int) (Any, error) {
+	if depth > maxTypeDepth {
+		return nil, fmt.Errorf("type nested deeper than %d levels", maxTypeDepth)
+	}
 	var firstByte [1]byte
 	if _, err := io.ReadFull(r, firstByte[:]); err != nil {
 		return nil, err
@@ -82,9 +90,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeUInt64:
 		return UInt64, nil
 	case BinaryTypeUInt128:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeUInt128")
 	case BinaryTypeUInt256:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeUInt256")
 	case BinaryTypeInt8:
 		return Int8, nil
 	case BinaryTypeInt16:
@@ -94,9 +102,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeInt64:
 		return Int64, nil
 	case BinaryTypeInt128:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeInt128")
 	case BinaryTypeInt256:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeInt256")
 	case BinaryTypeFloat32:
 		return Float32, nil
 	case BinaryTypeFloat64:
@@ -120,12 +128,18 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := checkDateTime64Precision(int64(size)); err != nil {
+			return nil, err
+		}
 		return DateTime64(size), nil
 	case BinaryTypeDateTime64WithTimeZone: // <uint8_precision><var_uint_time_zone_name_size><time_zone_name_data>
 		var name string
 		var size uint8
 		err := UInt8.Scan(r, &size)
 		if err != nil {
+			return nil, err
+		}
+		if err := checkDateTime64Precision(int64(size)); err != nil {
 			return nil, err
 		}
 		err = String.Scan(r, &name)
@@ -140,14 +154,20 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := checkFixedStringSize(size); err != nil {
+			return nil, err
+		}
 		return FixedString(int(size)), nil
 	case BinaryTypeEnum8: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><int8_value_1>...<var_uint_name_size_N><name_data_N><int8_value_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
 			return nil, err
 		}
-		mp := make(map[string]int8, n)
-		for i := 0; i < int(n); i++ {
+		if n > maxEnum8Elements {
+			return nil, fmt.Errorf("Enum8 element count must be at most %d, got %d", maxEnum8Elements, n)
+		}
+		mp := newEnumBuilder[int8]("Enum8")
+		for range n {
 			var name string
 			err := String.Scan(r, &name)
 			if err != nil {
@@ -158,16 +178,21 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			mp[name] = value
+			if err := mp.add(name, value); err != nil {
+				return nil, err
+			}
 		}
-		return Enum8(mp), nil
+		return Enum8(mp.labels), nil
 	case BinaryTypeEnum16: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><int16_little_endian_value_1>...><var_uint_name_size_N><name_data_N><int16_little_endian_value_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
 			return nil, err
 		}
-		mp := make(map[string]int16)
-		for i := 0; i < int(n); i++ {
+		if n > maxEnum16Elements {
+			return nil, fmt.Errorf("Enum16 element count must be at most %d, got %d", maxEnum16Elements, n)
+		}
+		mp := newEnumBuilder[int16]("Enum16")
+		for range n {
 			var name string
 			err := String.Scan(r, &name)
 			if err != nil {
@@ -178,9 +203,11 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			mp[name] = value
+			if err := mp.add(name, value); err != nil {
+				return nil, err
+			}
 		}
-		return Enum16(mp), nil
+		return Enum16(mp.labels), nil
 	case BinaryTypeDecimal32, BinaryTypeDecimal64, BinaryTypeDecimal128, BinaryTypeDecimal256: // <uint8_precision><uint8_scale>
 		var precision, scale uint8
 		err := UInt8.Scan(r, &precision)
@@ -191,11 +218,17 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := checkDecimalParams(uint64(precision), uint64(scale)); err != nil {
+			return nil, err
+		}
+		if tag := decimalTag(precision); tag != firstByte[0] {
+			return nil, fmt.Errorf("Decimal(%d, %d) must use binary tag %#02x, got %#02x", precision, scale, tag, firstByte[0])
+		}
 		return Decimal(precision, scale), nil
 	case BinaryTypeUUID:
 		return UUID, nil
 	case BinaryTypeArray:
-		nested, err := DecodeBinaryType(r)
+		nested, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +240,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		var types []Any
 		for range n {
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -226,7 +259,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -234,7 +267,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return TupleNamedAny(columns...), nil
 	case BinaryTypeSet:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeSet")
 	case BinaryTypeInterval: // <interval_kind> (see interval kind binary encoding)
 		b, err := r.ReadByte()
 		if err != nil {
@@ -264,29 +297,29 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		case intervalKindYear:
 			return IntervalYear, nil
 		}
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: interval kind %#02x", NotImplementedError, b)
 	case BinaryTypeNullable: // <nested_type_encoding>
-		nested, err := DecodeBinaryType(r)
+		nested, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
 		return NullableAny(nested), nil
 	case BinaryTypeFunction:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeFunction")
 	case BinaryTypeAggregateFunction:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeAggregateFunction")
 	case BinaryTypeLowCardinality: // <nested_type_encoding>
-		nested, err := DecodeBinaryType(r)
+		nested, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
 		return LowCardinalityAny(nested), nil
 	case BinaryTypeMap: // <key_type_encoding><value_type_encoding>
-		keyType, err := DecodeBinaryType(r)
+		keyType, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
-		valueType, err := DecodeBinaryType(r)
+		valueType, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
@@ -300,9 +333,12 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err := checkVariantCount(n); err != nil {
+			return nil, err
+		}
 		var types []Any
 		for range n {
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -315,6 +351,9 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		if err != nil {
 			return nil, err
 		}
+		if maxTypes > maxDynamicTypes {
+			return nil, fmt.Errorf("Dynamic max_types must be in range 0..%d, got %d", maxDynamicTypes, maxTypes)
+		}
 		return Dynamic(maxTypes), nil
 	case BinaryTypeCustom: // <var_uint_type_name_size><type_name_data>
 		var name string
@@ -326,7 +365,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeBool:
 		return Bool, nil
 	case BinaryTypeSimpleAggregateFunction:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeSimpleAggregateFunction")
 	case BinaryTypeNested: // <var_uint_number_of_elements><var_uint_name_size_1><name_data_1><nested_type_encoding_1>...<var_uint_name_size_N><name_data_N><nested_type_encoding_N>
 		n, err := binary.ReadUvarint(r)
 		if err != nil {
@@ -339,7 +378,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -347,15 +386,15 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return ArrayAny(TupleNamedAny(columns...)), nil
 	case BinaryTypeJSON: // 0x30<uint8_serialization_version><var_int_max_dynamic_paths><uint8_max_dynamic_types><var_uint_number_of_typed_paths><var_uint_path_name_size_1><path_name_data_1><encoded_type_1>...<var_uint_number_of_skip_paths><var_uint_skip_path_size_1><skip_path_data_1>...<var_uint_number_of_skip_path_regexps><var_uint_skip_path_regexp_size_1><skip_path_data_regexp_1>...
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeJSON")
 	case BinaryTypeBFloat16:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeBFloat16")
 	case BinaryTypeTime:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeTime")
 	case BinaryTypeTime64:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeTime64")
 	default:
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: binary type code %#02x", NotImplementedError, firstByte[0])
 	}
 
 }

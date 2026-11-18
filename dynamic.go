@@ -2,15 +2,24 @@ package rowbinary
 
 import (
 	"fmt"
+	"slices"
 )
 
+// DynamicDefaultMaxTypes is the max_types ClickHouse uses for a plain `Dynamic` column.
+const DynamicDefaultMaxTypes uint8 = 32
+
+// DynamicDefault is the type of a plain `Dynamic` column, i.e. Dynamic(max_types=32).
+var DynamicDefault = Dynamic(DynamicDefaultMaxTypes)
+
+// Dynamic returns the ClickHouse type Dynamic(max_types=maxTypes). As in ClickHouse,
+// maxTypes 0 is a valid limit (every value is stored in the shared variant), not
+// "use the default": pass DynamicDefaultMaxTypes, or use DynamicDefault, for a plain
+// `Dynamic` column. knownTypes are type instances to use when a scanned value has
+// the same type, for example a custom Go type for a tuple.
 func Dynamic(maxTypes uint8, knownTypes ...Any) Type[Value] {
-	if maxTypes == 0 {
-		maxTypes = 32
-	}
 	return MakeTypeWrapAny(typeDynamic{
 		maxTypes:   maxTypes,
-		knownTypes: knownTypes,
+		knownTypes: slices.Clone(knownTypes),
 	})
 }
 
@@ -20,7 +29,7 @@ type typeDynamic struct {
 }
 
 func (t typeDynamic) String() string {
-	if t.maxTypes == 32 {
+	if t.maxTypes == DynamicDefaultMaxTypes {
 		return "Dynamic"
 	}
 	return fmt.Sprintf("Dynamic(max_types=%d)", t.maxTypes)
@@ -31,7 +40,10 @@ func (t typeDynamic) Binary() []byte {
 }
 
 func (t typeDynamic) Write(w Writer, value Value) error {
-	_, err := w.Write(value.Type.Binary())
+	if value.Type == nil {
+		return errValueWithoutType
+	}
+	_, err := w.Write(typeBinary(value.Type))
 	if err != nil {
 		return err
 	}

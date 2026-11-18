@@ -3,26 +3,10 @@ package rowbinary
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
-
-func quote(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, `'`, `\'`)
-	return "'" + s + "'"
-}
-
-func unquote(s string) string {
-	s = strings.TrimSpace(s)
-	if len(s) < 2 || s[0] != '\'' || s[len(s)-1] != '\'' {
-		return s
-	}
-	s = s[1 : len(s)-1]
-	s = strings.ReplaceAll(s, `\'`, `'`)
-	s = strings.ReplaceAll(s, `\\`, `\`)
-	return s
-}
 
 func decodeStringTypeSplitRoot(t string, sep byte) []string {
 	s := t
@@ -37,6 +21,10 @@ func decodeStringTypeSplitRoot(t string, sep byte) []string {
 			i = 0
 			continue
 		}
+		if s[i] == '\'' {
+			i = skipQuoted(s, i)
+			continue
+		}
 		if s[i] == '(' {
 			level += 1
 		}
@@ -48,6 +36,43 @@ func decodeStringTypeSplitRoot(t string, sep byte) []string {
 
 	ret = append(ret, strings.TrimSpace(s))
 	return ret
+}
+
+// checkTypeName rejects empty names and unbalanced brackets outside quoted
+// strings, so malformed names are not silently accepted as Custom types.
+func checkTypeName(t string) error {
+	s := strings.TrimSpace(t)
+	if s == "" {
+		return errors.New("empty type name")
+	}
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\'':
+			for i++; i < len(s) && s[i] != '\''; i++ {
+				if s[i] == '\\' {
+					i++
+				}
+			}
+			if i >= len(s) {
+				return fmt.Errorf("unterminated quote in type name %q", s)
+			}
+		case '(':
+			depth++
+			if depth > maxTypeDepth {
+				return fmt.Errorf("type name nested deeper than %d levels", maxTypeDepth)
+			}
+		case ')':
+			depth--
+			if depth < 0 {
+				return fmt.Errorf("unbalanced brackets in type name %q", s)
+			}
+		}
+	}
+	if depth != 0 {
+		return fmt.Errorf("unbalanced brackets in type name %q", s)
+	}
+	return nil
 }
 
 func decodeStringTypeParseFunc(t string) (string, []string, error) {
@@ -68,13 +93,31 @@ func decodeStringTypeParseFunc(t string) (string, []string, error) {
 	funcName = s[:strings.Index(s, "(")]
 	argsStr := s[strings.Index(s, "(")+1 : len(s)-1]
 
-	args = decodeStringTypeSplitRoot(argsStr, ',')
+	if strings.TrimSpace(argsStr) != "" {
+		args = decodeStringTypeSplitRoot(argsStr, ',')
+	}
 
 	return funcName, args, nil
 }
 
 // DecodeStringType decodes a string type from the given reader.
+// Types nested deeper than maxTypeDepth are rejected.
 func DecodeStringType(t string) (Any, error) {
+	// One scan validates brackets and depth for the whole name, so the
+	// recursive parse below does not repeat it at every level.
+	if err := checkTypeName(t); err != nil {
+		return nil, err
+	}
+	return decodeStringType(t)
+}
+
+func decodeStringType(t string) (Any, error) {
+	// checkTypeName ran once for the whole name; arguments can still be empty,
+	// as in "Variant(,)".
+	if strings.TrimSpace(t) == "" {
+		return nil, errors.New("empty type name")
+	}
+
 	// simple types
 	switch strings.TrimSpace(t) {
 	case "Nothing":
@@ -90,9 +133,9 @@ func DecodeStringType(t string) (Any, error) {
 	case "UInt64":
 		return UInt64, nil
 	case "UInt128":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "UInt128")
 	case "UInt256":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "UInt256")
 	case "Int8":
 		return Int8, nil
 	case "Int16":
@@ -102,9 +145,9 @@ func DecodeStringType(t string) (Any, error) {
 	case "Int64":
 		return Int64, nil
 	case "Int128":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "Int128")
 	case "Int256":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "Int256")
 	case "Float32":
 		return Float32, nil
 	case "Float64":
@@ -116,11 +159,11 @@ func DecodeStringType(t string) (Any, error) {
 	case "DateTime":
 		return DateTime, nil
 	case "DateTime64":
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: %s", NotImplementedError, "DateTime64")
 	case "String":
 		return String, nil
 	case "FixedString": // <var_uint_size>
-		return nil, errors.New("not implemented")
+		return nil, fmt.Errorf("%w: FixedString without a size", NotImplementedError)
 	case "UUID":
 		return UUID, nil
 	case "IPv4":
@@ -128,7 +171,7 @@ func DecodeStringType(t string) (Any, error) {
 	case "IPv6":
 		return IPv6, nil
 	case "Dynamic":
-		return Dynamic(32), nil
+		return DynamicDefault, nil
 	case "IntervalNanosecond":
 		return IntervalNanosecond, nil
 	case "IntervalMicrosecond":
@@ -163,7 +206,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("Array must have exactly one argument: %#v", t)
 		}
-		elemType, err := DecodeStringType(funcArgs[0])
+		elemType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -173,11 +216,11 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 2 {
 			return nil, fmt.Errorf("Map must have exactly two arguments: %#v", t)
 		}
-		keyType, err := DecodeStringType(funcArgs[0])
+		keyType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
-		valueType, err := DecodeStringType(funcArgs[1])
+		valueType, err := decodeStringType(funcArgs[1])
 		if err != nil {
 			return nil, err
 		}
@@ -187,7 +230,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("Nullable must have exactly one argument: %#v", t)
 		}
-		elemType, err := DecodeStringType(funcArgs[0])
+		elemType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +240,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("LowCardinality must have exactly one argument: %#v", t)
 		}
-		elemType, err := DecodeStringType(funcArgs[0])
+		elemType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -220,6 +263,9 @@ func DecodeStringType(t string) (Any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("can't parse DateTime64 precision: %w", err)
 		}
+		if err := checkDateTime64Precision(int64(precision)); err != nil {
+			return nil, err
+		}
 		if len(funcArgs) == 1 {
 			return DateTime64(uint8(precision)), nil
 		}
@@ -229,13 +275,13 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 2 {
 			return nil, fmt.Errorf("Decimal must have exactly two arguments: %#v", t)
 		}
-		precision, err := strconv.Atoi(funcArgs[0])
+		precision, err := parseIntInRange("Decimal precision", funcArgs[0], 1, maxDecimalPrec)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse Decimal precision: %w", err)
+			return nil, err
 		}
-		scale, err := strconv.Atoi(funcArgs[1])
+		scale, err := parseIntInRange("Decimal scale", funcArgs[1], 0, precision)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse Decimal scale: %w", err)
+			return nil, err
 		}
 		return Decimal(uint8(precision), uint8(scale)), nil
 
@@ -243,15 +289,15 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("FixedString must have exactly one argument: %#v", t)
 		}
-		size, err := strconv.Atoi(funcArgs[0])
+		size, err := parseIntInRange("FixedString size", funcArgs[0], 1, maxFixedStringSize)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse FixedString size: %w", err)
+			return nil, err
 		}
-		return FixedString(size), nil
+		return FixedString(int(size)), nil
 
 	case "Tuple":
 		if len(funcArgs) == 0 {
-			return nil, fmt.Errorf("Tuple must have at least one argument: %#v", t)
+			return TupleAny(), nil // ClickHouse: toTypeName(()) = Tuple(), binary 1f 00
 		}
 
 		firstArgArr := decodeStringTypeSplitRoot(funcArgs[0], ' ')
@@ -259,7 +305,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(firstArgArr) == 1 {
 			var elemTypes []Any
 			for _, arg := range funcArgs {
-				elemType, err := DecodeStringType(arg)
+				elemType, err := decodeStringType(arg)
 				if err != nil {
 					return nil, err
 				}
@@ -275,7 +321,7 @@ func DecodeStringType(t string) (Any, error) {
 			if len(argArr) != 2 {
 				return nil, fmt.Errorf("can't parse named tuple element: %#v", arg)
 			}
-			elemType, err := DecodeStringType(argArr[1])
+			elemType, err := decodeStringType(argArr[1])
 			if err != nil {
 				return nil, err
 			}
@@ -285,45 +331,50 @@ func DecodeStringType(t string) (Any, error) {
 
 	case "Enum8":
 		// Enum8('windows' = -10, 'android' = 1, 'ios' = 2)
-		mp := make(map[string]int8)
+		mp := newEnumBuilder[int8]("Enum8")
 		for _, arg := range funcArgs {
-			argArr := decodeStringTypeSplitRoot(arg, ' ')
-			if len(argArr) != 3 || argArr[1] != "=" {
-				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
-			}
-			name := unquote(argArr[0])
-			value, err := strconv.Atoi(argArr[2])
+			name, valueStr, err := parseEnumElement(arg)
 			if err != nil {
-				return nil, fmt.Errorf("can't parse enum value: %w", err)
+				return nil, err
 			}
-			mp[name] = int8(value)
+			value, err := parseIntInRange("Enum8 value", valueStr, math.MinInt8, math.MaxInt8)
+			if err != nil {
+				return nil, err
+			}
+			if err := mp.add(name, int8(value)); err != nil {
+				return nil, err
+			}
 		}
-		return Enum8(mp), nil
+		return Enum8(mp.labels), nil
 	case "Enum16":
 		// Enum16('windows' = -10, 'android' = 1, 'ios' = 2)
-		mp := make(map[string]int16)
+		mp := newEnumBuilder[int16]("Enum16")
 		for _, arg := range funcArgs {
-			argArr := decodeStringTypeSplitRoot(arg, ' ')
-			if len(argArr) != 3 || argArr[1] != "=" {
-				return nil, fmt.Errorf("can't parse enum element: %#v", arg)
-			}
-			name := unquote(argArr[0])
-			value, err := strconv.Atoi(argArr[2])
+			name, valueStr, err := parseEnumElement(arg)
 			if err != nil {
-				return nil, fmt.Errorf("can't parse enum value: %w", err)
+				return nil, err
 			}
-			mp[name] = int16(value)
+			value, err := parseIntInRange("Enum16 value", valueStr, math.MinInt16, math.MaxInt16)
+			if err != nil {
+				return nil, err
+			}
+			if err := mp.add(name, int16(value)); err != nil {
+				return nil, err
+			}
 		}
-		return Enum16(mp), nil
+		return Enum16(mp.labels), nil
 
 	case "Variant":
 		if len(funcArgs) == 0 {
 			return nil, fmt.Errorf("Variant must have at least one argument: %#v", t)
 		}
+		if err := checkVariantCount(uint64(len(funcArgs))); err != nil {
+			return nil, err
+		}
 
 		var elemTypes []Any
 		for _, arg := range funcArgs {
-			elemType, err := DecodeStringType(arg)
+			elemType, err := decodeStringType(arg)
 			if err != nil {
 				return nil, err
 			}
@@ -344,9 +395,9 @@ func DecodeStringType(t string) (Any, error) {
 			return nil, fmt.Errorf("can't parse type: %#v", t)
 		}
 
-		maxTypes, err := strconv.Atoi(argArr[1])
+		maxTypes, err := parseIntInRange("Dynamic max_types", argArr[1], 0, maxDynamicTypes)
 		if err != nil {
-			return nil, fmt.Errorf("can't parse max_types: %w", err)
+			return nil, err
 		}
 		return Dynamic(uint8(maxTypes)), nil
 	}

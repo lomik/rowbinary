@@ -53,7 +53,8 @@ func (t typeNullable[V]) Scan(r Reader, v **V) error {
 		return err
 	}
 
-	if b == 0x01 {
+	// ClickHouse treats any non-zero marker as NULL; it writes only 0 and 1.
+	if b != 0 {
 		*v = nil
 		return nil
 	}
@@ -67,3 +68,5 @@ func (t typeNullable[V]) Scan(r Reader, v **V) error {
 	*v = &x
 	return nil
 }
+
+func (t typeNullable[V]) isNullValue(v *V) bool { return v == nil }

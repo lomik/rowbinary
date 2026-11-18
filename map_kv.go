@@ -10,12 +10,14 @@ func MapKV[K any, V any](keyType Type[K], valueType Type[V]) Type[*KV[K, V]] {
 	return MakeTypeWrapAny(typeMapKV[K, V]{
 		keyType:   keyType,
 		valueType: valueType,
+		zeroWidth: isZeroWidthType(keyType) && isZeroWidthType(valueType),
 	})
 }
 
 type typeMapKV[K any, V any] struct {
 	keyType   Type[K]
 	valueType Type[V]
+	zeroWidth bool // keys and values take no bytes; see maxZeroWidthElements
 }
 
 func (t typeMapKV[K, V]) String() string {
@@ -27,6 +29,10 @@ func (t typeMapKV[K, V]) Binary() []byte {
 }
 
 func (t typeMapKV[K, V]) Write(w Writer, value *KV[K, V]) error {
+	if value == nil {
+		// A nil *KV has no entries.
+		return VarintWrite(w, 0)
+	}
 	err := VarintWrite(w, uint64(value.Len()))
 	if err != nil {
 		return err
@@ -55,6 +61,11 @@ func (t typeMapKV[K, V]) Scan(r Reader, ret **KV[K, V]) error {
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return err
+	}
+	if t.zeroWidth && n > 0 {
+		if err := chargeZeroWidth(r, n, t.String()); err != nil {
+			return err
+		}
 	}
 
 	for i := uint64(0); i < n; i++ {

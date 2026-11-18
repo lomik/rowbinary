@@ -38,7 +38,7 @@ func BenchmarkChBench_Rowbinary(b *testing.B) {
 						}
 					}
 					assert.Equal(uint64(499999999), max)
-					return nil
+					return r.Err()
 				})),
 		)
 	}

@@ -58,6 +58,10 @@ func (w *FormatWriter) check() error {
 		return nil
 	}
 
+	if !w.options.format.In(RowBinary, RowBinaryWithNames, RowBinaryWithNamesAndTypes) {
+		return w.setErr(fmt.Errorf("unknown format: %v", w.options.format))
+	}
+
 	if len(w.options.columns) == 0 {
 		return w.setErr(fmt.Errorf("no columns defined in options"))
 	}
@@ -81,7 +85,9 @@ func (w *FormatWriter) Structure() string {
 		if i > 0 {
 			out.WriteString(", ")
 		}
-		out.WriteString(col.name)
+		// Names that are not plain identifiers are backquoted: ClickHouse parses
+		// the structure as SQL, so "my col" or "a, b" would otherwise break it.
+		out.WriteString(quoteIdentifierIfNeeded(col.name))
 		out.WriteString(" ")
 		out.WriteString(col.tp.String())
 	}
@@ -108,7 +114,7 @@ func (w *FormatWriter) writeHeader() error {
 		if w.options.format == RowBinaryWithNamesAndTypes {
 			for i := 0; i < len(w.options.columns); i++ {
 				if w.options.useBinaryHeader {
-					if _, err := w.wrap.Write(w.options.columns[i].tp.Binary()); err != nil {
+					if _, err := w.wrap.Write(typeBinary(w.options.columns[i].tp)); err != nil {
 						return w.setErr(err)
 					}
 				} else {

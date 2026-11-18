@@ -8,6 +8,9 @@ import (
 )
 
 func Decimal64(precision uint8, scale uint8) Type[decimal.Decimal] {
+	if msg := decimalConstructorError("Decimal64", precision, scale, BinaryTypeDecimal64[0]); msg != "" {
+		return Invalid[decimal.Decimal](msg)
+	}
 	return MakeTypeWrapAny(typeDecimal64{
 		precision: precision,
 		scale:     scale,

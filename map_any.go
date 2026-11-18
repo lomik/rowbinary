@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"slices"
 )
 
@@ -27,12 +28,14 @@ func MapAny(keyType Any, valueType Any) Type[map[any]any] {
 	return MakeTypeWrapAny(typeMapAny{
 		keyType:   keyType,
 		valueType: valueType,
+		zeroWidth: isZeroWidthType(keyType) && isZeroWidthType(valueType),
 	})
 }
 
 type typeMapAny struct {
 	keyType   Any
 	valueType Any
+	zeroWidth bool // keys and values take no bytes; see maxZeroWidthElements
 }
 
 func (t typeMapAny) String() string {
@@ -68,7 +71,13 @@ func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
 	if err != nil {
 		return err
 	}
-	*ret = make(map[any]any, int(n))
+	if t.zeroWidth && n > 0 {
+		if err := chargeZeroWidth(r, n, t.String()); err != nil {
+			return err
+		}
+	}
+	// Size hint capped: the declared count is not trusted to allocate.
+	*ret = make(map[any]any, min(n, 1024))
 	for i := uint64(0); i < n; i++ {
 		var k, v any
 		err = t.keyType.ScanAny(r, &k)
@@ -79,6 +88,9 @@ func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
 		err = t.valueType.ScanAny(r, &v)
 		if err != nil {
 			return err
+		}
+		if k != nil && !reflect.ValueOf(k).Comparable() {
+			return fmt.Errorf("Map key of type %T can't be a Go map key; use MapKV for %s keys", k, t.keyType.String())
 		}
 		(*ret)[k] = v
 	}

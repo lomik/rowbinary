@@ -1,3 +1,5 @@
+[![CI](https://github.com/lomik/rowbinary/actions/workflows/ci.yml/badge.svg)](https://github.com/lomik/rowbinary/actions/workflows/ci.yml)
+
 ## Features
 * HTTP client with `Select`, `Insert`, `Exec` methods
 * `RowBinary`, `RowBinaryWithNames` and `RowBinaryWithNamesAndTypes` formats are supported
@@ -10,6 +12,17 @@
 * Support `JSON` type
 
 ## Tests
+
+CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs on every push
+and pull request: `gofmt` and `go vet` for all three modules, offline tests on
+Go 1.24 (the minimum in `go.mod`) and the latest stable Go, the integration
+suite against ClickHouse in Docker, and 60 seconds of fuzzing each of the
+type-name and binary-header decoders and of `FormatReader` on arbitrary bytes.
+Inputs that once failed are kept in `testdata/fuzz`. To fuzz locally:
+
+```sh
+go test -run '^$' -fuzz '^FuzzDecodeBinaryType$' -fuzztime 60s .
+```
 
 Use Go 1.24.4 or newer (the module's toolchain directive supplies 1.24.4).
 The repository has three Go modules:
@@ -94,12 +107,14 @@ cd integration
 ROWBINARY_TEST_MODE=integration ROWBINARY_TEST_DSN='http://user:password@127.0.0.1:18123' go test ./... -count=1 -timeout=180s
 ```
 
-`TestType` is the fixture-only convenience helper; `TestTypeWithDSN(..., dsn)` adds
-live insertion without any dependency on TestMain or environment variables in the
-production library. Existing `NewTestClient` keeps its signature, but panics on
-setup error instead of exiting the process; prefer error-returning `NewTestClientE`
-or test-aware `NewTestClientTB`, which registers cleanup and reports failures
-through testing.TB.
+The test helpers live in `github.com/lomik/rowbinary/rowbinarytest`, so importing
+the library does not pull testing code into production builds.
+`rowbinarytest.TestType` is the fixture-only convenience helper for checking a type
+(including your own) against ClickHouse; `rowbinarytest.TestTypeWithDSN(..., dsn)`
+adds live insertion and read-back without any dependency on TestMain or environment
+variables. For a live server, `rowbinarytest.NewTestClientE` returns setup errors and
+`rowbinarytest.NewTestClientTB` also registers cleanup and reports failures through
+testing.TB; both create a uniquely named database that `Close` drops.
 
 ### Benchmark module
 

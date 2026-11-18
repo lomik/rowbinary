@@ -16,7 +16,7 @@ const intervalKindDay intervalKind = 0x06
 const intervalKindWeek intervalKind = 0x07
 const intervalKindMonth intervalKind = 0x08
 const intervalKindQuarter intervalKind = 0x09
-const intervalKindYear intervalKind = 0x1A
+const intervalKindYear intervalKind = 0x0A
 
 var IntervalNanosecond Type[int64] = MakeTypeWrapAny[int64](typeInterval{kind: intervalKindNanosecond})
 var IntervalMicrosecond Type[int64] = MakeTypeWrapAny[int64](typeInterval{kind: intervalKindMicrosecond})

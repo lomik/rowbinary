@@ -7,6 +7,9 @@ import (
 )
 
 func Decimal256(precision uint8, scale uint8) Type[decimal.Decimal] {
+	if msg := decimalConstructorError("Decimal256", precision, scale, BinaryTypeDecimal256[0]); msg != "" {
+		return Invalid[decimal.Decimal](msg)
+	}
 	return MakeTypeWrapAny(typeDecimal256{
 		precision: precision,
 		scale:     scale,
@@ -27,9 +30,13 @@ func (t typeDecimal256) Binary() []byte {
 }
 
 func (t typeDecimal256) Write(w Writer, value decimal.Decimal) error {
-	return NotImplementedError
+	return t.big().write(w, value)
 }
 
 func (t typeDecimal256) Scan(r Reader, v *decimal.Decimal) error {
-	return NotImplementedError
+	return t.big().scan(r, v)
+}
+
+func (t typeDecimal256) big() decimalBig {
+	return decimalBig{precision: t.precision, scale: t.scale, size: 32}
 }

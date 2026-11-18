@@ -7,6 +7,8 @@ import (
 	"io"
 )
 
+var errNoColumns = errors.New("cannot scan: stream has no columns")
+
 type FormatReader struct {
 	wrap     Reader
 	options  formatOptions
@@ -18,7 +20,7 @@ type FormatReader struct {
 
 func NewFormatReader(wrap io.Reader, opts ...FormatOption) *FormatReader {
 	r := &FormatReader{
-		wrap: NewReader(wrap),
+		wrap: &budgetReader{Reader: NewReader(wrap), zeroWidthLeft: maxZeroWidthElements},
 		options: formatOptions{
 			format:          RowBinary,
 			useBinaryHeader: false,
@@ -60,6 +62,7 @@ func (r *FormatReader) Next() bool {
 		return false
 	}
 	if err = r.wrap.UnreadByte(); err != nil {
+		r.setErr(err)
 		return false
 	}
 	return true
@@ -126,6 +129,10 @@ func (r *FormatReader) readHeaderRowBinaryWithNames() error {
 		remote = append(remote, Column{name: name, tp: tp})
 	}
 
+	if err := r.checkOptionColumns(remote); err != nil {
+		return r.setErr(err)
+	}
+
 	r.columns = remote
 	return nil
 }
@@ -188,7 +195,29 @@ func (r *FormatReader) readHeaderRowBinaryWithNamesAndTypes() error {
 		}
 	}
 
+	if err := r.checkOptionColumns(remote); err != nil {
+		return r.setErr(err)
+	}
+
 	r.columns = remote
+	return nil
+}
+
+// checkOptionColumns reports columns named in the options that the response
+// does not contain, typically a typo that would otherwise skip the type check.
+func (r *FormatReader) checkOptionColumns(remote []Column) error {
+	if len(r.options.columns) == 0 {
+		return nil
+	}
+	present := make(map[string]bool, len(remote))
+	for _, col := range remote {
+		present[col.name] = true
+	}
+	for _, col := range r.options.columns {
+		if !present[col.name] {
+			return fmt.Errorf("column %s is not in the response", col.name)
+		}
+	}
 	return nil
 }
 
@@ -229,10 +258,16 @@ func (r *FormatReader) Scan(dest ...any) error {
 	if err != nil {
 		return err
 	}
+	if len(dest) > 0 && len(r.columns) == 0 {
+		return r.setErr(errNoColumns)
+	}
 	for i := 0; i < len(dest); i++ {
+		if err := r.beginValue(); err != nil {
+			return err
+		}
 		err = r.columns[r.index].tp.ScanAny(r.wrap, dest[i])
 		if err != nil {
-			return r.setErr(err)
+			return r.setErr(midRowEOF(err))
 		}
 		r.nextColumn()
 	}
@@ -243,6 +278,9 @@ func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
 	if err := r.check(); err != nil {
 		return err
 	}
+	if len(r.columns) == 0 {
+		return r.setErr(errNoColumns)
+	}
 
 	if tp.ID() != r.columns[r.index].tp.ID() {
 		return r.setErr(TypeMismatchError{
@@ -251,7 +289,39 @@ func Scan[V any](r *FormatReader, tp Type[V], v *V) error {
 		})
 	}
 
+	if err := r.beginValue(); err != nil {
+		return err
+	}
 	err := tp.Scan(r.wrap, v)
 	r.nextColumn()
-	return r.setErr(err)
+	if err != nil {
+		return r.setErr(midRowEOF(err))
+	}
+	return nil
+}
+
+// beginValue reports a clean end of stream (io.EOF) when no data is left at a
+// row boundary. Anywhere else, running out of data means the stream was cut
+// off, which the value scan reports as io.ErrUnexpectedEOF.
+func (r *FormatReader) beginValue() error {
+	if r.index != 0 {
+		return nil
+	}
+	if _, err := r.wrap.Peek(1); err != nil {
+		return r.setErr(err)
+	}
+	// A new row: reset the zero-width element budget (maxZeroWidthElements).
+	if b, ok := r.wrap.(*budgetReader); ok {
+		b.resetRow()
+	}
+	return nil
+}
+
+// midRowEOF converts io.EOF from a value scan into io.ErrUnexpectedEOF: the
+// value had started (see beginValue), so the stream ended inside a row.
+func midRowEOF(err error) error {
+	if err == io.EOF {
+		return io.ErrUnexpectedEOF
+	}
+	return err
 }

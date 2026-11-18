@@ -9,7 +9,7 @@ import (
 var _ Type[time.Time] = DateTime64TZ(6, "Asia/Istanbul")
 
 func DateTime64TZ(p uint8, tz string) Type[time.Time] {
-	loc, locErr := time.LoadLocation(tz)
+	loc, locErr := loadLocation(tz)
 	return MakeTypeWrapAny[time.Time](typeDateTime64TZ{precision: int64(p), tz: tz, loc: loc, locErr: locErr})
 }
 
@@ -29,14 +29,23 @@ func (t typeDateTime64TZ) Binary() []byte {
 }
 
 func (t typeDateTime64TZ) Write(w Writer, value time.Time) error {
+	if err := checkDateTime64Precision(t.precision); err != nil {
+		return err
+	}
 	if t.locErr != nil {
 		return t.locErr
 	}
-	scale := intPow(10, t.precision)
-	return Int64.Write(w, value.Unix()*scale+int64(value.Nanosecond())/intPow(10, 9-t.precision))
+	ticks, err := dateTime64Ticks(value, t.precision)
+	if err != nil {
+		return err
+	}
+	return Int64.Write(w, ticks)
 }
 
 func (t typeDateTime64TZ) Scan(r Reader, v *time.Time) error {
+	if err := checkDateTime64Precision(t.precision); err != nil {
+		return err
+	}
 	if t.locErr != nil {
 		return t.locErr
 	}
