@@ -63,8 +63,16 @@ var (
 	BinaryTypeTime64                  = [1]byte{0x34} // <uint8_precision>
 )
 
-// DecodeBinaryType decodes a binary type from the given reader.
+// DecodeBinaryType decodes a binary type from the given reader. Types nested
+// deeper than maxTypeDepth are rejected.
 func DecodeBinaryType(r Reader) (Any, error) {
+	return decodeBinaryType(r, 0)
+}
+
+func decodeBinaryType(r Reader, depth int) (Any, error) {
+	if depth > maxTypeDepth {
+		return nil, fmt.Errorf("type nested deeper than %d levels", maxTypeDepth)
+	}
 	var firstByte [1]byte
 	if _, err := io.ReadFull(r, firstByte[:]); err != nil {
 		return nil, err
@@ -220,7 +228,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeUUID:
 		return UUID, nil
 	case BinaryTypeArray:
-		nested, err := DecodeBinaryType(r)
+		nested, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +240,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		var types []Any
 		for range n {
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -251,7 +259,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -291,7 +299,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		return nil, fmt.Errorf("%w: interval kind %#02x", NotImplementedError, b)
 	case BinaryTypeNullable: // <nested_type_encoding>
-		nested, err := DecodeBinaryType(r)
+		nested, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
@@ -301,17 +309,17 @@ func DecodeBinaryType(r Reader) (Any, error) {
 	case BinaryTypeAggregateFunction:
 		return nil, fmt.Errorf("%w: binary type %s", NotImplementedError, "BinaryTypeAggregateFunction")
 	case BinaryTypeLowCardinality: // <nested_type_encoding>
-		nested, err := DecodeBinaryType(r)
+		nested, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
 		return LowCardinalityAny(nested), nil
 	case BinaryTypeMap: // <key_type_encoding><value_type_encoding>
-		keyType, err := DecodeBinaryType(r)
+		keyType, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
-		valueType, err := DecodeBinaryType(r)
+		valueType, err := decodeBinaryType(r, depth+1)
 		if err != nil {
 			return nil, err
 		}
@@ -330,7 +338,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 		}
 		var types []Any
 		for range n {
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -370,7 +378,7 @@ func DecodeBinaryType(r Reader) (Any, error) {
 			if err != nil {
 				return nil, err
 			}
-			tp, err := DecodeBinaryType(r)
+			tp, err := decodeBinaryType(r, depth+1)
 			if err != nil {
 				return nil, err
 			}

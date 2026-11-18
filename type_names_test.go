@@ -15,6 +15,8 @@ func TestDecodeStringTypeRejectsMalformedNames(t *testing.T) {
 		"Array(UInt8",
 		"UInt8)",
 		"Map(String, Array(UInt8)",
+		"Variant(,)",
+		"Tuple(UInt8, )",
 		"Enum8('a = 1)",
 	} {
 		if tp, err := DecodeStringType(s); err == nil {

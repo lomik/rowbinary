@@ -59,6 +59,9 @@ func checkTypeName(t string) error {
 			}
 		case '(':
 			depth++
+			if depth > maxTypeDepth {
+				return fmt.Errorf("type name nested deeper than %d levels", maxTypeDepth)
+			}
 		case ')':
 			depth--
 			if depth < 0 {
@@ -98,9 +101,21 @@ func decodeStringTypeParseFunc(t string) (string, []string, error) {
 }
 
 // DecodeStringType decodes a string type from the given reader.
+// Types nested deeper than maxTypeDepth are rejected.
 func DecodeStringType(t string) (Any, error) {
+	// One scan validates brackets and depth for the whole name, so the
+	// recursive parse below does not repeat it at every level.
 	if err := checkTypeName(t); err != nil {
 		return nil, err
+	}
+	return decodeStringType(t)
+}
+
+func decodeStringType(t string) (Any, error) {
+	// checkTypeName ran once for the whole name; arguments can still be empty,
+	// as in "Variant(,)".
+	if strings.TrimSpace(t) == "" {
+		return nil, errors.New("empty type name")
 	}
 
 	// simple types
@@ -191,7 +206,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("Array must have exactly one argument: %#v", t)
 		}
-		elemType, err := DecodeStringType(funcArgs[0])
+		elemType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -201,11 +216,11 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 2 {
 			return nil, fmt.Errorf("Map must have exactly two arguments: %#v", t)
 		}
-		keyType, err := DecodeStringType(funcArgs[0])
+		keyType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
-		valueType, err := DecodeStringType(funcArgs[1])
+		valueType, err := decodeStringType(funcArgs[1])
 		if err != nil {
 			return nil, err
 		}
@@ -215,7 +230,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("Nullable must have exactly one argument: %#v", t)
 		}
-		elemType, err := DecodeStringType(funcArgs[0])
+		elemType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +240,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(funcArgs) != 1 {
 			return nil, fmt.Errorf("LowCardinality must have exactly one argument: %#v", t)
 		}
-		elemType, err := DecodeStringType(funcArgs[0])
+		elemType, err := decodeStringType(funcArgs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +305,7 @@ func DecodeStringType(t string) (Any, error) {
 		if len(firstArgArr) == 1 {
 			var elemTypes []Any
 			for _, arg := range funcArgs {
-				elemType, err := DecodeStringType(arg)
+				elemType, err := decodeStringType(arg)
 				if err != nil {
 					return nil, err
 				}
@@ -306,7 +321,7 @@ func DecodeStringType(t string) (Any, error) {
 			if len(argArr) != 2 {
 				return nil, fmt.Errorf("can't parse named tuple element: %#v", arg)
 			}
-			elemType, err := DecodeStringType(argArr[1])
+			elemType, err := decodeStringType(argArr[1])
 			if err != nil {
 				return nil, err
 			}
@@ -359,7 +374,7 @@ func DecodeStringType(t string) (Any, error) {
 
 		var elemTypes []Any
 		for _, arg := range funcArgs {
-			elemType, err := DecodeStringType(arg)
+			elemType, err := decodeStringType(arg)
 			if err != nil {
 				return nil, err
 			}

@@ -13,6 +13,10 @@ const (
 	maxDecimalPrec     = 76
 	maxEnum8Elements   = math.MaxUint8 + 1
 	maxEnum16Elements  = math.MaxUint16 + 1
+	// maxTypeDepth limits how deeply type names and binary type headers nest,
+	// matching ClickHouse's max_parser_depth default. Real types are a few
+	// levels deep; hostile input could otherwise recurse without bound.
+	maxTypeDepth = 1000
 )
 
 // parseIntInRange parses a decimal integer type parameter and checks min <= v <= max.
