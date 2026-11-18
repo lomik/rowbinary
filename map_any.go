@@ -28,12 +28,14 @@ func MapAny(keyType Any, valueType Any) Type[map[any]any] {
 	return MakeTypeWrapAny(typeMapAny{
 		keyType:   keyType,
 		valueType: valueType,
+		zeroWidth: isZeroWidthType(keyType) && isZeroWidthType(valueType),
 	})
 }
 
 type typeMapAny struct {
 	keyType   Any
 	valueType Any
+	zeroWidth bool // keys and values take no bytes; see maxZeroWidthElements
 }
 
 func (t typeMapAny) String() string {
@@ -68,6 +70,11 @@ func (t typeMapAny) Scan(r Reader, ret *map[any]any) (err error) {
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return err
+	}
+	if t.zeroWidth && n > 0 {
+		if err := chargeZeroWidth(r, n, t.String()); err != nil {
+			return err
+		}
 	}
 	// Size hint capped: the declared count is not trusted to allocate.
 	*ret = make(map[any]any, min(n, 1024))

@@ -87,9 +87,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # FuzzFormatReader is left out until arrays of zero-width elements
-        # have a size limit (TODO.md item 68); it finds that case quickly.
-        target: [FuzzDecodeStringType, FuzzDecodeBinaryType]
+        target: [FuzzDecodeStringType, FuzzDecodeBinaryType, FuzzFormatReader]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

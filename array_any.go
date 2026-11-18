@@ -10,10 +10,11 @@ var _ Any = ArrayAny(UInt32)
 
 type typeArrayAny struct {
 	valueType Any
+	zeroWidth bool // elements take no bytes; see maxZeroWidthElements
 }
 
 func ArrayAny(valueType Any) Type[[]any] {
-	return MakeTypeWrapAny(typeArrayAny{valueType: valueType})
+	return MakeTypeWrapAny(typeArrayAny{valueType: valueType, zeroWidth: isZeroWidthType(valueType)})
 }
 
 func (t typeArrayAny) String() string {
@@ -45,6 +46,11 @@ func (t typeArrayAny) Scan(r Reader, v *[]any) error {
 	}
 	if n > uint64(^uint(0)>>1) {
 		return fmt.Errorf("array length overflows int: %d", n)
+	}
+	if t.zeroWidth && n > 0 {
+		if err := chargeZeroWidth(r, n, t.String()); err != nil {
+			return err
+		}
 	}
 	// Grow as elements are read, never by the declared count alone.
 	s := (*v)[:0]

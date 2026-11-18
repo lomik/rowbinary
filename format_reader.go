@@ -20,7 +20,7 @@ type FormatReader struct {
 
 func NewFormatReader(wrap io.Reader, opts ...FormatOption) *FormatReader {
 	r := &FormatReader{
-		wrap: NewReader(wrap),
+		wrap: &budgetReader{Reader: NewReader(wrap), zeroWidthLeft: maxZeroWidthElements},
 		options: formatOptions{
 			format:          RowBinary,
 			useBinaryHeader: false,
@@ -309,6 +309,10 @@ func (r *FormatReader) beginValue() error {
 	}
 	if _, err := r.wrap.Peek(1); err != nil {
 		return r.setErr(err)
+	}
+	// A new row: reset the zero-width element budget (maxZeroWidthElements).
+	if b, ok := r.wrap.(*budgetReader); ok {
+		b.resetRow()
 	}
 	return nil
 }

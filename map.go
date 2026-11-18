@@ -25,12 +25,14 @@ func Map[K comparable, V any](keyType Type[K], valueType Type[V]) Type[map[K]V] 
 	return MakeTypeWrapAny(typeMap[K, V]{
 		keyType:   keyType,
 		valueType: valueType,
+		zeroWidth: isZeroWidthType(keyType) && isZeroWidthType(valueType),
 	})
 }
 
 type typeMap[K comparable, V any] struct {
 	keyType   Type[K]
 	valueType Type[V]
+	zeroWidth bool // keys and values take no bytes; see maxZeroWidthElements
 }
 
 func (t typeMap[K, V]) String() string {
@@ -67,6 +69,11 @@ func (t typeMap[K, V]) Scan(r Reader, ret *map[K]V) (err error) {
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
 		return err
+	}
+	if t.zeroWidth && n > 0 {
+		if err := chargeZeroWidth(r, n, t.String()); err != nil {
+			return err
+		}
 	}
 
 	for i := uint64(0); i < n; i++ {

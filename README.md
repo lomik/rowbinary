@@ -16,8 +16,9 @@
 CI ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)) runs on every push
 and pull request: `gofmt` and `go vet` for all three modules, offline tests on
 Go 1.24 (the minimum in `go.mod`) and the latest stable Go, the integration
-suite against ClickHouse in Docker, and 60 seconds of fuzzing of the type-name
-and binary-header decoders. To fuzz locally:
+suite against ClickHouse in Docker, and 60 seconds of fuzzing each of the
+type-name and binary-header decoders and of `FormatReader` on arbitrary bytes.
+Inputs that once failed are kept in `testdata/fuzz`. To fuzz locally:
 
 ```sh
 go test -run '^$' -fuzz '^FuzzDecodeBinaryType$' -fuzztime 60s .

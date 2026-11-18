@@ -1,0 +1,3 @@
+go test fuzz v1
+bool(true)
+[]byte("\x01\x010\x1e\x00\xdb\xdb\xdb\xdb\xdb0")
