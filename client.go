@@ -2,8 +2,11 @@ package rowbinary
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const headerClickhouseQueryID = "X-ClickHouse-Query-Id"
@@ -249,7 +252,37 @@ func (c *client) newRequest(ctx context.Context, dsn string, discoCtx DiscoveryC
 }
 
 func (c *client) do(req *http.Request) (*http.Response, error) {
-	return c.opts.httpClient.Do(req)
+	resp, err := c.opts.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	// On 301/302/303 the HTTP client follows the redirect with GET and no
+	// body: the query and data are dropped, and a 200 from the redirect target
+	// would look like success. Treat a changed method as an error.
+	if final := resp.Request; final != nil && final.Method != req.Method {
+		resp.Body.Close()
+		return nil, fmt.Errorf("server redirected the %s request to %s and the HTTP client re-sent it as %s without the query and data; put the final URL in the DSN", req.Method, redirectTarget(final.URL), final.Method)
+	}
+	return resp, nil
+}
+
+// redirectTarget is u without query parameters (which may hold settings).
+func redirectTarget(u *url.URL) string {
+	v := *u
+	v.RawQuery = ""
+	v.ForceQuery = false
+	v.User = nil
+	return v.String()
+}
+
+// setReplayableBody sets an in-memory request body that the HTTP client can
+// re-send when it follows a 307 or 308 redirect.
+func setReplayableBody(req *http.Request, body string) {
+	req.Body = io.NopCloser(strings.NewReader(body))
+	req.ContentLength = int64(len(body))
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader(body)), nil
+	}
 }
 
 // Close is a no-op by design; see Client.Close.

@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"slices"
-	"strings"
 )
 
 type selectOptions struct {
@@ -139,7 +138,7 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 			w.CloseWithError(bw.Flush()) // nil error closes the pipe normally
 		}()
 	} else {
-		req.Body = io.NopCloser(strings.NewReader(query))
+		setReplayableBody(req, query)
 	}
 
 	resp, err := c.do(req)

@@ -2,9 +2,7 @@ package rowbinary
 
 import (
 	"context"
-	"io"
 	"net/http"
-	"strings"
 )
 
 type execOptions struct {
@@ -40,7 +38,7 @@ func (c *client) Exec(ctx context.Context, query string, options ...ExecOption) 
 	if err != nil {
 		return err
 	}
-	req.Body = io.NopCloser(strings.NewReader(query))
+	setReplayableBody(req, query)
 
 	resp, err := c.do(req)
 	if err != nil {

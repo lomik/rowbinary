@@ -21,6 +21,11 @@ func statusError(resp *http.Response) error {
 	if len(body) > maxErrorBody {
 		body, suffix = body[:maxErrorBody], "... (truncated)"
 	}
+	if loc, err := resp.Location(); resp.StatusCode/100 == 3 && err == nil {
+		// Not followed: a streamed body (Insert, external data) cannot be
+		// re-sent, or the client does not follow redirects.
+		return fmt.Errorf("unexpected status code: %d (redirect to %s was not followed; put the final URL in the DSN)", resp.StatusCode, redirectTarget(loc))
+	}
 	return fmt.Errorf("unexpected status code: %d (%s%s)", resp.StatusCode, body, suffix)
 }
 
