@@ -85,7 +85,9 @@ func (w *FormatWriter) Structure() string {
 		if i > 0 {
 			out.WriteString(", ")
 		}
-		out.WriteString(col.name)
+		// Names that are not plain identifiers are backquoted: ClickHouse parses
+		// the structure as SQL, so "my col" or "a, b" would otherwise break it.
+		out.WriteString(quoteIdentifierIfNeeded(col.name))
 		out.WriteString(" ")
 		out.WriteString(col.tp.String())
 	}

@@ -580,3 +580,43 @@ func TestClient_ContextCallbacks(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// External data with table and column names that are not plain identifiers.
+// The query quotes them with QuoteIdentifier; the structure sent to the
+// server must quote the column names too.
+func TestClient_Select_ExternalDataNames(t *testing.T) {
+	c := integrationClient(t)
+	sum := func(table, col string) error {
+		var got uint64
+		err := c.Select(t.Context(),
+			fmt.Sprintf("SELECT toUInt64(sum(%s)) FROM %s", QuoteIdentifier(col), QuoteIdentifier(table)),
+			WithFormatReader(func(r *FormatReader) error {
+				if !r.Next() {
+					return fmt.Errorf("no rows: %w", r.Err())
+				}
+				return Scan(r, UInt64, &got)
+			}),
+			WithExternalData(table, C(col, UInt64), WithFormatWriter(func(w *FormatWriter) error {
+				for i := range uint64(5) {
+					if err := Write(w, UInt64, i); err != nil {
+						return err
+					}
+				}
+				return nil
+			})))
+		if err == nil && got != 10 {
+			err = fmt.Errorf("sum = %d, want 10", got)
+		}
+		return err
+	}
+	for _, name := range []string{"with space", "dash-name", "dot.name", "quote'name", `dq"name`, `back\slash`, "back`tick", "юникод", "a,b", "semi;colon"} {
+		if err := sum(name, "v"); err != nil {
+			t.Errorf("table %q: %v", name, err)
+		}
+	}
+	for _, name := range []string{"my col", "dot.col", "back`tick", "юникод", "a,b", "q'uote", "a b, c", "x UInt8"} {
+		if err := sum("ext", name); err != nil {
+			t.Errorf("column %q: %v", name, err)
+		}
+	}
+}

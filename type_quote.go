@@ -132,3 +132,19 @@ func parseEnumElement(s string) (label, value string, err error) {
 	}
 	return label, strings.TrimSpace(rest[1:]), nil
 }
+
+// quoteIdentifierIfNeeded returns name unchanged if it is a plain identifier
+// ([A-Za-z_][A-Za-z0-9_]*), and backquoted otherwise.
+func quoteIdentifierIfNeeded(name string) string {
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		letter := c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+		if !letter && (i == 0 || c < '0' || c > '9') {
+			return QuoteIdentifier(name)
+		}
+	}
+	if name == "" {
+		return QuoteIdentifier(name)
+	}
+	return name
+}

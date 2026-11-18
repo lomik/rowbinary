@@ -3,6 +3,7 @@ package rowbinary
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -63,7 +64,15 @@ func (c *client) Select(ctx context.Context, query string, options ...SelectOpti
 		}
 		opt.applySelectOptions(&opts)
 	}
+	seen := make(map[string]bool, len(opts.externalData))
 	for _, ed := range opts.externalData {
+		if ed.name == "" {
+			return errors.New("external data requires a table name")
+		}
+		if seen[ed.name] {
+			return fmt.Errorf("external data table %q is given more than once", ed.name)
+		}
+		seen[ed.name] = true
 		if ed.cb == nil {
 			return fmt.Errorf("external data %q requires a format writer", ed.name)
 		}
